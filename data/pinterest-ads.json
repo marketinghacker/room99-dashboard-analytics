@@ -1,0 +1,31 @@
+{
+  "period": {
+    "label": "Kwiecien 2026",
+    "start": "2026-04-01",
+    "end": "2026-04-14"
+  },
+  "source": "manual_upload",
+  "uploadedAt": null,
+  "kpis": {
+    "spend": { "label": "Wydatki", "value": 10000, "change": 15, "changeDirection": "up", "format": "currency" },
+    "revenue": { "label": "Przychod", "value": 195000, "change": 23, "changeDirection": "up", "format": "currency" },
+    "roas": { "label": "ROAS", "value": 19.5, "change": 8, "changeDirection": "up", "format": "decimal" },
+    "cr": { "label": "CR", "value": 1.8, "change": -0.1, "changeDirection": "down", "format": "pp" },
+    "impressions": { "label": "Wyswietlenia", "value": 850000, "change": 18, "changeDirection": "up", "format": "number" },
+    "clicks": { "label": "Klikniecia", "value": 8500, "change": 12, "changeDirection": "up", "format": "number" },
+    "saves": { "label": "Zapisy (Saves)", "value": 4250, "change": 20, "changeDirection": "up", "format": "number" },
+    "ctr": { "label": "CTR", "value": 1.0, "change": -0.05, "changeDirection": "down", "format": "pp" }
+  },
+  "topCampaigns": [
+    { "rank": 1, "name": "Shopping - Meble salon", "type": "Shopping", "spend": 2200, "revenue": 55000, "roas": 25.0, "cr": 2.5, "saves": 820 },
+    { "rank": 2, "name": "Shopping - Oswietlenie", "type": "Shopping", "spend": 1800, "revenue": 41400, "roas": 23.0, "cr": 2.3, "saves": 690 },
+    { "rank": 3, "name": "Conversion - Retargeting", "type": "Conversion", "spend": 1500, "revenue": 34500, "roas": 23.0, "cr": 3.1, "saves": 310 },
+    { "rank": 4, "name": "Shopping - Dekoracje", "type": "Shopping", "spend": 1200, "revenue": 24000, "roas": 20.0, "cr": 1.9, "saves": 580 },
+    { "rank": 5, "name": "Awareness - Inspiracje wnetrz", "type": "Awareness", "spend": 800, "revenue": 12000, "roas": 15.0, "cr": 1.2, "saves": 920 },
+    { "rank": 6, "name": "Shopping - Kuchnia", "type": "Shopping", "spend": 700, "revenue": 10500, "roas": 15.0, "cr": 1.5, "saves": 350 },
+    { "rank": 7, "name": "Conversion - Lookalike", "type": "Conversion", "spend": 650, "revenue": 8450, "roas": 13.0, "cr": 1.1, "saves": 280 },
+    { "rank": 8, "name": "Shopping - Lazienka", "type": "Shopping", "spend": 500, "revenue": 6000, "roas": 12.0, "cr": 1.0, "saves": 180 },
+    { "rank": 9, "name": "Awareness - Trendy 2026", "type": "Awareness", "spend": 400, "revenue": 2400, "roas": 6.0, "cr": 0.4, "saves": 650 },
+    { "rank": 10, "name": "Traffic - Blog design", "type": "Traffic", "spend": 250, "revenue": 750, "roas": 3.0, "cr": 0.2, "saves": 470 }
+  ]
+}

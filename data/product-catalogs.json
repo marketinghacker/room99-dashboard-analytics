@@ -1,0 +1,126 @@
+{
+  "period": {
+    "label": "Kwiecien 2026",
+    "start": "2026-04-01",
+    "end": "2026-04-14"
+  },
+  "catalogPerformance": [
+    {
+      "catalog": "Google Merchant Center",
+      "platform": "google",
+      "totalProducts": 4850,
+      "activeProducts": 4620,
+      "disapproved": 115,
+      "pending": 115,
+      "approvalRate": 95.3,
+      "change": 0.5
+    },
+    {
+      "catalog": "Meta Commerce",
+      "platform": "meta",
+      "totalProducts": 4850,
+      "activeProducts": 4700,
+      "disapproved": 85,
+      "pending": 65,
+      "approvalRate": 96.9,
+      "change": 0.3
+    },
+    {
+      "catalog": "Pinterest Catalog",
+      "platform": "pinterest",
+      "totalProducts": 4850,
+      "activeProducts": 4580,
+      "disapproved": 180,
+      "pending": 90,
+      "approvalRate": 94.4,
+      "change": -0.2
+    },
+    {
+      "catalog": "Criteo Feed",
+      "platform": "criteo",
+      "totalProducts": 4850,
+      "activeProducts": 4750,
+      "disapproved": 55,
+      "pending": 45,
+      "approvalRate": 97.9,
+      "change": 0.8
+    },
+    {
+      "catalog": "Google CSS (Comparison Shopping)",
+      "platform": "google",
+      "totalProducts": 3200,
+      "activeProducts": 3050,
+      "disapproved": 95,
+      "pending": 55,
+      "approvalRate": 95.3,
+      "change": 0.4
+    }
+  ],
+  "topDisplayedProducts": [
+    {
+      "rank": 1,
+      "name": "Sofa Modular COMO 3-osobowa",
+      "sku": "COMO-3S-GR",
+      "impressions": 45200,
+      "clicks": 1580,
+      "ctr": 3.5,
+      "revenue": 89400,
+      "transactions": 42
+    },
+    {
+      "rank": 2,
+      "name": "Lampa wiszaca AURORA LED",
+      "sku": "AUR-LED-BK",
+      "impressions": 38900,
+      "clicks": 1320,
+      "ctr": 3.4,
+      "revenue": 52800,
+      "transactions": 88
+    },
+    {
+      "rank": 3,
+      "name": "Stolik kawowy NORDEN okragly",
+      "sku": "NOR-CT-RD",
+      "impressions": 35100,
+      "clicks": 1190,
+      "ctr": 3.4,
+      "revenue": 41600,
+      "transactions": 65
+    }
+  ],
+  "highImpressionsLowSales": [
+    {
+      "rank": 1,
+      "name": "Dywan SAHARA 200x300",
+      "sku": "SAH-200300",
+      "impressions": 28500,
+      "clicks": 420,
+      "ctr": 1.5,
+      "revenue": 3200,
+      "transactions": 2,
+      "issue": "Niska konwersja mimo duzej ekspozycji"
+    },
+    {
+      "rank": 2,
+      "name": "Krzeslo barowe LOFT Industrial",
+      "sku": "LFT-BAR-IN",
+      "impressions": 22100,
+      "clicks": 380,
+      "ctr": 1.7,
+      "revenue": 1800,
+      "transactions": 3,
+      "issue": "Wysoka cena vs konkurencja"
+    },
+    {
+      "rank": 3,
+      "name": "Lustro scienne INFINITY okragle",
+      "sku": "INF-MIR-RD",
+      "impressions": 19800,
+      "clicks": 290,
+      "ctr": 1.5,
+      "revenue": 2400,
+      "transactions": 4,
+      "issue": "Zdjecia produktowe do poprawy"
+    }
+  ]
+}

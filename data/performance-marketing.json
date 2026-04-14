@@ -1,0 +1,90 @@
+{
+  "period": {
+    "label": "Kwiecien 2026",
+    "start": "2026-04-01",
+    "end": "2026-04-14"
+  },
+  "budgetByPlatform": [
+    {
+      "platform": "Google Ads",
+      "platformKey": "google",
+      "spend": 40000,
+      "share": 35,
+      "change": 8
+    },
+    {
+      "platform": "Meta Ads",
+      "platformKey": "meta",
+      "spend": 35000,
+      "share": 31,
+      "change": 5
+    },
+    {
+      "platform": "Pinterest Ads",
+      "platformKey": "pinterest",
+      "spend": 10000,
+      "share": 9,
+      "change": 15
+    },
+    {
+      "platform": "Criteo",
+      "platformKey": "criteo",
+      "spend": 28000,
+      "share": 25,
+      "change": 6
+    }
+  ],
+  "totalSpend": 113000,
+  "efficiency": [
+    {
+      "platform": "Google Ads",
+      "platformKey": "google",
+      "spend": 40000,
+      "revenue": 920000,
+      "roas": 23.0,
+      "roasChange": 5,
+      "cr": 2.8,
+      "crChange": -0.3,
+      "cpa": 6.38,
+      "cpaChange": -3
+    },
+    {
+      "platform": "Meta Ads",
+      "platformKey": "meta",
+      "spend": 35000,
+      "revenue": 735000,
+      "roas": 21.0,
+      "roasChange": 2,
+      "cr": 2.1,
+      "crChange": -0.2,
+      "cpa": 5.58,
+      "cpaChange": -1
+    },
+    {
+      "platform": "Pinterest Ads",
+      "platformKey": "pinterest",
+      "spend": 10000,
+      "revenue": 195000,
+      "roas": 19.5,
+      "roasChange": 8,
+      "cr": 1.8,
+      "crChange": -0.1,
+      "cpa": 5.56,
+      "cpaChange": -5
+    },
+    {
+      "platform": "Criteo",
+      "platformKey": "criteo",
+      "spend": 28000,
+      "revenue": 588000,
+      "roas": 21.0,
+      "roasChange": 3,
+      "cr": 2.0,
+      "crChange": -0.1,
+      "cpa": 5.33,
+      "cpaChange": -2
+    }
+  ],
+  "totalRevenue": 2438000,
+  "overallROAS": 21.6
+}

@@ -1,65 +1,112 @@
-import Image from "next/image";
+import fs from 'fs';
+import path from 'path';
+import FilterBar from '@/components/FilterBar';
+import SectionTitle from '@/components/SectionTitle';
+import KPIGrid from '@/components/KPIGrid';
+import KPICard from '@/components/KPICard';
+import { formatPLN, formatNumber, formatPercent, formatDecimal } from '@/lib/formatters';
 
-export default function Home() {
+const data = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data', 'executive-summary.json'), 'utf-8'));
+
+function formatValue(value: number, format: string): string {
+  switch (format) {
+    case 'currency':
+      return formatPLN(value);
+    case 'percent':
+      return formatPercent(value);
+    case 'number':
+      return formatNumber(value);
+    case 'decimal':
+      return formatDecimal(value, 1);
+    case 'pp':
+      return formatDecimal(value, 2) + ' pp';
+    default:
+      return String(value);
+  }
+}
+
+export default function ExecutiveSummaryPage() {
+  const { period, comparison, kpis, marketing } = data;
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="flex flex-col gap-6">
+      <FilterBar
+        period={period.label}
+        comparison={comparison.label}
+      />
+
+      <SectionTitle>Kluczowe wskazniki biznesowe</SectionTitle>
+
+      <KPIGrid columns={4}>
+        <KPICard
+          label={kpis.revenue.label}
+          value={formatValue(kpis.revenue.value, kpis.revenue.format)}
+          change={kpis.revenue.change}
+          changeDirection={kpis.revenue.changeDirection}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+        <KPICard
+          label={kpis.aov.label}
+          value={formatValue(kpis.aov.value, kpis.aov.format)}
+          change={kpis.aov.change}
+          changeDirection={kpis.aov.changeDirection}
+        />
+        <KPICard
+          label={kpis.cr.label}
+          value={formatValue(kpis.cr.value, kpis.cr.format)}
+          change={kpis.cr.change}
+          changeDirection={kpis.cr.changeDirection}
+        />
+        <KPICard
+          label={kpis.transactions.label}
+          value={formatValue(kpis.transactions.value, kpis.transactions.format)}
+          change={kpis.transactions.change}
+          changeDirection={kpis.transactions.changeDirection}
+        />
+      </KPIGrid>
+
+      <KPIGrid columns={3}>
+        <KPICard
+          label={kpis.sessions.label}
+          value={formatValue(kpis.sessions.value, kpis.sessions.format)}
+          change={kpis.sessions.change}
+          changeDirection={kpis.sessions.changeDirection}
+        />
+        <KPICard
+          label={kpis.newCustomers.label}
+          value={formatValue(kpis.newCustomers.value, kpis.newCustomers.format)}
+          change={kpis.newCustomers.change}
+          changeDirection={kpis.newCustomers.changeDirection}
+        />
+        <KPICard
+          label={kpis.returningCustomers.label}
+          value={formatValue(kpis.returningCustomers.value, kpis.returningCustomers.format)}
+          change={kpis.returningCustomers.change}
+          changeDirection={kpis.returningCustomers.changeDirection}
+        />
+      </KPIGrid>
+
+      <SectionTitle className="mt-8">Efektywnosc marketingu</SectionTitle>
+
+      <KPIGrid columns={3}>
+        <KPICard
+          label={marketing.spend.label}
+          value={formatValue(marketing.spend.value, marketing.spend.format)}
+          change={marketing.spend.change}
+          changeDirection={marketing.spend.changeDirection}
+        />
+        <KPICard
+          label={marketing.costShare.label}
+          value={formatValue(marketing.costShare.value, marketing.costShare.format)}
+          change={marketing.costShare.change}
+          changeDirection={marketing.costShare.changeDirection}
+        />
+        <KPICard
+          label={marketing.roas.label}
+          value={formatValue(marketing.roas.value, marketing.roas.format)}
+          change={marketing.roas.change}
+          changeDirection={marketing.roas.changeDirection}
+        />
+      </KPIGrid>
     </div>
   );
 }

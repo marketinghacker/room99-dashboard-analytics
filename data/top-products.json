@@ -1,0 +1,48 @@
+{
+  "period": {
+    "label": "Kwiecien 2026",
+    "start": "2026-04-01",
+    "end": "2026-04-14"
+  },
+  "top25": [
+    { "rank": 1, "name": "Sofa Modular COMO 3-osobowa", "sku": "COMO-3S-GR", "category": "Meble / Sofy", "revenue": 127500, "transactions": 60, "aov": 2125, "change": 18 },
+    { "rank": 2, "name": "Lampa wiszaca AURORA LED", "sku": "AUR-LED-BK", "category": "Oswietlenie / Lampy wiszace", "revenue": 95200, "transactions": 136, "aov": 700, "change": 22 },
+    { "rank": 3, "name": "Stolik kawowy NORDEN okragly", "sku": "NOR-CT-RD", "category": "Meble / Stoliki", "revenue": 78000, "transactions": 120, "aov": 650, "change": 15 },
+    { "rank": 4, "name": "Fotel BERGEN bujany", "sku": "BER-ARM-BJ", "category": "Meble / Fotele", "revenue": 72800, "transactions": 52, "aov": 1400, "change": 12 },
+    { "rank": 5, "name": "Lozko MALMO 160x200 tapicerowane", "sku": "MAL-BED-160", "category": "Meble / Lozka", "revenue": 68400, "transactions": 36, "aov": 1900, "change": 8 },
+    { "rank": 6, "name": "Komoda STOCKHOLM 3-szufladowa", "sku": "STK-COM-3S", "category": "Meble / Komody", "revenue": 62100, "transactions": 69, "aov": 900, "change": 14 },
+    { "rank": 7, "name": "Lampa stojaca NORDIC Arc", "sku": "NOR-FLR-ARC", "category": "Oswietlenie / Lampy stojace", "revenue": 58500, "transactions": 90, "aov": 650, "change": 25 },
+    { "rank": 8, "name": "Krzeslo COPENHAGEN welurowe", "sku": "COP-CHR-VL", "category": "Meble / Krzesla", "revenue": 54600, "transactions": 182, "aov": 300, "change": 10 },
+    { "rank": 9, "name": "Regal CUBE modularny 9-pol", "sku": "CUB-SHL-9", "category": "Meble / Regaly", "revenue": 49800, "transactions": 83, "aov": 600, "change": 6 },
+    { "rank": 10, "name": "Stol jadalny OSLO rozkladany", "sku": "OSL-DIN-EXT", "category": "Meble / Stoly", "revenue": 46200, "transactions": 33, "aov": 1400, "change": 9 },
+    { "rank": 11, "name": "Szafka nocna VIENNA marmur", "sku": "VIE-NS-MR", "category": "Meble / Szafki nocne", "revenue": 43500, "transactions": 145, "aov": 300, "change": 19 },
+    { "rank": 12, "name": "Poduszka dekoracyjna VELVET set 4szt", "sku": "VEL-PIL-S4", "category": "Dekoracje / Poduszki", "revenue": 41200, "transactions": 412, "aov": 100, "change": 35 },
+    { "rank": 13, "name": "Dywan SAHARA 160x230", "sku": "SAH-160230", "category": "Dekoracje / Dywany", "revenue": 39800, "transactions": 53, "aov": 751, "change": 7 },
+    { "rank": 14, "name": "Lustro scienne INFINITY okragle 80cm", "sku": "INF-MIR-80", "category": "Dekoracje / Lustra", "revenue": 37600, "transactions": 94, "aov": 400, "change": 11 },
+    { "rank": 15, "name": "Kosz na pranie BAMBOO", "sku": "BAM-LND-BK", "category": "Lazienka / Akcesoria", "revenue": 35400, "transactions": 354, "aov": 100, "change": 28 },
+    { "rank": 16, "name": "Wazon CERAMICA duzy", "sku": "CER-VAS-LG", "category": "Dekoracje / Wazony", "revenue": 33200, "transactions": 166, "aov": 200, "change": 5 },
+    { "rank": 17, "name": "Polka scienna HEXAGON set 3szt", "sku": "HEX-SHF-S3", "category": "Dekoracje / Polki", "revenue": 31000, "transactions": 155, "aov": 200, "change": 16 },
+    { "rank": 18, "name": "Lampka biurkowa STUDIO regulowana", "sku": "STU-DSK-RG", "category": "Oswietlenie / Lampki biurkowe", "revenue": 28800, "transactions": 96, "aov": 300, "change": 13 },
+    { "rank": 19, "name": "Organizer lazienkowy STONE 5-elem", "sku": "STN-ORG-5E", "category": "Lazienka / Akcesoria", "revenue": 26600, "transactions": 190, "aov": 140, "change": 20 },
+    { "rank": 20, "name": "Obraz ABSTRACT GOLD 100x70", "sku": "ABS-GLD-100", "category": "Dekoracje / Obrazy", "revenue": 24400, "transactions": 61, "aov": 400, "change": 3 },
+    { "rank": 21, "name": "Swiecznik NOIR metalowy 3-ramienny", "sku": "NOI-CND-3A", "category": "Dekoracje / Swieczniki", "revenue": 22200, "transactions": 148, "aov": 150, "change": 8 },
+    { "rank": 22, "name": "Wieszak scienny INDUSTRIAL 5 hakow", "sku": "IND-HNG-5H", "category": "Przedpokoj / Wieszaki", "revenue": 20500, "transactions": 205, "aov": 100, "change": 12 },
+    { "rank": 23, "name": "Koc ALPACA miekki 150x200", "sku": "ALP-BLN-150", "category": "Tekstylia / Koce", "revenue": 19200, "transactions": 128, "aov": 150, "change": 30 },
+    { "rank": 24, "name": "Doniczka TERRACOTTA duza z podstawka", "sku": "TER-POT-LG", "category": "Ogrod / Doniczki", "revenue": 17800, "transactions": 178, "aov": 100, "change": 15 },
+    { "rank": 25, "name": "Zegar scienny MINIMAL czarny 40cm", "sku": "MIN-CLK-40", "category": "Dekoracje / Zegary", "revenue": 16200, "transactions": 108, "aov": 150, "change": 4 }
+  ],
+  "topGrowth": [
+    { "rank": 1, "name": "Poduszka dekoracyjna VELVET set 4szt", "sku": "VEL-PIL-S4", "revenue": 41200, "change": 35, "previousRevenue": 30519, "driver": "Kampania Meta ASC + trending na Pintereście" },
+    { "rank": 2, "name": "Koc ALPACA miekki 150x200", "sku": "ALP-BLN-150", "revenue": 19200, "change": 30, "previousRevenue": 14769, "driver": "Sezon wiosenny, cross-sell z meblami" },
+    { "rank": 3, "name": "Kosz na pranie BAMBOO", "sku": "BAM-LND-BK", "revenue": 35400, "change": 28, "previousRevenue": 27656, "driver": "Nowa kampania Google Shopping" },
+    { "rank": 4, "name": "Lampa stojaca NORDIC Arc", "sku": "NOR-FLR-ARC", "revenue": 58500, "change": 25, "previousRevenue": 46800, "driver": "Wysoka pozycja w PMax, viral na IG" },
+    { "rank": 5, "name": "Lampa wiszaca AURORA LED", "sku": "AUR-LED-BK", "revenue": 95200, "change": 22, "previousRevenue": 78033, "driver": "Top seller w Google Shopping i Meta DPA" }
+  ],
+  "topDecline": [
+    { "rank": 1, "name": "Obraz ABSTRACT GOLD 100x70", "sku": "ABS-GLD-100", "revenue": 24400, "change": -12, "previousRevenue": 27727, "driver": "Spadek zainteresowania, sezonowosc" },
+    { "rank": 2, "name": "Zegar scienny MINIMAL czarny 40cm", "sku": "MIN-CLK-40", "revenue": 16200, "change": -8, "previousRevenue": 17609, "driver": "Silna konkurencja cenowa" },
+    { "rank": 3, "name": "Wazon CERAMICA duzy", "sku": "CER-VAS-LG", "revenue": 33200, "change": -5, "previousRevenue": 34947, "driver": "Brak nowych wariantow kolorystycznych" },
+    { "rank": 4, "name": "Dywan SAHARA 160x230", "sku": "SAH-160230", "revenue": 39800, "change": -4, "previousRevenue": 41458, "driver": "Mniejszy ruch organiczny na kategorie dywanow" },
+    { "rank": 5, "name": "Swiecznik NOIR metalowy 3-ramienny", "sku": "NOI-CND-3A", "revenue": 22200, "change": -3, "previousRevenue": 22887, "driver": "Koniec sezonu zimowego, mniejszy popyt" }
+  ]
+}

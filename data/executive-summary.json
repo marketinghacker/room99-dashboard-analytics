@@ -1,0 +1,84 @@
+{
+  "period": {
+    "label": "Kwiecien 2026",
+    "start": "2026-04-01",
+    "end": "2026-04-14"
+  },
+  "comparison": {
+    "label": "vs Kwiecien 2025 (YoY)"
+  },
+  "kpis": {
+    "revenue": {
+      "label": "Przychod",
+      "value": 1850000,
+      "change": 15,
+      "changeDirection": "up",
+      "format": "currency"
+    },
+    "aov": {
+      "label": "AOV",
+      "value": 295,
+      "change": 5,
+      "changeDirection": "up",
+      "format": "currency"
+    },
+    "cr": {
+      "label": "CR",
+      "value": 2.15,
+      "change": -8,
+      "changeDirection": "down",
+      "format": "percent"
+    },
+    "transactions": {
+      "label": "Transakcje",
+      "value": 6271,
+      "change": 9,
+      "changeDirection": "up",
+      "format": "number"
+    },
+    "sessions": {
+      "label": "Sesje",
+      "value": 250000,
+      "change": 15,
+      "changeDirection": "up",
+      "format": "number"
+    },
+    "newCustomers": {
+      "label": "Nowi klienci",
+      "value": 45,
+      "change": -2,
+      "changeDirection": "down",
+      "format": "percent"
+    },
+    "returningCustomers": {
+      "label": "Powracajacy",
+      "value": 55,
+      "change": 5,
+      "changeDirection": "up",
+      "format": "percent"
+    }
+  },
+  "marketing": {
+    "spend": {
+      "label": "Wydatki reklamowe",
+      "value": 113000,
+      "change": 12,
+      "changeDirection": "up",
+      "format": "currency"
+    },
+    "costShare": {
+      "label": "Udzial kosztow",
+      "value": 6.11,
+      "change": 0.3,
+      "changeDirection": "up",
+      "format": "pp"
+    },
+    "roas": {
+      "label": "ROAS calkowity",
+      "value": 21.6,
+      "change": 3,
+      "changeDirection": "up",
+      "format": "decimal"
+    }
+  }
+}

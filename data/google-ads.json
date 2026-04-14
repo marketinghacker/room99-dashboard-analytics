@@ -1,0 +1,67 @@
+{
+  "period": {
+    "label": "Kwiecien 2026",
+    "start": "2026-04-01",
+    "end": "2026-04-14"
+  },
+  "kpis": {
+    "spend": { "label": "Wydatki", "value": 40000, "change": 8, "changeDirection": "up", "format": "currency" },
+    "revenue": { "label": "Przychod", "value": 920000, "change": 13, "changeDirection": "up", "format": "currency" },
+    "roas": { "label": "ROAS", "value": 23.0, "change": 5, "changeDirection": "up", "format": "decimal" },
+    "cr": { "label": "CR", "value": 2.8, "change": -0.3, "changeDirection": "down", "format": "pp" },
+    "impressions": { "label": "Wyswietlenia", "value": 1250000, "change": 12, "changeDirection": "up", "format": "number" },
+    "clicks": { "label": "Klikniecia", "value": 28750, "change": 10, "changeDirection": "up", "format": "number" },
+    "ctr": { "label": "CTR", "value": 2.3, "change": -0.2, "changeDirection": "down", "format": "pp" },
+    "cpc": { "label": "CPC", "value": 1.39, "change": -2, "changeDirection": "down", "format": "currency" }
+  },
+  "campaignTypes": [
+    { "type": "Performance Max", "spend": 14000, "revenue": 336000, "roas": 24.0, "share": 35 },
+    { "type": "Shopping", "spend": 12000, "revenue": 312000, "roas": 26.0, "share": 30 },
+    { "type": "Search", "spend": 9500, "revenue": 209000, "roas": 22.0, "share": 24 },
+    { "type": "GDN (Display)", "spend": 4500, "revenue": 63000, "roas": 14.0, "share": 11 }
+  ],
+  "brandVsNonBrand": {
+    "brand": {
+      "label": "Brand",
+      "spend": 8500,
+      "revenue": 255000,
+      "roas": 30.0,
+      "share": 21
+    },
+    "nonBrand": {
+      "label": "Non-brand",
+      "spend": 31500,
+      "revenue": 665000,
+      "roas": 21.1,
+      "share": 79
+    }
+  },
+  "gscBrandTrend": {
+    "labels": ["Sierpien", "Wrzesien", "Pazdziernik", "Listopad", "Grudzien", "Styczen", "Luty", "Marzec", "Kwiecien"],
+    "values": [7200, 7450, 7100, 7800, 8400, 9100, 10200, 11500, 13050]
+  },
+  "topCampaigns": [
+    { "rank": 1, "name": "PMax - Meble Salon", "type": "PMax", "spend": 4200, "revenue": 126000, "roas": 30.0, "cr": 3.5, "transactions": 315 },
+    { "rank": 2, "name": "Shopping - Bestsellery", "type": "Shopping", "spend": 3800, "revenue": 110200, "roas": 29.0, "cr": 3.2, "transactions": 280 },
+    { "rank": 3, "name": "Search - Brand", "type": "Search", "spend": 3200, "revenue": 96000, "roas": 30.0, "cr": 5.1, "transactions": 240 },
+    { "rank": 4, "name": "PMax - Oswietlenie", "type": "PMax", "spend": 3500, "revenue": 94500, "roas": 27.0, "cr": 2.9, "transactions": 230 },
+    { "rank": 5, "name": "Shopping - Nowe kolekcje", "type": "Shopping", "spend": 3200, "revenue": 83200, "roas": 26.0, "cr": 2.8, "transactions": 215 },
+    { "rank": 6, "name": "Search - Meble biurowe", "type": "Search", "spend": 2800, "revenue": 72800, "roas": 26.0, "cr": 2.7, "transactions": 195 },
+    { "rank": 7, "name": "PMax - Dekoracje", "type": "PMax", "spend": 3300, "revenue": 69300, "roas": 21.0, "cr": 2.4, "transactions": 180 },
+    { "rank": 8, "name": "Shopping - Dodatki", "type": "Shopping", "spend": 2500, "revenue": 62500, "roas": 25.0, "cr": 2.6, "transactions": 165 },
+    { "rank": 9, "name": "Search - Lampy designerskie", "type": "Search", "spend": 1800, "revenue": 45000, "roas": 25.0, "cr": 2.5, "transactions": 120 },
+    { "rank": 10, "name": "PMax - Outdoor", "type": "PMax", "spend": 3000, "revenue": 46500, "roas": 15.5, "cr": 1.8, "transactions": 105 }
+  ],
+  "bottomCampaigns": [
+    { "rank": 1, "name": "GDN - Remarketing ogolny", "type": "GDN", "spend": 2200, "revenue": 22000, "roas": 10.0, "cr": 0.8, "transactions": 45, "issue": "Niski CR i ROAS" },
+    { "rank": 2, "name": "Search - Konkurencja generyczne", "type": "Search", "spend": 1700, "revenue": 11900, "roas": 7.0, "cr": 0.5, "transactions": 28, "issue": "Wysoki CPC, niski CR" },
+    { "rank": 3, "name": "GDN - Prospecting zimny", "type": "GDN", "spend": 2300, "revenue": 18400, "roas": 8.0, "cr": 0.4, "transactions": 35, "issue": "Zbyt szeroki targeting" }
+  ],
+  "microconversions": {
+    "addToCart": { "label": "Dodanie do koszyka", "count": 4850, "change": 12, "rate": 16.9 },
+    "beginCheckout": { "label": "Rozpoczecie zakupu", "count": 2910, "change": 8, "rate": 10.1 },
+    "addPaymentInfo": { "label": "Dane platnosci", "count": 2425, "change": 6, "rate": 8.4 },
+    "viewItem": { "label": "Wyswietlenie produktu", "count": 18200, "change": 15, "rate": 63.3 },
+    "newsletter": { "label": "Newsletter signup", "count": 385, "change": 18, "rate": 1.3 }
+  }
+}

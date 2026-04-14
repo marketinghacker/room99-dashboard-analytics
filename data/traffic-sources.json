@@ -1,0 +1,112 @@
+{
+  "period": {
+    "label": "Kwiecien 2026",
+    "start": "2026-04-01",
+    "end": "2026-04-14"
+  },
+  "channels": [
+    {
+      "channel": "Organic Search",
+      "sessions": 82500,
+      "share": 28.9,
+      "addToCart": 5775,
+      "addToCartRate": 7.0,
+      "purchases": 2310,
+      "cr": 2.8,
+      "crChange": 0.2,
+      "revenue": 508200,
+      "revenueShare": 27.5
+    },
+    {
+      "channel": "Paid Search",
+      "sessions": 57000,
+      "share": 20.0,
+      "addToCart": 4560,
+      "addToCartRate": 8.0,
+      "purchases": 1596,
+      "cr": 2.8,
+      "crChange": -0.3,
+      "revenue": 446880,
+      "revenueShare": 24.2
+    },
+    {
+      "channel": "Paid Social",
+      "sessions": 51300,
+      "share": 18.0,
+      "addToCart": 3591,
+      "addToCartRate": 7.0,
+      "purchases": 1077,
+      "cr": 2.1,
+      "crChange": -0.2,
+      "revenue": 290730,
+      "revenueShare": 15.7
+    },
+    {
+      "channel": "Direct",
+      "sessions": 42750,
+      "share": 15.0,
+      "addToCart": 3420,
+      "addToCartRate": 8.0,
+      "purchases": 1283,
+      "cr": 3.0,
+      "crChange": 0.1,
+      "revenue": 346410,
+      "revenueShare": 18.7
+    },
+    {
+      "channel": "Email",
+      "sessions": 22800,
+      "share": 8.0,
+      "addToCart": 2508,
+      "addToCartRate": 11.0,
+      "purchases": 912,
+      "cr": 4.0,
+      "crChange": 0.5,
+      "revenue": 164160,
+      "revenueShare": 8.9
+    },
+    {
+      "channel": "Referral",
+      "sessions": 17100,
+      "share": 6.0,
+      "addToCart": 855,
+      "addToCartRate": 5.0,
+      "purchases": 342,
+      "cr": 2.0,
+      "crChange": -0.1,
+      "revenue": 61560,
+      "revenueShare": 3.3
+    },
+    {
+      "channel": "Social Organic",
+      "sessions": 11400,
+      "share": 4.0,
+      "addToCart": 570,
+      "addToCartRate": 5.0,
+      "purchases": 171,
+      "cr": 1.5,
+      "crChange": 0.1,
+      "revenue": 30780,
+      "revenueShare": 1.7
+    }
+  ],
+  "revenueShareByChannel": [
+    { "channel": "Organic Search", "share": 27.5 },
+    { "channel": "Paid Search", "share": 24.2 },
+    { "channel": "Direct", "share": 18.7 },
+    { "channel": "Paid Social", "share": 15.7 },
+    { "channel": "Email", "share": 8.9 },
+    { "channel": "Referral", "share": 3.3 },
+    { "channel": "Social Organic", "share": 1.7 }
+  ],
+  "crTrend": {
+    "labels": ["Wrzesien", "Pazdziernik", "Listopad", "Grudzien", "Styczen", "Luty", "Marzec"],
+    "organicSearch": [2.5, 2.6, 2.7, 3.1, 2.6, 2.7, 2.8],
+    "paidSearch": [3.0, 3.1, 3.2, 3.5, 2.9, 2.8, 2.8],
+    "paidSocial": [2.2, 2.3, 2.4, 2.8, 2.2, 2.1, 2.1],
+    "direct": [2.8, 2.9, 3.0, 3.3, 2.9, 2.9, 3.0],
+    "email": [3.5, 3.6, 3.8, 4.2, 3.7, 3.8, 4.0],
+    "referral": [1.9, 2.0, 2.1, 2.3, 2.0, 2.0, 2.0],
+    "socialOrganic": [1.3, 1.4, 1.4, 1.7, 1.4, 1.4, 1.5]
+  }
+}
