@@ -1,41 +1,41 @@
 {
   "period": {
-    "label": "Kwiecien 2026",
-    "start": "2026-04-01",
-    "end": "2026-04-14"
+    "label": "Marzec 2026",
+    "start": "2026-03-01",
+    "end": "2026-03-31"
   },
   "kpis": {
-    "spend": { "label": "Wydatki", "value": 35000, "change": 5, "changeDirection": "up", "format": "currency" },
-    "revenue": { "label": "Przychod", "value": 735000, "change": 8, "changeDirection": "up", "format": "currency" },
-    "roas": { "label": "ROAS", "value": 21.0, "change": 2, "changeDirection": "up", "format": "decimal" },
-    "cr": { "label": "CR", "value": 2.1, "change": -0.2, "changeDirection": "down", "format": "pp" },
-    "reach": { "label": "Zasieg", "value": 485000, "change": 8, "changeDirection": "up", "format": "number" },
-    "impressions": { "label": "Wyswietlenia", "value": 2150000, "change": 12, "changeDirection": "up", "format": "number" },
-    "frequency": { "label": "Czestotliwosc", "value": 4.43, "change": 0.3, "changeDirection": "up", "format": "decimal" },
-    "ctr": { "label": "CTR", "value": 1.14, "change": -0.05, "changeDirection": "down", "format": "pp" }
+    "spend": { "label": "Wydatki", "value": 133778, "change": 32, "changeDirection": "up", "format": "currency" },
+    "revenue": { "label": "Przychod", "value": 1043980, "change": 38, "changeDirection": "up", "format": "currency" },
+    "roas": { "label": "ROAS", "value": 7.80, "change": 12, "changeDirection": "up", "format": "decimal" },
+    "cr": { "label": "CR", "value": 2.77, "change": 0.3, "changeDirection": "up", "format": "pp" },
+    "reach": { "label": "Zasieg", "value": 1244969, "change": 25, "changeDirection": "up", "format": "number" },
+    "impressions": { "label": "Wyswietlenia", "value": 9977878, "change": 30, "changeDirection": "up", "format": "number" },
+    "frequency": { "label": "Czestotliwosc", "value": 3.07, "change": -0.2, "changeDirection": "down", "format": "decimal" },
+    "ctr": { "label": "CTR", "value": 1.84, "change": 0.15, "changeDirection": "up", "format": "pp" }
   },
   "topCampaigns": [
-    { "rank": 1, "name": "ASC - Meble premium", "type": "Advantage+", "spend": 5200, "revenue": 156000, "roas": 30.0, "cr": 3.2, "reach": 72000 },
-    { "rank": 2, "name": "DABA - Retargeting DPA", "type": "DPA", "spend": 4800, "revenue": 134400, "roas": 28.0, "cr": 3.8, "reach": 45000 },
-    { "rank": 3, "name": "ASC - Oswietlenie", "type": "Advantage+", "spend": 4500, "revenue": 112500, "roas": 25.0, "cr": 2.8, "reach": 68000 },
-    { "rank": 4, "name": "Prospecting - Lookalike 1%", "type": "Conversion", "spend": 3800, "revenue": 83600, "roas": 22.0, "cr": 2.2, "reach": 52000 },
-    { "rank": 5, "name": "DABA - Cross-sell", "type": "DPA", "spend": 3500, "revenue": 73500, "roas": 21.0, "cr": 2.5, "reach": 38000 },
-    { "rank": 6, "name": "Prospecting - Interest targeting", "type": "Conversion", "spend": 3200, "revenue": 60800, "roas": 19.0, "cr": 1.9, "reach": 58000 },
-    { "rank": 7, "name": "ASC - Dekoracje domu", "type": "Advantage+", "spend": 3000, "revenue": 54000, "roas": 18.0, "cr": 1.8, "reach": 48000 },
-    { "rank": 8, "name": "Retargeting - Koszyk porzucony", "type": "Conversion", "spend": 2500, "revenue": 52500, "roas": 21.0, "cr": 4.1, "reach": 22000 },
-    { "rank": 9, "name": "Video Views - Branding", "type": "Video", "spend": 2200, "revenue": 26400, "roas": 12.0, "cr": 0.9, "reach": 42000 },
-    { "rank": 10, "name": "Prospecting - Broad", "type": "Conversion", "spend": 2300, "revenue": 23000, "roas": 10.0, "cr": 0.8, "reach": 40000 }
+    { "rank": 1, "name": "Broad Zaslony ASC+", "type": "Advantage+", "spend": 27214, "revenue": 223642, "roas": 8.21, "cr": 2.54, "reach": 298000 },
+    { "rank": 2, "name": "Sempai ZAPACH", "type": "Conversion", "spend": 18937, "revenue": 159793, "roas": 8.44, "cr": 2.50, "reach": 245000 },
+    { "rank": 3, "name": "Broad Narzuty ASC+", "type": "Advantage+", "spend": 14630, "revenue": 117445, "roas": 8.03, "cr": 3.76, "reach": 112000 },
+    { "rank": 4, "name": "Sempai Katalog Adv+ 7c1v", "type": "Advantage+", "spend": 11234, "revenue": 101138, "roas": 9.00, "cr": 5.09, "reach": 155000 },
+    { "rank": 5, "name": "Katalog Remarketing 7c1v", "type": "DPA", "spend": 10368, "revenue": 96263, "roas": 9.29, "cr": 5.45, "reach": 62000 },
+    { "rank": 6, "name": "Broad Obrusy ASC+", "type": "Advantage+", "spend": 13555, "revenue": 87572, "roas": 6.46, "cr": 3.55, "reach": 125000 },
+    { "rank": 7, "name": "Sempai INFLU Materialy", "type": "Conversion", "spend": 8479, "revenue": 78937, "roas": 9.31, "cr": 5.11, "reach": 82000 },
+    { "rank": 8, "name": "Sempai Bestsellery", "type": "Conversion", "spend": 8694, "revenue": 67956, "roas": 7.82, "cr": 4.43, "reach": 98000 },
+    { "rank": 9, "name": "Broad Poduszki ASC+", "type": "Advantage+", "spend": 7136, "revenue": 42360, "roas": 5.94, "cr": 2.88, "reach": 68000 },
+    { "rank": 10, "name": "Kolekcja Molly", "type": "Conversion", "spend": 5168, "revenue": 39493, "roas": 7.64, "cr": 2.66, "reach": 72000 }
   ],
   "bottomCampaigns": [
-    { "rank": 1, "name": "Traffic - Blog content", "type": "Traffic", "spend": 1800, "revenue": 7200, "roas": 4.0, "cr": 0.3, "reach": 35000, "issue": "Niski ROAS, kampania ruchowa" },
-    { "rank": 2, "name": "Reach - Awareness ogolny", "type": "Reach", "spend": 1500, "revenue": 3000, "roas": 2.0, "cr": 0.1, "reach": 62000, "issue": "Brak konwersji, budowanie swiadomosci" },
-    { "rank": 3, "name": "Prospecting - Szeroki cold", "type": "Conversion", "spend": 2100, "revenue": 12600, "roas": 6.0, "cr": 0.4, "reach": 55000, "issue": "Zbyt szeroka grupa, niski CR" }
+    { "rank": 1, "name": "Broad Poduszki ASC+", "type": "Advantage+", "spend": 7136, "revenue": 42360, "roas": 5.94, "cr": 2.88, "reach": 68000, "issue": "ROAS ponizej sredniego, wysoki koszt pozyskania" },
+    { "rank": 2, "name": "Broad Obrusy ASC+", "type": "Advantage+", "spend": 13555, "revenue": 87572, "roas": 6.46, "cr": 3.55, "reach": 125000, "issue": "Duzy budzet, ROAS ponizej sredniej platformy" },
+    { "rank": 3, "name": "Kolekcja Molly", "type": "Conversion", "spend": 5168, "revenue": 39493, "roas": 7.64, "cr": 2.66, "reach": 72000, "issue": "Nizszy ROAS, testowa kampania kolekcyjna" }
   ],
   "microconversions": {
-    "addToCart": { "label": "Dodanie do koszyka", "count": 3920, "change": 10, "rate": 14.8 },
-    "beginCheckout": { "label": "Rozpoczecie zakupu", "count": 2350, "change": 7, "rate": 8.9 },
-    "addPaymentInfo": { "label": "Dane platnosci", "count": 1960, "change": 5, "rate": 7.4 },
-    "viewItem": { "label": "Wyswietlenie produktu", "count": 15400, "change": 11, "rate": 58.1 },
-    "initiateCheckout": { "label": "Inicjacja checkout", "count": 2100, "change": 6, "rate": 7.9 }
+    "addToCart": { "label": "Dodanie do koszyka", "count": 27753, "change": 18, "rate": 15.1 },
+    "beginCheckout": { "label": "Rozpoczecie zakupu", "count": 12500, "change": 14, "rate": 6.8 },
+    "addPaymentInfo": { "label": "Dane platnosci", "count": 9800, "change": 10, "rate": 5.3 },
+    "viewItem": { "label": "Wyswietlenie produktu", "count": 176366, "change": 22, "rate": 96.0 },
+    "initiateCheckout": { "label": "Inicjacja checkout", "count": 11200, "change": 12, "rate": 6.1 }
   }
 }

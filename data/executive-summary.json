@@ -1,82 +1,82 @@
 {
   "period": {
-    "label": "Kwiecien 2026",
-    "start": "2026-04-01",
-    "end": "2026-04-14"
+    "label": "Marzec 2026",
+    "start": "2026-03-01",
+    "end": "2026-03-31"
   },
   "comparison": {
-    "label": "vs Kwiecien 2025 (YoY)"
+    "label": "vs Marzec 2025 (YoY)"
   },
   "kpis": {
     "revenue": {
       "label": "Przychod",
-      "value": 1850000,
-      "change": 15,
+      "value": 2841804,
+      "change": 73.9,
       "changeDirection": "up",
       "format": "currency"
     },
     "aov": {
       "label": "AOV",
-      "value": 295,
-      "change": 5,
+      "value": 211,
+      "change": 8.2,
       "changeDirection": "up",
       "format": "currency"
     },
     "cr": {
       "label": "CR",
-      "value": 2.15,
-      "change": -8,
-      "changeDirection": "down",
+      "value": 3.52,
+      "change": 12,
+      "changeDirection": "up",
       "format": "percent"
     },
     "transactions": {
       "label": "Transakcje",
-      "value": 6271,
-      "change": 9,
+      "value": 13444,
+      "change": 52.3,
       "changeDirection": "up",
       "format": "number"
     },
     "sessions": {
       "label": "Sesje",
-      "value": 250000,
-      "change": 15,
+      "value": 381974,
+      "change": 73.9,
       "changeDirection": "up",
       "format": "number"
     },
     "newCustomers": {
       "label": "Nowi klienci",
-      "value": 45,
-      "change": -2,
-      "changeDirection": "down",
+      "value": 48,
+      "change": 5,
+      "changeDirection": "up",
       "format": "percent"
     },
     "returningCustomers": {
       "label": "Powracajacy",
-      "value": 55,
-      "change": 5,
-      "changeDirection": "up",
+      "value": 52,
+      "change": -3,
+      "changeDirection": "down",
       "format": "percent"
     }
   },
   "marketing": {
     "spend": {
       "label": "Wydatki reklamowe",
-      "value": 113000,
-      "change": 12,
+      "value": 281001,
+      "change": 35,
       "changeDirection": "up",
       "format": "currency"
     },
     "costShare": {
       "label": "Udzial kosztow",
-      "value": 6.11,
-      "change": 0.3,
-      "changeDirection": "up",
+      "value": 9.89,
+      "change": -2.1,
+      "changeDirection": "down",
       "format": "pp"
     },
     "roas": {
       "label": "ROAS calkowity",
-      "value": 21.6,
-      "change": 3,
+      "value": 10.11,
+      "change": 18,
       "changeDirection": "up",
       "format": "decimal"
     }

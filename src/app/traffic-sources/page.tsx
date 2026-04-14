@@ -38,23 +38,23 @@ export default function TrafficSourcesPage() {
   // Transform crTrend data for TrendChart component
   const trendData = crTrend.labels.map((label: string, idx: number) => ({
     period: label,
-    organicSearch: crTrend.organicSearch[idx],
-    paidSearch: crTrend.paidSearch[idx],
-    paidSocial: crTrend.paidSocial[idx],
-    direct: crTrend.direct[idx],
-    email: crTrend.email[idx],
-    referral: crTrend.referral[idx],
-    socialOrganic: crTrend.socialOrganic[idx],
+    organicSearch: crTrend.organicSearch?.[idx] ?? 0,
+    paidSearch: crTrend.paidSearch?.[idx] ?? 0,
+    paidSocial: crTrend.paidSocial?.[idx] ?? 0,
+    direct: crTrend.direct?.[idx] ?? 0,
+    crossNetwork: crTrend.crossNetwork?.[idx] ?? 0,
+    referral: crTrend.referral?.[idx] ?? 0,
+    organicSocial: crTrend.organicSocial?.[idx] ?? 0,
   }));
 
   const trendLines = [
-    { key: 'organicSearch', color: '#34a853', label: 'Organic Search' },
     { key: 'paidSearch', color: '#4285f4', label: 'Paid Search' },
-    { key: 'paidSocial', color: '#0668E1', label: 'Paid Social' },
+    { key: 'organicSearch', color: '#34a853', label: 'Organic Search' },
     { key: 'direct', color: '#ea4335', label: 'Direct' },
-    { key: 'email', color: '#fbbc04', label: 'Email' },
+    { key: 'crossNetwork', color: '#ff6d01', label: 'Cross-network' },
+    { key: 'organicSocial', color: '#E60023', label: 'Organic Social' },
+    { key: 'paidSocial', color: '#0668E1', label: 'Paid Social' },
     { key: 'referral', color: '#9334e6', label: 'Referral' },
-    { key: 'socialOrganic', color: '#E60023', label: 'Social Organic' },
   ];
 
   return (

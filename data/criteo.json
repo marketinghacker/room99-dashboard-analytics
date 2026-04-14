@@ -1,55 +1,55 @@
 {
   "period": {
-    "label": "Kwiecien 2026",
-    "start": "2026-04-01",
-    "end": "2026-04-14"
+    "label": "Marzec 2026",
+    "start": "2026-03-01",
+    "end": "2026-03-31"
   },
   "kpis": {
-    "spend": { "label": "Wydatki", "value": 28000, "change": 6, "changeDirection": "up", "format": "currency" },
-    "revenue": { "label": "Przychod", "value": 588000, "change": 9, "changeDirection": "up", "format": "currency" },
-    "roas": { "label": "ROAS", "value": 21.0, "change": 3, "changeDirection": "up", "format": "decimal" },
-    "cr": { "label": "CR", "value": 2.0, "change": -0.1, "changeDirection": "down", "format": "pp" },
+    "spend": { "label": "Wydatki", "value": 9497, "change": 5, "changeDirection": "up", "format": "currency" },
+    "revenue": { "label": "Przychod", "value": 137441, "change": 12, "changeDirection": "up", "format": "currency" },
+    "roas": { "label": "ROAS", "value": 14.47, "change": 8, "changeDirection": "up", "format": "decimal" },
+    "cr": { "label": "CR", "value": 6.95, "change": 0.5, "changeDirection": "up", "format": "pp" },
     "reach": { "label": "Zasieg", "value": 395000, "change": 7, "changeDirection": "up", "format": "number" },
-    "impressions": { "label": "Wyswietlenia", "value": 1820000, "change": 11, "changeDirection": "up", "format": "number" },
-    "frequency": { "label": "Czestotliwosc", "value": 4.61, "change": 0.4, "changeDirection": "up", "format": "decimal" },
-    "ctr": { "label": "CTR", "value": 0.98, "change": -0.03, "changeDirection": "down", "format": "pp" }
+    "impressions": { "label": "Wyswietlenia", "value": 1652123, "change": 11, "changeDirection": "up", "format": "number" },
+    "frequency": { "label": "Czestotliwosc", "value": 4.18, "change": 0.3, "changeDirection": "up", "format": "decimal" },
+    "ctr": { "label": "CTR", "value": 0.58, "change": -0.02, "changeDirection": "down", "format": "pp" }
   },
   "campaigns": [
     {
-      "name": "Retargeting - Web visitors",
-      "id": "campaign_a",
-      "spend": 10500,
-      "revenue": 273000,
-      "roas": 26.0,
-      "cr": 2.8,
-      "impressions": 680000,
-      "clicks": 6800,
-      "ctr": 1.0,
-      "transactions": 520
+      "name": "Lower Funnel",
+      "id": "lower_funnel",
+      "spend": 5063,
+      "revenue": 74230,
+      "roas": 14.66,
+      "cr": 8.01,
+      "impressions": 792270,
+      "clicks": 4196,
+      "ctr": 0.53,
+      "transactions": 336
     },
     {
-      "name": "Retargeting - Similar audiences",
-      "id": "campaign_b",
-      "spend": 12000,
-      "revenue": 252000,
-      "roas": 21.0,
-      "cr": 1.9,
-      "impressions": 750000,
-      "clicks": 7200,
-      "ctr": 0.96,
-      "transactions": 480
+      "name": "Retention Non-buyers 30d",
+      "id": "retention_nonbuyers_30d",
+      "spend": 1900,
+      "revenue": 30621,
+      "roas": 16.11,
+      "cr": 8.36,
+      "impressions": 266167,
+      "clicks": 1651,
+      "ctr": 0.62,
+      "transactions": 138
     },
     {
-      "name": "Prospecting - New audiences",
-      "id": "campaign_c",
-      "spend": 5500,
-      "revenue": 63000,
-      "roas": 11.5,
-      "cr": 0.9,
-      "impressions": 390000,
-      "clicks": 3850,
-      "ctr": 0.99,
-      "transactions": 120
+      "name": "Retention 2024/12/10",
+      "id": "retention_2024_12_10",
+      "spend": 2533,
+      "revenue": 32590,
+      "roas": 12.87,
+      "cr": 5.12,
+      "impressions": 593686,
+      "clicks": 3693,
+      "ctr": 0.62,
+      "transactions": 189
     }
   ]
 }

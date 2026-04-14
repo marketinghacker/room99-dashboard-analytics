@@ -1,8 +1,8 @@
 {
   "period": {
-    "label": "Kwiecien 2026",
-    "start": "2026-04-01",
-    "end": "2026-04-14"
+    "label": "Marzec 2026",
+    "start": "2026-03-01",
+    "end": "2026-03-31"
   },
   "catalogPerformance": [
     {
@@ -13,7 +13,12 @@
       "disapproved": 115,
       "pending": 115,
       "approvalRate": 95.3,
-      "change": 0.5
+      "change": 0.5,
+      "spend": 137726,
+      "revenue": 2082314,
+      "roas": 15.12,
+      "clicks": 165979,
+      "impressions": 5765493
     },
     {
       "catalog": "Meta Commerce",
@@ -23,7 +28,12 @@
       "disapproved": 85,
       "pending": 65,
       "approvalRate": 96.9,
-      "change": 0.3
+      "change": 0.3,
+      "spend": 133778,
+      "revenue": 1043980,
+      "roas": 7.80,
+      "clicks": 183753,
+      "impressions": 9977878
     },
     {
       "catalog": "Pinterest Catalog",
@@ -33,7 +43,12 @@
       "disapproved": 180,
       "pending": 90,
       "approvalRate": 94.4,
-      "change": -0.2
+      "change": -0.2,
+      "spend": 10000,
+      "revenue": 195000,
+      "roas": 19.5,
+      "clicks": 8500,
+      "impressions": 850000
     },
     {
       "catalog": "Criteo Feed",
@@ -43,7 +58,12 @@
       "disapproved": 55,
       "pending": 45,
       "approvalRate": 97.9,
-      "change": 0.8
+      "change": 0.8,
+      "spend": 9497,
+      "revenue": 137441,
+      "roas": 14.47,
+      "clicks": 9540,
+      "impressions": 1652123
     },
     {
       "catalog": "Google CSS (Comparison Shopping)",

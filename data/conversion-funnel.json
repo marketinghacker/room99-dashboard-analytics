@@ -1,121 +1,121 @@
 {
   "period": {
-    "label": "Kwiecien 2026",
-    "start": "2026-04-01",
-    "end": "2026-04-14"
+    "label": "Marzec 2026",
+    "start": "2026-03-01",
+    "end": "2026-03-31"
   },
   "overallFunnel": {
     "steps": [
       {
         "step": "sessions",
         "label": "Sesje",
-        "value": 285000,
+        "value": 381974,
         "rate": 100,
         "dropoff": null
       },
       {
         "step": "productView",
         "label": "Wyswietlenie produktu",
-        "value": 128250,
-        "rate": 45.0,
-        "dropoff": 55.0
+        "value": 479973,
+        "rate": 125.7,
+        "dropoff": null
       },
       {
         "step": "addToCart",
         "label": "Dodanie do koszyka",
-        "value": 19238,
-        "rate": 15.0,
-        "dropoff": 85.0
+        "value": 137000,
+        "rate": 28.5,
+        "dropoff": 71.5
       },
       {
         "step": "checkout",
         "label": "Checkout",
-        "value": 12504,
-        "rate": 65.0,
-        "dropoff": 35.0
+        "value": 52000,
+        "rate": 38.0,
+        "dropoff": 62.0
       },
       {
         "step": "purchase",
         "label": "Zakup",
-        "value": 7252,
-        "rate": 58.0,
-        "dropoff": 42.0
+        "value": 13444,
+        "rate": 25.9,
+        "dropoff": 74.1
       }
     ],
-    "overallCR": 2.54
+    "overallCR": 3.52
   },
   "deviceComparison": {
     "mobile": {
       "label": "Mobile",
-      "sessions": 199500,
+      "sessions": 267382,
       "share": 70,
-      "productView": 85575,
-      "productViewRate": 42.9,
-      "addToCart": 12565,
-      "addToCartRate": 14.7,
-      "checkout": 7788,
-      "checkoutRate": 62.0,
-      "purchase": 4390,
-      "purchaseRate": 56.4,
-      "cr": 2.2
+      "productView": 331181,
+      "productViewRate": 123.9,
+      "addToCart": 91390,
+      "addToCartRate": 27.6,
+      "checkout": 33800,
+      "checkoutRate": 37.0,
+      "purchase": 8530,
+      "purchaseRate": 25.2,
+      "cr": 3.19
     },
     "desktop": {
       "label": "Desktop",
-      "sessions": 71250,
+      "sessions": 95494,
       "share": 25,
-      "productView": 35625,
-      "productViewRate": 50.0,
-      "addToCart": 5700,
-      "addToCartRate": 16.0,
-      "checkout": 4047,
-      "checkoutRate": 71.0,
-      "purchase": 2497,
-      "purchaseRate": 61.7,
-      "cr": 3.5
+      "productView": 124393,
+      "productViewRate": 130.3,
+      "addToCart": 38350,
+      "addToCartRate": 30.8,
+      "checkout": 15200,
+      "checkoutRate": 39.6,
+      "purchase": 4170,
+      "purchaseRate": 27.4,
+      "cr": 4.37
     },
     "tablet": {
       "label": "Tablet",
-      "sessions": 14250,
+      "sessions": 19099,
       "share": 5,
-      "productView": 7125,
-      "productViewRate": 50.0,
-      "addToCart": 998,
-      "addToCartRate": 14.0,
-      "checkout": 669,
-      "checkoutRate": 67.0,
-      "purchase": 365,
-      "purchaseRate": 54.6,
-      "cr": 2.6
+      "productView": 24399,
+      "productViewRate": 127.7,
+      "addToCart": 7260,
+      "addToCartRate": 29.8,
+      "checkout": 3000,
+      "checkoutRate": 41.3,
+      "purchase": 744,
+      "purchaseRate": 24.8,
+      "cr": 3.90
     }
   },
   "userTypeComparison": {
     "new": {
       "label": "Nowi uzytkownicy",
-      "sessions": 128250,
-      "share": 45,
-      "productView": 51300,
-      "productViewRate": 40.0,
-      "addToCart": 6413,
-      "addToCartRate": 12.5,
-      "checkout": 3848,
-      "checkoutRate": 60.0,
-      "purchase": 1925,
-      "purchaseRate": 50.0,
-      "cr": 1.5
+      "sessions": 185353,
+      "share": 48.5,
+      "productView": 218900,
+      "productViewRate": 118.1,
+      "addToCart": 54800,
+      "addToCartRate": 25.0,
+      "checkout": 19500,
+      "checkoutRate": 35.6,
+      "purchase": 4700,
+      "purchaseRate": 24.1,
+      "cr": 2.54
     },
     "returning": {
       "label": "Powracajacy uzytkownicy",
-      "sessions": 156750,
-      "share": 55,
-      "productView": 76950,
-      "productViewRate": 49.1,
-      "addToCart": 12825,
-      "addToCartRate": 16.7,
-      "checkout": 8656,
-      "checkoutRate": 67.5,
-      "purchase": 5327,
-      "purchaseRate": 61.5,
-      "cr": 3.4
+      "sessions": 196621,
+      "share": 51.5,
+      "productView": 261073,
+      "productViewRate": 132.8,
+      "addToCart": 82200,
+      "addToCartRate": 31.5,
+      "checkout": 32500,
+      "checkoutRate": 39.5,
+      "purchase": 8744,
+      "purchaseRate": 26.9,
+      "cr": 4.45
     }
   }
 }
