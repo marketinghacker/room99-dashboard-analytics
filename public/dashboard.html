@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Room99 — Performance Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#f5f6fa;--card:#fff;--border:#e5e7eb;
+  --text:#111827;--text2:#6b7280;--text3:#9ca3af;
+  --accent:#f97316;--accent-bg:rgba(249,115,22,0.08);
+  --green:#16a34a;--green-bg:rgba(22,163,74,0.08);
+  --red:#dc2626;--red-bg:rgba(220,38,38,0.08);
+  --blue:#3b82f6;--blue-bg:rgba(59,130,246,0.08);
+  --google:#4285f4;--meta:#0668e1;--criteo:#ff6b35;
+  --radius:12px;
+}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
+
+/* Header */
+.header{background:#fff;border-bottom:1px solid var(--border);padding:0 32px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-mark{width:32px;height:32px;background:linear-gradient(135deg,#f97316,#ea580c);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:14px}
+.logo-text{font-weight:700;font-size:15px;color:var(--text)}
+.logo-sub{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin-top:1px}
+.header-right{display:flex;align-items:center;gap:16px}
+.status{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3)}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.period-badge{font-size:12px;font-weight:600;color:var(--text2);background:var(--bg);padding:4px 12px;border-radius:8px}
+
+/* Nav */
+.nav{background:#fff;border-bottom:1px solid var(--border);padding:0 32px;display:flex;gap:0;overflow-x:auto;position:sticky;top:56px;z-index:99}
+.nav a{padding:12px 16px;font-size:12px;font-weight:600;color:var(--text3);text-decoration:none;white-space:nowrap;position:relative;transition:color .15s}
+.nav a:hover{color:var(--text2)}
+.nav a.active{color:var(--accent)}
+.nav a.active::after{content:'';position:absolute;bottom:0;left:8px;right:8px;height:2px;background:var(--accent);border-radius:2px 2px 0 0}
+
+/* Container */
+.container{max-width:1320px;margin:0 auto;padding:24px 32px 80px}
+
+/* Section */
+.section{margin-bottom:28px}
+.section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.8px;color:var(--text3);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.section-title::before{content:'';width:3px;height:14px;background:var(--accent);border-radius:2px}
+
+/* KPI Grid */
+.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+.kpi-grid-2{grid-template-columns:repeat(2,1fr)}
+.kpi-grid-3{grid-template-columns:repeat(3,1fr)}
+
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;position:relative;overflow:hidden;transition:box-shadow .2s,border-color .2s}
+.kpi:hover{box-shadow:0 4px 20px rgba(0,0,0,0.06);border-color:#d1d5db}
+.kpi-accent{border-top:3px solid var(--accent)}
+.kpi-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);margin-bottom:6px}
+.kpi-value{font-size:26px;font-weight:800;color:var(--text);line-height:1.1;font-variant-numeric:tabular-nums}
+.kpi-value.accent{color:var(--accent)}
+.kpi-value.green{color:var(--green)}
+.kpi-value.red{color:var(--red)}
+.kpi-suffix{font-size:13px;font-weight:500;color:var(--text3);margin-left:4px}
+
+/* Table */
+.table-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:12px 18px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);border-bottom:2px solid var(--border)}
+th.right{text-align:right}
+td{padding:14px 18px;border-bottom:1px solid #f3f4f6}
+td.right{text-align:right;font-variant-numeric:tabular-nums}
+tr:hover td{background:#fafbfc}
+tr:last-child td{border-bottom:none}
+.total-row td{background:#f9fafb;font-weight:700;border-top:2px solid var(--border)}
+
+/* Platform badge */
+.platform{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:4px 10px;border-radius:8px}
+.platform-dot{width:6px;height:6px;border-radius:50%}
+.p-google{background:rgba(66,133,244,.1);color:var(--google)}.p-google .platform-dot{background:var(--google)}
+.p-meta{background:rgba(6,104,225,.1);color:var(--meta)}.p-meta .platform-dot{background:var(--meta)}
+.p-criteo{background:rgba(255,107,53,.1);color:var(--criteo)}.p-criteo .platform-dot{background:var(--criteo)}
+
+/* Progress bar */
+.bar-track{width:100%;height:6px;background:#f3f4f6;border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width .6s ease}
+
+/* Charts */
+.chart-grid{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:28px}
+.chart-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px}
+.chart-card h3{font-size:12px;font-weight:700;color:var(--text2);margin-bottom:14px;text-transform:uppercase;letter-spacing:1px}
+.chart-card canvas{max-height:260px}
+
+/* Responsive */
+@media(max-width:1024px){.kpi-grid{grid-template-columns:repeat(3,1fr)}.chart-grid{grid-template-columns:1fr}}
+@media(max-width:640px){.kpi-grid,.kpi-grid-2,.kpi-grid-3{grid-template-columns:repeat(2,1fr)}.container{padding:16px}.header{padding:0 16px}.nav{padding:0 16px}.chart-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <div class="logo-mark">R</div>
+    <div>
+      <div class="logo-text">Room99</div>
+      <div class="logo-sub">Performance Dashboard</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="period-badge">1 — 15 kwietnia 2026</span>
+    <div class="status"><div class="status-dot"></div>Dane aktualne</div>
+  </div>
+</div>
+
+<div class="nav">
+  <a href="#" class="active">Executive Summary</a>
+  <a href="#marketing">Performance Marketing</a>
+  <a href="#google">Google Ads</a>
+  <a href="#meta">Meta Ads</a>
+  <a href="#criteo">Criteo</a>
+  <a href="#traffic">Zrodla ruchu</a>
+</div>
+
+<div class="container">
+
+  <!-- KPIs -->
+  <div class="section">
+    <div class="section-title">Kluczowe wskazniki</div>
+    <div class="kpi-grid">
+      <div class="kpi kpi-accent">
+        <div class="kpi-label">Przychod (SHR)</div>
+        <div class="kpi-value accent">818 475<span class="kpi-suffix">PLN</span></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Transakcje</div>
+        <div class="kpi-value">3 862</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">AOV</div>
+        <div class="kpi-value">211,93<span class="kpi-suffix">PLN</span></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Sesje</div>
+        <div class="kpi-value">120 572</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">CR</div>
+        <div class="kpi-value">3,20<span class="kpi-suffix">%</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Marketing -->
+  <div class="section" id="marketing">
+    <div class="section-title">Efektywnosc marketingu</div>
+    <div class="kpi-grid kpi-grid-2">
+      <div class="kpi">
+        <div class="kpi-label">Wydatki reklamowe</div>
+        <div class="kpi-value">86 678<span class="kpi-suffix">PLN</span></div>
+      </div>
+      <div class="kpi" style="border-top:3px solid var(--green)">
+        <div class="kpi-label">COS (Cost of Sale)</div>
+        <div class="kpi-value green">10,59<span class="kpi-suffix">%</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="chart-grid">
+    <div class="chart-card">
+      <h3>Sesje dzienne — GA4</h3>
+      <canvas id="sessionsChart"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3>Udzial platform w wydatkach</h3>
+      <canvas id="spendChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Platform table -->
+  <div class="section">
+    <div class="section-title">Wydatki wg platformy</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Platforma</th>
+          <th class="right">Wydatki</th>
+          <th class="right">Udzial</th>
+          <th style="width:25%">Rozklad</th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="platform p-meta"><span class="platform-dot"></span>Meta Ads</span></td>
+            <td class="right"><strong>44 229 PLN</strong></td>
+            <td class="right">51,03%</td>
+            <td><div class="bar-track"><div class="bar-fill" style="width:51%;background:var(--meta)"></div></div></td>
+          </tr>
+          <tr>
+            <td><span class="platform p-google"><span class="platform-dot"></span>Google Ads</span></td>
+            <td class="right"><strong>37 765 PLN</strong></td>
+            <td class="right">43,57%</td>
+            <td><div class="bar-track"><div class="bar-fill" style="width:43.5%;background:var(--google)"></div></div></td>
+          </tr>
+          <tr>
+            <td><span class="platform p-criteo"><span class="platform-dot"></span>Criteo</span></td>
+            <td class="right"><strong>4 684 PLN</strong></td>
+            <td class="right">5,40%</td>
+            <td><div class="bar-track"><div class="bar-fill" style="width:5.4%;background:var(--criteo)"></div></div></td>
+          </tr>
+          <tr class="total-row">
+            <td>Razem</td>
+            <td class="right">86 678 PLN</td>
+            <td class="right">100%</td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Google Ads section -->
+  <div class="section" id="google">
+    <div class="section-title">Google Ads — TOP kampanie</div>
+    <div class="kpi-grid kpi-grid-3" style="margin-bottom:14px">
+      <div class="kpi" style="border-top:3px solid var(--google)">
+        <div class="kpi-label">Wydatki Google</div>
+        <div class="kpi-value" style="color:var(--google)">37 765<span class="kpi-suffix">PLN</span></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Wartosc konwersji</div>
+        <div class="kpi-value">465 244<span class="kpi-suffix">PLN</span></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">ROAS (platforma)</div>
+        <div class="kpi-value">12,32</div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Kampania</th><th>Typ</th><th class="right">Wydatki</th><th class="right">Konwersje</th><th class="right">Wart. konw.</th><th class="right">ROAS</th></tr></thead>
+        <tbody id="gads-table"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Meta Ads -->
+  <div class="section" id="meta">
+    <div class="section-title">Meta Ads</div>
+    <div class="kpi-grid kpi-grid-3" style="margin-bottom:14px">
+      <div class="kpi" style="border-top:3px solid var(--meta)">
+        <div class="kpi-label">Wydatki Meta</div>
+        <div class="kpi-value" style="color:var(--meta)">44 229<span class="kpi-suffix">PLN</span></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Przychod (platforma)</div>
+        <div class="kpi-value">314 868<span class="kpi-suffix">PLN</span></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Zakupy</div>
+        <div class="kpi-value">1 507</div>
+      </div>
+    </div>
+    <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">
+      <div class="kpi"><div class="kpi-label">Wyswietlenia</div><div class="kpi-value" style="font-size:20px">3 431 116</div></div>
+      <div class="kpi"><div class="kpi-label">Klikniecia</div><div class="kpi-value" style="font-size:20px">56 400</div></div>
+      <div class="kpi"><div class="kpi-label">CTR</div><div class="kpi-value" style="font-size:20px">1,64%</div></div>
+      <div class="kpi"><div class="kpi-label">CPC</div><div class="kpi-value" style="font-size:20px">0,78 PLN</div></div>
+    </div>
+  </div>
+
+  <!-- Criteo -->
+  <div class="section" id="criteo">
+    <div class="section-title">Criteo</div>
+    <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">
+      <div class="kpi" style="border-top:3px solid var(--criteo)">
+        <div class="kpi-label">Wydatki</div>
+        <div class="kpi-value" style="color:var(--criteo)">4 684<span class="kpi-suffix">PLN</span></div>
+      </div>
+      <div class="kpi"><div class="kpi-label">ROAS</div><div class="kpi-value">10,22</div></div>
+      <div class="kpi"><div class="kpi-label">Klikniecia</div><div class="kpi-value">5 029</div></div>
+      <div class="kpi"><div class="kpi-label">Wyswietlenia</div><div class="kpi-value" style="font-size:20px">943 038</div></div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Kampania</th><th class="right">Wydatki</th><th class="right">Klikniecia</th><th class="right">ROAS</th></tr></thead>
+        <tbody>
+          <tr><td>Lower Funnel</td><td class="right"><strong>2 483 PLN</strong></td><td class="right">2 728</td><td class="right"><strong>10,58</strong></td></tr>
+          <tr><td>Retention-2024/12/10</td><td class="right"><strong>1 246 PLN</strong></td><td class="right">1 564</td><td class="right"><strong>8,57</strong></td></tr>
+          <tr><td>Retention - Non-buyers 30d</td><td class="right"><strong>955 PLN</strong></td><td class="right">737</td><td class="right"><strong>11,44</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Traffic sources -->
+  <div class="section" id="traffic">
+    <div class="section-title">Zrodla ruchu — GA4</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Kanal</th><th class="right">Sesje</th><th class="right">Udzial</th><th style="width:25%">Rozklad</th></tr></thead>
+        <tbody id="traffic-table"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <footer style="text-align:center;padding:32px;font-size:11px;color:var(--text3)">
+    Room99 Performance Dashboard &middot; Dane z: GA4, Google Ads, Meta Ads, Criteo, BaseLinker SHR &middot; Ostatnia aktualizacja: 15 kwie 2026, 15:49
+  </footer>
+</div>
+
+<script>
+const COLORS = ['#3b82f6','#f97316','#16a34a','#8b5cf6','#ec4899','#06b6d4','#eab308','#ef4444'];
+const TRAFFIC_COLORS = {'Paid Social':'#0668e1','Cross-network':'#ff6b35','Paid Search':'#4285f4','Organic Search':'#16a34a','Direct':'#dc2626','Organic Social':'#ec4899','Paid Shopping':'#8b5cf6','Paid Other':'#d97706','Display':'#06b6d4','Referral':'#6366f1'};
+
+// Sessions data
+const sessions = [
+  {d:'01.04',v:11261},{d:'02.04',v:8590},{d:'03.04',v:5335},{d:'04.04',v:5212},{d:'05.04',v:4746},
+  {d:'06.04',v:7056},{d:'07.04',v:8440},{d:'08.04',v:9698},{d:'09.04',v:8236},{d:'10.04',v:8899},
+  {d:'11.04',v:9563},{d:'12.04',v:11193},{d:'13.04',v:10288},{d:'14.04',v:9504},{d:'15.04',v:2551}
+];
+
+// Sessions chart
+new Chart(document.getElementById('sessionsChart'),{
+  type:'line',
+  data:{labels:sessions.map(s=>s.d),datasets:[{label:'Sesje',data:sessions.map(s=>s.v),borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,0.08)',borderWidth:2,fill:true,tension:.3,pointRadius:3,pointHoverRadius:6,pointBackgroundColor:'#3b82f6'}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.parsed.y.toLocaleString('pl-PL')} sesji`}}},scales:{x:{grid:{display:false}},y:{beginAtZero:false,ticks:{callback:v=>v>=1e3?(v/1e3).toFixed(0)+'k':v},grid:{color:'#f3f4f6'}}}}
+});
+
+// Spend doughnut
+new Chart(document.getElementById('spendChart'),{
+  type:'doughnut',
+  data:{labels:['Meta Ads','Google Ads','Criteo'],datasets:[{data:[44229,37765,4684],backgroundColor:['#0668e1','#4285f4','#ff6b35'],borderWidth:0}]},
+  options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'bottom',labels:{usePointStyle:true,padding:12,font:{size:11}}},tooltip:{callbacks:{label:c=>{const t=c.dataset.data.reduce((a,b)=>a+b,0);return `${c.label}: ${c.parsed.toLocaleString('pl-PL')} PLN (${((c.parsed/t)*100).toFixed(1)}%)`}}}}}
+});
+
+// Google Ads campaigns
+const gads=[
+  {n:'Search Brand',t:'Search',s:1473,c:774,cv:168208,r:114.2},
+  {n:'CSS3 PM Perfo Labalizer',t:'PMax',s:5860,c:258,cv:52597,r:8.98},
+  {n:'CSS2 Oryginal Zaslony',t:'PMax',s:4910,c:168,cv:35761,r:7.28},
+  {n:'CSS3 PM Bestsellery',t:'PMax',s:3910,c:148,cv:32387,r:8.28},
+  {n:'CSS2 Boost 01.2026',t:'PMax',s:3143,c:128,cv:26428,r:8.41},
+  {n:'CSS1 Room99 (b)',t:'Shopping',s:2613,c:83,cv:16401,r:6.28},
+  {n:'PMAX Zaslony MH',t:'PMax',s:2472,c:96,cv:21695,r:8.78},
+  {n:'Search Tree Zaslony',t:'Search',s:1834,c:66,cv:14469,r:7.89},
+  {n:'CSS2 Sembot Narzuty',t:'PMax',s:1720,c:125,cv:17287,r:10.05},
+  {n:'CSS2 Sembot Zaslony',t:'PMax',s:1480,c:72,cv:15116,r:10.21},
+];
+const tColors={'PMax':'#7c3aed','Search':'#d97706','Shopping':'#059669'};
+const gTb=document.getElementById('gads-table');
+gads.forEach(c=>{
+  const tc=tColors[c.t]||'#6b7280';
+  gTb.innerHTML+=`<tr>
+    <td><strong>${c.n}</strong></td>
+    <td><span style="background:${tc}15;color:${tc};padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;text-transform:uppercase">${c.t}</span></td>
+    <td class="right">${c.s.toLocaleString('pl-PL')} PLN</td>
+    <td class="right">${Math.round(c.c)}</td>
+    <td class="right">${c.cv.toLocaleString('pl-PL')} PLN</td>
+    <td class="right"><strong>${c.r.toFixed(2)}</strong></td>
+  </tr>`;
+});
+
+// Traffic sources
+const traffic=[
+  {ch:'Paid Social',s:41512},{ch:'Cross-network',s:27282},{ch:'Paid Search',s:17207},
+  {ch:'Organic Search',s:10441},{ch:'Direct',s:8391},{ch:'Organic Social',s:5117},
+  {ch:'Paid Shopping',s:2908},{ch:'Paid Other',s:2806},{ch:'Display',s:1572},
+  {ch:'Referral',s:641}
+];
+const totalTraffic=traffic.reduce((a,b)=>a+b.s,0);
+const tTb=document.getElementById('traffic-table');
+traffic.forEach(t=>{
+  const pct=((t.s/totalTraffic)*100).toFixed(1);
+  const c=TRAFFIC_COLORS[t.ch]||'#9ca3af';
+  tTb.innerHTML+=`<tr>
+    <td><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:${c}"></span>${t.ch}</span></td>
+    <td class="right"><strong>${t.s.toLocaleString('pl-PL')}</strong></td>
+    <td class="right">${pct}%</td>
+    <td><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${c}"></div></div></td>
+  </tr>`;
+});
+
+// Smooth scroll for nav
+document.querySelectorAll('.nav a').forEach(a=>{
+  a.addEventListener('click',e=>{
+    const href=a.getAttribute('href');
+    if(href.startsWith('#')){
+      e.preventDefault();
+      const el=document.querySelector(href);
+      if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
+      document.querySelectorAll('.nav a').forEach(x=>x.classList.remove('active'));
+      a.classList.add('active');
+    }
+  });
+});
+</script>
+</body>
+</html>
