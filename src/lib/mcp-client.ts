@@ -157,7 +157,7 @@ export async function callMcpTool(
 
   const response = await getClient().beta.messages.create({
     model: 'claude-3-haiku-20240307',
-    max_tokens: 8192,
+    max_tokens: 4096,
     betas: ['mcp-client-2025-11-20'],
     mcp_servers: [mcpServer] as unknown as Anthropic.Beta.Messages.BetaRequestMCPServerURLDefinition[],
     tools: [

@@ -10,6 +10,7 @@ interface KPICardProps {
   prefix?: string;
   suffix?: string;
   accent?: string;
+  glow?: boolean;
 }
 
 export default function KPICard({
@@ -20,31 +21,39 @@ export default function KPICard({
   prefix,
   suffix,
   accent,
+  glow,
 }: KPICardProps) {
   return (
     <div
-      className="bg-card rounded-xl p-5 flex flex-col gap-1.5 relative overflow-hidden transition-shadow hover:shadow-[var(--shadow-md)]"
-      style={{ boxShadow: 'var(--shadow-sm)', borderLeft: accent ? `3px solid ${accent}` : undefined }}
+      className={`glass-card p-5 flex flex-col gap-2 relative overflow-hidden ${glow ? 'kpi-glow' : ''}`}
     >
+      {/* Accent top line */}
+      {accent && (
+        <div
+          className="absolute top-0 left-0 right-0 h-[2px]"
+          style={{ background: `linear-gradient(90deg, ${accent}, transparent)` }}
+        />
+      )}
+
       {/* Label */}
-      <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-text-muted">
+      <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted">
         {label}
       </span>
 
       {/* Value */}
-      <div className="text-[32px] font-bold leading-none text-text tabular-nums tracking-tight">
+      <div className="text-[28px] font-extrabold leading-none tracking-tight tabular-nums" style={{ color: accent || 'var(--text)' }}>
         {prefix && (
-          <span className="text-[20px] font-medium text-text-secondary mr-0.5">{prefix}</span>
+          <span className="text-[18px] font-semibold text-text-secondary mr-1">{prefix}</span>
         )}
         {value}
         {suffix && (
-          <span className="text-[13px] font-medium text-text-muted ml-1.5">{suffix}</span>
+          <span className="text-[12px] font-medium text-text-muted ml-2">{suffix}</span>
         )}
       </div>
 
       {/* Change */}
       {change !== undefined && (
-        <div className="mt-0.5">
+        <div>
           <ChangeIndicator value={change} direction={changeDirection} size="sm" />
         </div>
       )}

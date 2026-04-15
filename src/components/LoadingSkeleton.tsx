@@ -1,44 +1,47 @@
 'use client';
 
 interface LoadingSkeletonProps {
-  /** Number of KPI cards to show */
   cards?: number;
-  /** Show a table skeleton below cards */
   showTable?: boolean;
-  /** Show a chart skeleton */
   showChart?: boolean;
 }
 
-function SkeletonPulse({ className, style }: { className?: string; style?: React.CSSProperties }) {
+function Pulse({ className, style }: { className?: string; style?: React.CSSProperties }) {
   return (
-    <div className={`animate-pulse bg-border/40 rounded ${className ?? ''}`} style={style} />
+    <div
+      className={`rounded-lg ${className ?? ''}`}
+      style={{
+        ...style,
+        background: 'linear-gradient(90deg, var(--surface) 25%, var(--surface-hover) 50%, var(--surface) 75%)',
+        backgroundSize: '200% 100%',
+        animation: 'shimmer 1.5s ease-in-out infinite',
+      }}
+    />
   );
 }
 
 function SkeletonCard() {
   return (
-    <div className="bg-card border border-border rounded-lg p-4 flex flex-col gap-2">
-      <SkeletonPulse className="h-3 w-20" />
-      <SkeletonPulse className="h-8 w-28" />
-      <SkeletonPulse className="h-5 w-16 rounded-full" />
+    <div className="glass-card p-5 flex flex-col gap-3">
+      <Pulse className="h-2.5 w-16" />
+      <Pulse className="h-7 w-24" />
+      <Pulse className="h-4 w-14" />
     </div>
   );
 }
 
-function SkeletonTable({ rows = 5 }: { rows?: number }) {
+function SkeletonTable({ rows = 4 }: { rows?: number }) {
   return (
-    <div className="bg-card border border-border rounded-lg overflow-hidden">
-      {/* Header */}
-      <div className="flex gap-4 px-4 py-3 border-b border-border bg-wire-bg">
-        {[120, 80, 80, 80, 60].map((w, i) => (
-          <SkeletonPulse key={i} className="h-3" style={{ width: w }} />
+    <div className="glass-card overflow-hidden">
+      <div className="flex gap-6 px-5 py-3.5 border-b border-glass-border">
+        {[100, 70, 60, 80].map((w, i) => (
+          <Pulse key={i} className="h-2.5" style={{ width: w }} />
         ))}
       </div>
-      {/* Rows */}
       {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="flex gap-4 px-4 py-3 border-b border-border last:border-b-0">
-          {[120, 80, 80, 80, 60].map((w, j) => (
-            <SkeletonPulse key={j} className="h-3" style={{ width: w }} />
+        <div key={i} className="flex gap-6 px-5 py-3.5 border-b border-glass-border/50">
+          {[100, 70, 60, 80].map((w, j) => (
+            <Pulse key={j} className="h-3" style={{ width: w }} />
           ))}
         </div>
       ))}
@@ -46,47 +49,17 @@ function SkeletonTable({ rows = 5 }: { rows?: number }) {
   );
 }
 
-function SkeletonChart() {
+export default function LoadingSkeleton({ cards = 5, showTable = false }: LoadingSkeletonProps) {
   return (
-    <div className="bg-card border border-border rounded-lg p-4">
-      <SkeletonPulse className="h-4 w-32 mb-4" />
-      <div className="flex items-end gap-2 h-[200px]">
-        {Array.from({ length: 12 }).map((_, i) => (
-          <SkeletonPulse
-            key={i}
-            className="flex-1 rounded-t"
-            style={{ height: `${30 + Math.random() * 70}%` }}
-          />
-        ))}
+    <div className="space-y-6 animate-fade-up">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        {Array.from({ length: cards }).map((_, i) => <SkeletonCard key={i} />)}
       </div>
-    </div>
-  );
-}
-
-export default function LoadingSkeleton({
-  cards = 5,
-  showTable = false,
-  showChart = false,
-}: LoadingSkeletonProps) {
-  return (
-    <div className="space-y-5 animate-in fade-in duration-300">
-      {/* KPI cards grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-        {Array.from({ length: cards }).map((_, i) => (
-          <SkeletonCard key={i} />
-        ))}
-      </div>
-
-      {/* Chart skeleton */}
-      {showChart && <SkeletonChart />}
-
-      {/* Table skeleton */}
       {showTable && <SkeletonTable />}
     </div>
   );
 }
 
-/** Inline skeleton for single values */
 export function InlineSkeleton({ width = 60 }: { width?: number }) {
-  return <SkeletonPulse className="h-4 inline-block align-middle" style={{ width }} />;
+  return <Pulse className="h-4 inline-block align-middle" style={{ width }} />;
 }

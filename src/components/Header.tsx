@@ -2,25 +2,27 @@
 
 export default function Header() {
   return (
-    <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border px-5 py-2.5" style={{ minHeight: 48 }}>
-      <div className="max-w-[1280px] mx-auto flex items-center justify-between">
+    <header className="sticky top-0 z-50 border-b border-glass-border bg-bg/70 backdrop-blur-xl" style={{ minHeight: 52 }}>
+      <div className="max-w-[1400px] mx-auto px-6 flex items-center justify-between h-[52px]">
         {/* Brand */}
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center">
-            <span className="text-white text-[13px] font-bold tracking-tight">R</span>
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-accent to-amber-600 flex items-center justify-center shadow-md shadow-accent/20">
+              <span className="text-black text-[14px] font-extrabold">R</span>
+            </div>
           </div>
-          <div className="flex flex-col">
-            <span className="font-bold text-[14px] text-text leading-none tracking-tight">Room99</span>
-            <span className="text-[10px] text-text-muted leading-none mt-0.5">Performance Dashboard</span>
+          <div>
+            <div className="text-[15px] font-bold text-text tracking-tight leading-none">Room99</div>
+            <div className="text-[10px] font-medium text-text-muted tracking-wide uppercase mt-0.5">Performance Dashboard</div>
           </div>
         </div>
 
-        {/* Right */}
-        <div className="flex items-center gap-4">
-          <span className="text-[11px] text-text-muted">
-            Okres: 1–15 kwi 2026
-          </span>
-          <div className="w-1.5 h-1.5 rounded-full bg-green animate-pulse" title="Dane aktualne" />
+        {/* Status */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 text-[11px] text-text-muted">
+            <div className="w-1.5 h-1.5 rounded-full bg-green shadow-sm shadow-green/50 animate-pulse" />
+            <span>Live</span>
+          </div>
         </div>
       </div>
     </header>

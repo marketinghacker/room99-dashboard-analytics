@@ -21,15 +21,16 @@ export default function ChangeIndicator({
       : String(value);
 
   const styles = {
-    up: 'text-green bg-green-bg',
-    down: 'text-red bg-red-bg',
-    neutral: 'text-text-muted bg-wire-bg',
+    up: 'text-green bg-green-subtle',
+    down: 'text-red bg-red-subtle',
+    neutral: 'text-text-muted bg-surface',
   }[dir];
 
-  const sizeClass = size === 'sm' ? 'text-[11px] px-2 py-0.5' : 'text-[12px] px-2.5 py-0.5';
+  const sizeClass = size === 'sm' ? 'text-[10px] px-2 py-0.5' : 'text-[11px] px-2.5 py-1';
 
   return (
-    <span className={`inline-flex items-center rounded-md font-semibold tabular-nums ${styles} ${sizeClass}`}>
+    <span className={`inline-flex items-center gap-1 rounded-md font-bold tabular-nums ${styles} ${sizeClass}`}>
+      <span className="text-[8px]">{dir === 'up' ? '▲' : dir === 'down' ? '▼' : '●'}</span>
       {displayValue}
     </span>
   );

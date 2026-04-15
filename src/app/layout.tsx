@@ -23,11 +23,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pl" className={`${geistSans.variable}`}>
-      <body className="min-h-screen bg-bg text-text">
+      <body className="min-h-screen relative">
         <ClientProviders>
           <Header />
           <TabNavigation />
-          <main className="max-w-[1280px] mx-auto px-5 pt-5 pb-16 space-y-5">
+          <main className="max-w-[1400px] mx-auto px-6 pt-6 pb-20 space-y-6 relative z-10">
             <FilterBar />
             {children}
           </main>
