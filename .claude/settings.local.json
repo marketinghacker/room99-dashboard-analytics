@@ -1,7 +1,29 @@
 {
   "permissions": {
     "allow": [
-      "Bash(pnpm create:*)"
+      "Bash(pnpm create:*)",
+      "Bash(pnpm add:*)",
+      "Bash(npx tsc:*)",
+      "Bash(python3 -c 'import json; json.load\\(open\\('\\\\''__TRACKED_VAR__'\\\\''\\)\\); print\\('\\\\''VALID'\\\\''\\)')",
+      "Bash(ls -lh /Users/marcinmichalski/Downloads/room99-dashboard-analytics/data/*.json)",
+      "Bash(awk '{print $5, $NF}')",
+      "Bash(npx next:*)",
+      "Bash(ls /Users/marcinmichalski/Downloads/room99-dashboard-analytics/src/app/*/)",
+      "Bash(ls -la /Users/marcinmichalski/Downloads/room99-dashboard-analytics/src/app/*/page.tsx /Users/marcinmichalski/Downloads/room99-dashboard-analytics/src/app/page.tsx)",
+      "Bash(ls /Users/marcinmichalski/Downloads/room99-dashboard-analytics/src/app/*/page.tsx /Users/marcinmichalski/Downloads/room99-dashboard-analytics/src/app/page.tsx)",
+      "Bash(pnpm build:*)",
+      "Bash(git add:*)",
+      "Bash(gh repo:*)",
+      "Bash(vercel --yes --prod)",
+      "mcp__170878e1-1a3d-45e2-b3ee-b6755cfc0514__get_traffic_sources",
+      "mcp__170878e1-1a3d-45e2-b3ee-b6755cfc0514__get_ecommerce_report",
+      "mcp__1e4d3d07-f2b9-42dd-80e2-cdcff0c341c8__get_campaign_performance",
+      "Bash(python3 -c 'import json; json.load\\(open\\('\\\\''__TRACKED_VAR__'\\\\''\\)\\)')",
+      "Bash(git restore:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(rm -f /Users/marcinmichalski/Downloads/room99-dashboard-analytics/.git/index.lock)",
+      "Bash(git push:*)",
+      "Bash(vercel --prod --yes)"
     ]
   }
 }

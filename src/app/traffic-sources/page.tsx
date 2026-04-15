@@ -6,18 +6,32 @@ import ErrorBanner from '@/components/ErrorBanner';
 import { formatNumber, formatPercent } from '@/lib/formatters';
 import { useDashboardData } from '@/hooks/useDashboardData';
 
-interface TrafficRow {
-  channel: string;
-  sessions: number;
-  [key: string]: unknown;
-}
-
 interface GA4Data {
   sessions: unknown;
   ecommerce: unknown;
-  traffic: TrafficRow[] | { rows: TrafficRow[] } | unknown;
+  traffic: unknown;
   funnel: unknown;
 }
+
+interface TrafficRow {
+  channel?: string;
+  sessionDefaultChannelGroup?: string;
+  sessions: number;
+  totalUsers?: number;
+}
+
+const CHANNEL_COLORS: Record<string, string> = {
+  'Paid Social': '#0668E1',
+  'Cross-network': '#ff6b35',
+  'Paid Search': '#4285f4',
+  'Organic Search': '#16a34a',
+  'Direct': '#dc2626',
+  'Organic Social': '#E60023',
+  'Paid Shopping': '#8b5cf6',
+  'Paid Other': '#d97706',
+  'Display': '#ec4899',
+  'Referral': '#6366f1',
+};
 
 function extractTrafficRows(traffic: unknown): TrafficRow[] {
   if (!traffic) return [];
@@ -44,61 +58,61 @@ export default function TrafficSourcesPage() {
   const totalSessions = channels.reduce((s, c) => s + Number(c.sessions || 0), 0);
 
   return (
-    <div className="flex flex-col gap-6">
-      <SectionTitle>Performance kanalow</SectionTitle>
+    <div className="flex flex-col gap-7 animate-fade-up">
+      <section>
+        <SectionTitle>Zrodla ruchu — GA4</SectionTitle>
 
-      {channels.length > 0 ? (
-        <div className="bg-card border border-border rounded-lg overflow-hidden">
-          <table className="w-full border-collapse text-[13px]">
-            <thead>
-              <tr>
-                <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-text-secondary bg-wire-bg border-b-2 border-border text-left">Kanal</th>
-                <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-text-secondary bg-wire-bg border-b-2 border-border text-right">Sesje</th>
-                <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-text-secondary bg-wire-bg border-b-2 border-border text-right">% udzial</th>
-              </tr>
-            </thead>
-            <tbody>
-              {channels.map((c, i) => {
-                const sessions = Number(c.sessions || 0);
-                const share = totalSessions > 0 ? (sessions / totalSessions) * 100 : 0;
-                return (
-                  <tr key={i} className="border-b border-border hover:bg-wire-bg transition-colors">
-                    <td className="px-3 py-2.5 font-medium">{String(c.channel || c.sessionDefaultChannelGroup || `Kanal ${i + 1}`)}</td>
-                    <td className="px-3 py-2.5 text-right">{formatNumber(sessions)}</td>
-                    <td className="px-3 py-2.5 text-right">{formatPercent(share)}</td>
-                  </tr>
-                );
-              })}
-              <tr className="bg-wire-bg font-bold">
-                <td className="px-3 py-2.5">Razem</td>
-                <td className="px-3 py-2.5 text-right">{formatNumber(totalSessions)}</td>
-                <td className="px-3 py-2.5 text-right">{formatPercent(100)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <div className="bg-card border border-border rounded-lg p-8 text-center text-text-secondary text-[13px]">
-          Brak danych o zrodlach ruchu dla wybranego okresu.
-        </div>
-      )}
+        {channels.length > 0 ? (
+          <div className="bg-card rounded-xl overflow-hidden mt-3" style={{ boxShadow: 'var(--shadow-sm)' }}>
+            <table className="w-full text-[13px]">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-[0.12em] text-text-muted text-left">Kanal</th>
+                  <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-[0.12em] text-text-muted text-right">Sesje</th>
+                  <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-[0.12em] text-text-muted text-right">Udzial</th>
+                  <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-[0.12em] text-text-muted text-left w-[30%]">Rozklad</th>
+                </tr>
+              </thead>
+              <tbody>
+                {channels.map((c, i) => {
+                  const sessions = Number(c.sessions || 0);
+                  const share = totalSessions > 0 ? (sessions / totalSessions) * 100 : 0;
+                  const channelName = String(c.channel || c.sessionDefaultChannelGroup || `Kanal ${i + 1}`);
+                  const color = CHANNEL_COLORS[channelName] || '#9ca3af';
 
-      {/* Attribution warning */}
-      <div className="bg-yellow-bg border border-yellow/30 rounded-lg px-5 py-4 flex items-start gap-3">
-        <div className="text-yellow mt-0.5 shrink-0">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-            <line x1="12" y1="9" x2="12" y2="13" />
-            <line x1="12" y1="17" x2="12.01" y2="17" />
-          </svg>
-        </div>
-        <div>
-          <div className="text-[13px] font-bold text-yellow mb-1">Uwaga: bias atrybucji GA4</div>
-          <div className="text-[12px] text-text-secondary leading-relaxed">
-            Dane GA4 opieraja sie na modelu atrybucji data-driven, ktory moze przypisywac konwersje inaczej niz platformy reklamowe.
+                  return (
+                    <tr key={i} className="border-b border-border-light hover:bg-card-hover transition-colors">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                          <span className="font-medium">{channelName}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-right tabular-nums font-medium">{formatNumber(sessions)}</td>
+                      <td className="px-4 py-3 text-right tabular-nums text-text-secondary">{formatPercent(share)}</td>
+                      <td className="px-4 py-3">
+                        <div className="w-full bg-wire-bg rounded-full h-2 overflow-hidden">
+                          <div className="h-full rounded-full" style={{ width: `${share}%`, backgroundColor: color }} />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+                <tr className="bg-wire-bg font-bold">
+                  <td className="px-4 py-3 text-text-secondary">Razem</td>
+                  <td className="px-4 py-3 text-right tabular-nums">{formatNumber(totalSessions)}</td>
+                  <td className="px-4 py-3 text-right tabular-nums text-text-secondary">100%</td>
+                  <td className="px-4 py-3" />
+                </tr>
+              </tbody>
+            </table>
           </div>
-        </div>
-      </div>
+        ) : (
+          <div className="bg-card rounded-xl p-8 text-center text-text-muted text-[13px] mt-3" style={{ boxShadow: 'var(--shadow-sm)' }}>
+            Brak danych o zrodlach ruchu.
+          </div>
+        )}
+      </section>
     </div>
   );
 }

@@ -26,61 +26,31 @@ export default function MetaAdsPage() {
     { skipComparison: true }
   );
 
-  if (loading) return <LoadingSkeleton cards={8} showTable />;
+  if (loading) return <LoadingSkeleton cards={8} />;
   if (error) return <ErrorBanner message={error} onRetry={refresh} />;
   if (!data) return <ErrorBanner message="Brak danych" onRetry={refresh} />;
 
-  const cr = data.clicks > 0 ? (data.conversions / data.clicks) * 100 : 0;
-  const campaigns = Array.isArray(data.campaigns) ? data.campaigns : [];
-
   return (
-    <div className="flex flex-col gap-6">
-      <SectionTitle>Metryki ogolne — Meta Ads</SectionTitle>
+    <div className="flex flex-col gap-7 animate-fade-up">
+      <section>
+        <SectionTitle>Meta Ads — podsumowanie</SectionTitle>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
+          <KPICard label="Wydatki" value={formatPLN(data.totalSpend)} accent="var(--meta)" />
+          <KPICard label="Przychod (platforma)" value={formatPLN(data.revenue)} />
+          <KPICard label="ROAS (platforma)" value={formatDecimal(data.roas, 2)} />
+          <KPICard label="Zakupy" value={formatNumber(data.conversions)} />
+        </div>
+      </section>
 
-      <KPIGrid columns={4}>
-        <KPICard label="Wydatki" value={formatPLN(data.totalSpend)} />
-        <KPICard label="Przychod" value={formatPLN(data.revenue)} />
-        <KPICard label="ROAS" value={formatDecimal(data.roas, 1)} />
-        <KPICard label="CR" value={formatPercent(cr)} />
-      </KPIGrid>
-
-      <KPIGrid columns={4}>
-        <KPICard label="Wyswietlenia" value={formatNumber(data.impressions)} />
-        <KPICard label="Klikniecia" value={formatNumber(data.clicks)} />
-        <KPICard label="CTR" value={formatPercent(data.ctr)} />
-        <KPICard label="CPC" value={formatPLN(data.cpc)} />
-      </KPIGrid>
-
-      {/* Campaign insights */}
-      {campaigns.length > 0 && (
-        <>
-          <SectionTitle>Kampanie</SectionTitle>
-          <div className="bg-card border border-border rounded-lg overflow-hidden overflow-x-auto">
-            <table className="w-full border-collapse text-[13px]">
-              <thead>
-                <tr>
-                  <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-text-secondary bg-wire-bg border-b-2 border-border text-left">Kampania</th>
-                  <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-text-secondary bg-wire-bg border-b-2 border-border text-right">Wydatki</th>
-                  <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-text-secondary bg-wire-bg border-b-2 border-border text-right">Wyswietlenia</th>
-                  <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-text-secondary bg-wire-bg border-b-2 border-border text-right">Klikniecia</th>
-                  <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-text-secondary bg-wire-bg border-b-2 border-border text-right">CTR</th>
-                </tr>
-              </thead>
-              <tbody>
-                {campaigns.slice(0, 20).map((c: Record<string, unknown>, i: number) => (
-                  <tr key={i} className="border-b border-border hover:bg-wire-bg transition-colors">
-                    <td className="px-3 py-2.5 font-medium">{String(c.campaign_name || c.name || `Kampania ${i + 1}`)}</td>
-                    <td className="px-3 py-2.5 text-right">{formatPLN(Number(c.spend || 0))}</td>
-                    <td className="px-3 py-2.5 text-right">{formatNumber(Number(c.impressions || 0))}</td>
-                    <td className="px-3 py-2.5 text-right">{formatNumber(Number(c.clicks || 0))}</td>
-                    <td className="px-3 py-2.5 text-right">{formatPercent(Number(c.ctr || 0))}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
-      )}
+      <section>
+        <SectionTitle>Metryki ruchu</SectionTitle>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
+          <KPICard label="Wyswietlenia" value={formatNumber(data.impressions)} />
+          <KPICard label="Klikniecia" value={formatNumber(data.clicks)} />
+          <KPICard label="CTR" value={formatPercent(data.ctr)} />
+          <KPICard label="CPC" value={formatPLN(data.cpc)} />
+        </div>
+      </section>
     </div>
   );
 }
