@@ -1,0 +1,188 @@
+{
+  "campaigns": [
+    {
+      "name": "CSS3 PM Perfo Labalizer",
+      "type": "PMax",
+      "spend": 5860.2,
+      "conversions": 258.06,
+      "convValue": 52597.46,
+      "clicks": 5091,
+      "impressions": 246452
+    },
+    {
+      "name": "CSS2 Oryginal Zaslony Netarch",
+      "type": "PMax",
+      "spend": 4910.12,
+      "conversions": 168.17,
+      "convValue": 35760.97,
+      "clicks": 3241,
+      "impressions": 138811
+    },
+    {
+      "name": "CSS3 PM Miesięczne Bestsellery",
+      "type": "PMax",
+      "spend": 3910.36,
+      "conversions": 147.82,
+      "convValue": 32387.22,
+      "clicks": 2665,
+      "impressions": 116086
+    },
+    {
+      "name": "CSS2 Boost 01.2026",
+      "type": "PMax",
+      "spend": 3142.88,
+      "conversions": 127.68,
+      "convValue": 26427.94,
+      "clicks": 2776,
+      "impressions": 125749
+    },
+    {
+      "name": "CSS1 Room99 (b)",
+      "type": "Shopping",
+      "spend": 2613.04,
+      "conversions": 82.91,
+      "convValue": 16400.65,
+      "clicks": 1930,
+      "impressions": 80914
+    },
+    {
+      "name": "PMAX Zaslony MH",
+      "type": "PMax",
+      "spend": 2472.33,
+      "conversions": 95.96,
+      "convValue": 21695.37,
+      "clicks": 2340,
+      "impressions": 123834
+    },
+    {
+      "name": "Search Tree Zaslony",
+      "type": "Search",
+      "spend": 1833.96,
+      "conversions": 66.24,
+      "convValue": 14468.77,
+      "clicks": 1147,
+      "impressions": 23848
+    },
+    {
+      "name": "PMAX Firany MH",
+      "type": "PMax",
+      "spend": 1758.96,
+      "conversions": 69.93,
+      "convValue": 14361.99,
+      "clicks": 3634,
+      "impressions": 121355
+    },
+    {
+      "name": "CSS2 Sembot Narzuty",
+      "type": "PMax",
+      "spend": 1720.34,
+      "conversions": 125.44,
+      "convValue": 17286.98,
+      "clicks": 2148,
+      "impressions": 73280
+    },
+    {
+      "name": "CSS2 Sembot Zaslony NetArch",
+      "type": "PMax",
+      "spend": 1480.09,
+      "conversions": 72.38,
+      "convValue": 15115.51,
+      "clicks": 1287,
+      "impressions": 82703
+    },
+    {
+      "name": "Search Brand",
+      "type": "Search",
+      "spend": 1473.11,
+      "conversions": 774.12,
+      "convValue": 168207.72,
+      "clicks": 9979,
+      "impressions": 22240
+    },
+    {
+      "name": "Search General TEST_BM",
+      "type": "Search",
+      "spend": 1109.99,
+      "conversions": 32.93,
+      "convValue": 9473.17,
+      "clicks": 764,
+      "impressions": 17468
+    },
+    {
+      "name": "Search General",
+      "type": "Search",
+      "spend": 940.31,
+      "conversions": 23.9,
+      "convValue": 5582.33,
+      "clicks": 658,
+      "impressions": 13855
+    },
+    {
+      "name": "CSS2 Promocja",
+      "type": "PMax",
+      "spend": 939.18,
+      "conversions": 33.74,
+      "convValue": 7880.37,
+      "clicks": 603,
+      "impressions": 20115
+    },
+    {
+      "name": "PLA Narzuty MH",
+      "type": "Shopping",
+      "spend": 736.76,
+      "conversions": 21.41,
+      "convValue": 3868.46,
+      "clicks": 462,
+      "impressions": 21844
+    },
+    {
+      "name": "CSS2 Sembot Obrusy",
+      "type": "PMax",
+      "spend": 678.84,
+      "conversions": 40.09,
+      "convValue": 6127.42,
+      "clicks": 525,
+      "impressions": 27192
+    },
+    {
+      "name": "CSSG Zaslony GMC",
+      "type": "PMax",
+      "spend": 639.9,
+      "conversions": 23.48,
+      "convValue": 5099.02,
+      "clicks": 1064,
+      "impressions": 58945
+    },
+    {
+      "name": "Search Tree Firany",
+      "type": "Search",
+      "spend": 628.09,
+      "conversions": 27.55,
+      "convValue": 6229.3,
+      "clicks": 513,
+      "impressions": 8284
+    },
+    {
+      "name": "PLA Obrusy MH",
+      "type": "Shopping",
+      "spend": 613.92,
+      "conversions": 32.4,
+      "convValue": 3087.34,
+      "clicks": 306,
+      "impressions": 19309
+    },
+    {
+      "name": "CSS2 PM Off White",
+      "type": "PMax",
+      "spend": 302.63,
+      "conversions": 16.55,
+      "convValue": 3185.6,
+      "clicks": 295,
+      "impressions": 7487
+    }
+  ],
+  "totalSpend": 37765.009999999995,
+  "totalConversions": 2240.7600000000007,
+  "totalConversionValue": 465243.58999999997,
+  "roas": 12.319435106729749
+}

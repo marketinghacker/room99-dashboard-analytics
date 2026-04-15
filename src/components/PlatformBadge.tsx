@@ -1,27 +1,26 @@
-import { PLATFORM_COLORS } from '@/lib/constants';
-
-type Platform = keyof typeof PLATFORM_COLORS;
+type Platform = 'google' | 'meta' | 'pinterest' | 'criteo';
 
 interface PlatformBadgeProps {
-  platform: Platform;
+  platform: Platform | string;
 }
 
-const platformLabels: Record<Platform, string> = {
-  google: 'Google Ads',
-  meta: 'Meta Ads',
-  pinterest: 'Pinterest',
-  criteo: 'Criteo',
+const PLATFORM_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
+  google: { label: 'Google Ads', color: 'var(--google)', bg: 'var(--google-bg)' },
+  meta: { label: 'Meta Ads', color: 'var(--meta)', bg: 'var(--meta-bg)' },
+  pinterest: { label: 'Pinterest', color: 'var(--pinterest)', bg: 'var(--pinterest-bg)' },
+  criteo: { label: 'Criteo', color: 'var(--criteo)', bg: 'var(--criteo-bg)' },
 };
 
 export default function PlatformBadge({ platform }: PlatformBadgeProps) {
-  const colors = PLATFORM_COLORS[platform];
+  const config = PLATFORM_CONFIG[platform] || { label: platform, color: '#666', bg: '#f5f5f5' };
 
   return (
     <span
-      className="inline-block rounded-full px-2.5 py-0.5 text-[11px] font-semibold whitespace-nowrap"
-      style={{ backgroundColor: colors.bg, color: colors.text }}
+      className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap"
+      style={{ backgroundColor: config.bg, color: config.color }}
     >
-      {platformLabels[platform]}
+      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: config.color }} />
+      {config.label}
     </span>
   );
 }

@@ -1,0 +1,32 @@
+{
+  "totalSpend": 4684.42,
+  "clicks": 5029,
+  "displays": 943038,
+  "roas": 10.22,
+  "campaigns": [
+    {
+      "id": "185338",
+      "name": "Lower Funnel",
+      "spend": 2482.99,
+      "clicks": 2728,
+      "displays": 518536,
+      "roas": 10.58
+    },
+    {
+      "id": "792475",
+      "name": "Retention-2024/12/10",
+      "spend": 1246.37,
+      "clicks": 1564,
+      "displays": 284684,
+      "roas": 8.57
+    },
+    {
+      "id": "353544",
+      "name": "Retention - Non-buyers 30d",
+      "spend": 955.07,
+      "clicks": 737,
+      "displays": 139818,
+      "roas": 11.44
+    }
+  ]
+}

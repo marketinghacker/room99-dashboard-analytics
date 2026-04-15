@@ -3,6 +3,8 @@ import { Geist } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
 import TabNavigation from "@/components/TabNavigation";
+import ClientProviders from "@/components/ClientProviders";
+import FilterBar from "@/components/FilterBar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,12 +23,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pl" className={`${geistSans.variable}`}>
-      <body className="min-h-screen bg-[var(--bg)] text-[var(--text)]" style={{ fontFamily: 'var(--font-geist-sans), "Google Sans", "Segoe UI", Roboto, sans-serif' }}>
-        <Header />
-        <TabNavigation />
-        <main className="max-w-[1280px] mx-auto px-6 py-5 pb-16">
-          {children}
-        </main>
+      <body className="min-h-screen bg-bg text-text">
+        <ClientProviders>
+          <Header />
+          <TabNavigation />
+          <main className="max-w-[1280px] mx-auto px-5 pt-5 pb-16 space-y-5">
+            <FilterBar />
+            {children}
+          </main>
+        </ClientProviders>
       </body>
     </html>
   );

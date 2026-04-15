@@ -1,159 +1,107 @@
-import fs from 'fs';
-import path from 'path';
-import FilterBar from '@/components/FilterBar';
+'use client';
+
 import SectionTitle from '@/components/SectionTitle';
-import PlatformBadge from '@/components/PlatformBadge';
-import ChangeIndicator from '@/components/ChangeIndicator';
+import LoadingSkeleton from '@/components/LoadingSkeleton';
+import ErrorBanner from '@/components/ErrorBanner';
 import { formatPLN, formatNumber, formatPercent, formatDecimal } from '@/lib/formatters';
+import { useDashboardData } from '@/hooks/useDashboardData';
 
-const data = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data', 'product-catalogs.json'), 'utf-8'));
-
-interface CatalogItem {
-  catalog: string;
-  platform: 'google' | 'meta' | 'pinterest' | 'criteo';
-  totalProducts: number;
-  activeProducts: number;
-  disapproved: number;
-  pending: number;
-  approvalRate: number;
-  change: number;
+interface ShoppingProduct {
+  item_id?: string;
+  title?: string;
+  brand?: string;
+  impressions?: number;
+  clicks?: number;
+  cost?: number;
+  conversions?: number;
+  conversions_value?: number;
+  [key: string]: unknown;
 }
 
-interface TopProduct {
-  rank: number;
-  name: string;
-  sku: string;
-  impressions: number;
-  clicks: number;
-  ctr: number;
-  revenue: number;
-  transactions: number;
+interface GoogleAdsData {
+  campaigns: unknown;
+  shopping: ShoppingProduct[] | { rows: ShoppingProduct[] } | null;
+  types: unknown;
+  totalSpend?: number;
+  roas?: number;
 }
 
-interface ProblemProduct {
-  rank: number;
-  name: string;
-  sku: string;
-  impressions: number;
-  clicks: number;
-  ctr: number;
-  revenue: number;
-  transactions: number;
-  issue: string;
+function extractShoppingProducts(shopping: unknown): ShoppingProduct[] {
+  if (!shopping) return [];
+  if (Array.isArray(shopping)) return shopping;
+  if (typeof shopping === 'object' && shopping !== null) {
+    const obj = shopping as Record<string, unknown>;
+    if (Array.isArray(obj.rows)) return obj.rows;
+    if (Array.isArray(obj.data)) return obj.data;
+  }
+  return [];
 }
 
 export default function ProductCatalogsPage() {
-  const { period, catalogPerformance, topDisplayedProducts, highImpressionsLowSales } = data;
+  const { data, loading, error, refresh } = useDashboardData<GoogleAdsData>(
+    '/api/data/google-ads',
+    { skipComparison: true, extraParams: { section: 'shopping' } }
+  );
+
+  if (loading) return <LoadingSkeleton cards={0} showTable />;
+  if (error) return <ErrorBanner message={error} onRetry={refresh} />;
+  if (!data) return <ErrorBanner message="Brak danych" onRetry={refresh} />;
+
+  const products = extractShoppingProducts(data.shopping);
 
   return (
     <div className="flex flex-col gap-6">
-      <FilterBar
-        period={period.label}
-        comparison="vs Poprzedni okres"
-      />
+      <SectionTitle>Katalog produktow — Google Shopping</SectionTitle>
 
-      <SectionTitle>Performance katalogow</SectionTitle>
-
-      <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg overflow-hidden">
-        <table className="w-full border-collapse text-[13px]">
-          <thead>
-            <tr>
-              <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)] bg-[var(--wire-bg)] border-b-2 border-[var(--border)] text-left">Katalog</th>
-              <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)] bg-[var(--wire-bg)] border-b-2 border-[var(--border)] text-left">Platforma</th>
-              <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)] bg-[var(--wire-bg)] border-b-2 border-[var(--border)] text-right">Produkty</th>
-              <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)] bg-[var(--wire-bg)] border-b-2 border-[var(--border)] text-right">Aktywne</th>
-              <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)] bg-[var(--wire-bg)] border-b-2 border-[var(--border)] text-right">Odrzucone</th>
-              <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)] bg-[var(--wire-bg)] border-b-2 border-[var(--border)] text-right">% zatwierdzenia</th>
-              <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)] bg-[var(--wire-bg)] border-b-2 border-[var(--border)] text-right">Zmiana</th>
-            </tr>
-          </thead>
-          <tbody>
-            {catalogPerformance.map((c: CatalogItem, idx: number) => (
-              <tr key={idx} className="border-b border-[var(--border)] hover:bg-[var(--wire-bg)] transition-colors">
-                <td className="px-3 py-2.5 border-b border-[var(--border)] font-medium">{c.catalog}</td>
-                <td className="px-3 py-2.5 border-b border-[var(--border)]">
-                  <PlatformBadge platform={c.platform} />
-                </td>
-                <td className="px-3 py-2.5 border-b border-[var(--border)] text-right">{formatNumber(c.totalProducts)}</td>
-                <td className="px-3 py-2.5 border-b border-[var(--border)] text-right">{formatNumber(c.activeProducts)}</td>
-                <td className="px-3 py-2.5 border-b border-[var(--border)] text-right">{formatNumber(c.disapproved)}</td>
-                <td className="px-3 py-2.5 border-b border-[var(--border)] text-right">{formatPercent(c.approvalRate)}</td>
-                <td className="px-3 py-2.5 border-b border-[var(--border)] text-right">
-                  <ChangeIndicator value={c.change} />
-                </td>
+      {products.length > 0 ? (
+        <div className="bg-card border border-border rounded-lg overflow-hidden overflow-x-auto">
+          <table className="w-full border-collapse text-[13px]">
+            <thead>
+              <tr>
+                <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-text-secondary bg-wire-bg border-b-2 border-border text-left">Produkt</th>
+                <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-text-secondary bg-wire-bg border-b-2 border-border text-right">Wyswietlenia</th>
+                <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-text-secondary bg-wire-bg border-b-2 border-border text-right">Klikniecia</th>
+                <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-text-secondary bg-wire-bg border-b-2 border-border text-right">CTR</th>
+                <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-text-secondary bg-wire-bg border-b-2 border-border text-right">Koszt</th>
+                <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-text-secondary bg-wire-bg border-b-2 border-border text-right">Konwersje</th>
+                <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-text-secondary bg-wire-bg border-b-2 border-border text-right">Przychod</th>
+                <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-text-secondary bg-wire-bg border-b-2 border-border text-right">ROAS</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {products.slice(0, 30).map((p, i) => {
+                const impressions = Number(p.impressions || 0);
+                const clicks = Number(p.clicks || 0);
+                const cost = Number(p.cost || 0);
+                const convValue = Number(p.conversions_value || 0);
+                const conv = Number(p.conversions || 0);
+                const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
+                const roas = cost > 0 ? convValue / cost : 0;
 
-      <SectionTitle>Najczesciej wyswietlane produkty</SectionTitle>
-
-      <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg overflow-hidden">
-        <table className="w-full border-collapse text-[13px]">
-          <thead>
-            <tr>
-              <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)] bg-[var(--wire-bg)] border-b-2 border-[var(--border)] text-left">Produkt</th>
-              <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)] bg-[var(--wire-bg)] border-b-2 border-[var(--border)] text-right">Wyswietlenia</th>
-              <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)] bg-[var(--wire-bg)] border-b-2 border-[var(--border)] text-right">Klikniecia</th>
-              <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)] bg-[var(--wire-bg)] border-b-2 border-[var(--border)] text-right">CTR</th>
-              <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)] bg-[var(--wire-bg)] border-b-2 border-[var(--border)] text-right">Sprzedaz</th>
-              <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)] bg-[var(--wire-bg)] border-b-2 border-[var(--border)] text-right">Przychod</th>
-              <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)] bg-[var(--wire-bg)] border-b-2 border-[var(--border)] text-right">ROAS</th>
-            </tr>
-          </thead>
-          <tbody>
-            {topDisplayedProducts.map((p: TopProduct) => (
-              <tr key={p.rank} className="border-b border-[var(--border)] hover:bg-[var(--wire-bg)] transition-colors">
-                <td className="px-3 py-2.5 border-b border-[var(--border)]">
-                  <div className="font-medium">{p.name}</div>
-                  <div className="text-[11px] text-[var(--text-secondary)]">{p.sku}</div>
-                </td>
-                <td className="px-3 py-2.5 border-b border-[var(--border)] text-right">{formatNumber(p.impressions)}</td>
-                <td className="px-3 py-2.5 border-b border-[var(--border)] text-right">{formatNumber(p.clicks)}</td>
-                <td className="px-3 py-2.5 border-b border-[var(--border)] text-right">{formatPercent(p.ctr)}</td>
-                <td className="px-3 py-2.5 border-b border-[var(--border)] text-right">{formatNumber(p.transactions)}</td>
-                <td className="px-3 py-2.5 border-b border-[var(--border)] text-right">{formatPLN(p.revenue)}</td>
-                <td className="px-3 py-2.5 border-b border-[var(--border)] text-right">{formatDecimal(p.revenue / (p.clicks > 0 ? p.clicks : 1) * (p.ctr / 100), 1)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <SectionTitle>Produkty z wysokimi wyswietleniami, niska sprzedaza</SectionTitle>
-
-      <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg overflow-hidden">
-        <table className="w-full border-collapse text-[13px]">
-          <thead>
-            <tr>
-              <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)] bg-[var(--wire-bg)] border-b-2 border-[var(--border)] text-left">Produkt</th>
-              <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)] bg-[var(--wire-bg)] border-b-2 border-[var(--border)] text-right">Wyswietlenia</th>
-              <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)] bg-[var(--wire-bg)] border-b-2 border-[var(--border)] text-right">Sprzedaz</th>
-              <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)] bg-[var(--wire-bg)] border-b-2 border-[var(--border)] text-right">CR</th>
-              <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)] bg-[var(--wire-bg)] border-b-2 border-[var(--border)] text-left">Problem</th>
-            </tr>
-          </thead>
-          <tbody>
-            {highImpressionsLowSales.map((p: ProblemProduct) => (
-              <tr key={p.rank} className="border-b border-[var(--border)] hover:bg-[var(--wire-bg)] transition-colors">
-                <td className="px-3 py-2.5 border-b border-[var(--border)]">
-                  <div className="font-medium">{p.name}</div>
-                  <div className="text-[11px] text-[var(--text-secondary)]">{p.sku}</div>
-                </td>
-                <td className="px-3 py-2.5 border-b border-[var(--border)] text-right">{formatNumber(p.impressions)}</td>
-                <td className="px-3 py-2.5 border-b border-[var(--border)] text-right">{formatNumber(p.transactions)}</td>
-                <td className="px-3 py-2.5 border-b border-[var(--border)] text-right">{formatPercent(p.clicks > 0 ? (p.transactions / p.clicks) * 100 : 0)}</td>
-                <td className="px-3 py-2.5 border-b border-[var(--border)]">
-                  <span className="inline-block bg-[var(--red-bg)] text-[var(--red)] text-[11px] font-semibold rounded-full px-2.5 py-0.5">
-                    {p.issue}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                return (
+                  <tr key={i} className="border-b border-border hover:bg-wire-bg transition-colors">
+                    <td className="px-3 py-2.5">
+                      <div className="font-medium">{String(p.title || `Produkt ${i + 1}`)}</div>
+                      <div className="text-[11px] text-text-secondary">{String(p.item_id || '')}</div>
+                    </td>
+                    <td className="px-3 py-2.5 text-right">{formatNumber(impressions)}</td>
+                    <td className="px-3 py-2.5 text-right">{formatNumber(clicks)}</td>
+                    <td className="px-3 py-2.5 text-right">{formatPercent(ctr)}</td>
+                    <td className="px-3 py-2.5 text-right">{formatPLN(cost)}</td>
+                    <td className="px-3 py-2.5 text-right">{formatNumber(conv)}</td>
+                    <td className="px-3 py-2.5 text-right">{formatPLN(convValue)}</td>
+                    <td className="px-3 py-2.5 text-right font-semibold">{formatDecimal(roas, 1)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="bg-card border border-border rounded-lg p-8 text-center text-text-secondary text-[13px]">
+          Brak danych o katalogach produktow. Dane wymagaja polaczenia z Google Merchant Center.
+        </div>
+      )}
     </div>
   );
 }

@@ -1,36 +1,27 @@
-import { Shield } from 'lucide-react';
-import { loadMeta } from '@/lib/data-loader';
+'use client';
 
 export default function Header() {
-  const meta = loadMeta();
-  const lastUpdated = meta?.lastUpdated ?? '---';
-
   return (
-    <header
-      className="sticky top-0 z-50 flex items-center justify-between bg-card border-b border-border px-4 py-2"
-      style={{ minHeight: 49 }}
-    >
-      {/* Left: brand */}
-      <div className="flex items-center gap-2 shrink-0">
-        <Shield className="h-5 w-5 text-primary" />
-        <span className="font-bold text-[15px] text-text">Room99</span>
-      </div>
+    <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border px-5 py-2.5" style={{ minHeight: 48 }}>
+      <div className="max-w-[1280px] mx-auto flex items-center justify-between">
+        {/* Brand */}
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center">
+            <span className="text-white text-[13px] font-bold tracking-tight">R</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="font-bold text-[14px] text-text leading-none tracking-tight">Room99</span>
+            <span className="text-[10px] text-text-muted leading-none mt-0.5">Performance Dashboard</span>
+          </div>
+        </div>
 
-      {/* Center: title */}
-      <div className="flex flex-col items-center text-center flex-1 min-w-0 px-4">
-        <h1 className="text-[14px] font-semibold text-text leading-tight truncate">
-          Room99 — Dashboard Performance Marketing
-        </h1>
-        <p className="text-[11px] text-text-secondary leading-tight truncate">
-          Tekstylia Domowe: Zasłony &bull; Firany &bull; Narzuty &bull; Pościele
-        </p>
-      </div>
-
-      {/* Right: last updated */}
-      <div className="shrink-0 text-right">
-        <span className="text-[11px] text-text-secondary whitespace-nowrap">
-          Ostatnia aktualizacja: {lastUpdated}
-        </span>
+        {/* Right */}
+        <div className="flex items-center gap-4">
+          <span className="text-[11px] text-text-muted">
+            Okres: 1–15 kwi 2026
+          </span>
+          <div className="w-1.5 h-1.5 rounded-full bg-green animate-pulse" title="Dane aktualne" />
+        </div>
       </div>
     </header>
   );

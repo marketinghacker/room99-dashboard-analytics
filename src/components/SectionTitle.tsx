@@ -6,12 +6,12 @@ interface SectionTitleProps {
 
 export default function SectionTitle({ children, subtitle, className = '' }: SectionTitleProps) {
   return (
-    <div className={`mb-4 ${className}`}>
-      <h2 className="text-[16px] font-bold text-text pb-2 border-b-2 border-primary">
+    <div className={`${className}`}>
+      <h2 className="text-[13px] font-bold uppercase tracking-[0.1em] text-text-secondary">
         {children}
       </h2>
       {subtitle && (
-        <p className="text-[12px] text-text-secondary mt-1">{subtitle}</p>
+        <p className="text-[12px] text-text-muted mt-0.5">{subtitle}</p>
       )}
     </div>
   );

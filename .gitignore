@@ -33,6 +33,9 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# dashboard config (API keys saved via admin panel)
+.dashboard-config.json
+
 # vercel
 .vercel
 

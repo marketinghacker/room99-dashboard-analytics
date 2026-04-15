@@ -1,0 +1,225 @@
+{
+  "sessions": {
+    "rows": [
+      {
+        "date": "20260401",
+        "sessions": 11261,
+        "totalUsers": 9480,
+        "newUsers": 5304,
+        "activeUsers": 8412,
+        "engagementRate": 0.547,
+        "averageSessionDuration": 230.15,
+        "screenPageViews": 49342
+      },
+      {
+        "date": "20260402",
+        "sessions": 8590,
+        "totalUsers": 7193,
+        "newUsers": 4098,
+        "activeUsers": 6334,
+        "engagementRate": 0.528,
+        "averageSessionDuration": 196.24,
+        "screenPageViews": 36033
+      },
+      {
+        "date": "20260403",
+        "sessions": 5335,
+        "totalUsers": 4570,
+        "newUsers": 2596,
+        "activeUsers": 4009,
+        "engagementRate": 0.515,
+        "averageSessionDuration": 178.77,
+        "screenPageViews": 20769
+      },
+      {
+        "date": "20260404",
+        "sessions": 5212,
+        "totalUsers": 4561,
+        "newUsers": 2739,
+        "activeUsers": 4025,
+        "engagementRate": 0.491,
+        "averageSessionDuration": 171.75,
+        "screenPageViews": 19081
+      },
+      {
+        "date": "20260405",
+        "sessions": 4746,
+        "totalUsers": 4171,
+        "newUsers": 2468,
+        "activeUsers": 3668,
+        "engagementRate": 0.51,
+        "averageSessionDuration": 172.92,
+        "screenPageViews": 19082
+      },
+      {
+        "date": "20260406",
+        "sessions": 7056,
+        "totalUsers": 5866,
+        "newUsers": 3594,
+        "activeUsers": 5301,
+        "engagementRate": 0.549,
+        "averageSessionDuration": 189.24,
+        "screenPageViews": 29684
+      },
+      {
+        "date": "20260407",
+        "sessions": 8440,
+        "totalUsers": 6934,
+        "newUsers": 4014,
+        "activeUsers": 6182,
+        "engagementRate": 0.557,
+        "averageSessionDuration": 207.4,
+        "screenPageViews": 36850
+      },
+      {
+        "date": "20260408",
+        "sessions": 9698,
+        "totalUsers": 8065,
+        "newUsers": 4772,
+        "activeUsers": 7211,
+        "engagementRate": 0.554,
+        "averageSessionDuration": 214.03,
+        "screenPageViews": 41810
+      },
+      {
+        "date": "20260409",
+        "sessions": 8236,
+        "totalUsers": 6765,
+        "newUsers": 3935,
+        "activeUsers": 6041,
+        "engagementRate": 0.552,
+        "averageSessionDuration": 208.43,
+        "screenPageViews": 35323
+      },
+      {
+        "date": "20260410",
+        "sessions": 8899,
+        "totalUsers": 7487,
+        "newUsers": 4478,
+        "activeUsers": 6623,
+        "engagementRate": 0.542,
+        "averageSessionDuration": 194.03,
+        "screenPageViews": 36509
+      },
+      {
+        "date": "20260411",
+        "sessions": 9563,
+        "totalUsers": 8143,
+        "newUsers": 4995,
+        "activeUsers": 7249,
+        "engagementRate": 0.55,
+        "averageSessionDuration": 191.81,
+        "screenPageViews": 39803
+      },
+      {
+        "date": "20260412",
+        "sessions": 11193,
+        "totalUsers": 9498,
+        "newUsers": 5842,
+        "activeUsers": 8524,
+        "engagementRate": 0.568,
+        "averageSessionDuration": 218.41,
+        "screenPageViews": 52062
+      },
+      {
+        "date": "20260413",
+        "sessions": 10288,
+        "totalUsers": 8495,
+        "newUsers": 4983,
+        "activeUsers": 7437,
+        "engagementRate": 0.534,
+        "averageSessionDuration": 194.84,
+        "screenPageViews": 41897
+      },
+      {
+        "date": "20260414",
+        "sessions": 9504,
+        "totalUsers": 7868,
+        "newUsers": 4522,
+        "activeUsers": 6966,
+        "engagementRate": 0.531,
+        "averageSessionDuration": 223.82,
+        "screenPageViews": 41184
+      },
+      {
+        "date": "20260415",
+        "sessions": 2551,
+        "totalUsers": 2239,
+        "newUsers": 929,
+        "activeUsers": 1966,
+        "engagementRate": 0.543,
+        "averageSessionDuration": 218.23,
+        "screenPageViews": 11113
+      }
+    ]
+  },
+  "traffic": [
+    {
+      "channel": "Paid Social",
+      "sessions": 41512,
+      "totalUsers": 31006
+    },
+    {
+      "channel": "Cross-network",
+      "sessions": 27282,
+      "totalUsers": 19835
+    },
+    {
+      "channel": "Paid Search",
+      "sessions": 17207,
+      "totalUsers": 11038
+    },
+    {
+      "channel": "Organic Search",
+      "sessions": 10441,
+      "totalUsers": 7892
+    },
+    {
+      "channel": "Direct",
+      "sessions": 8391,
+      "totalUsers": 5360
+    },
+    {
+      "channel": "Organic Social",
+      "sessions": 5117,
+      "totalUsers": 4236
+    },
+    {
+      "channel": "Paid Shopping",
+      "sessions": 2908,
+      "totalUsers": 2297
+    },
+    {
+      "channel": "Paid Other",
+      "sessions": 2806,
+      "totalUsers": 1814
+    },
+    {
+      "channel": "Unassigned",
+      "sessions": 1670,
+      "totalUsers": 1238
+    },
+    {
+      "channel": "Display",
+      "sessions": 1572,
+      "totalUsers": 1057
+    },
+    {
+      "channel": "Referral",
+      "sessions": 641,
+      "totalUsers": 385
+    },
+    {
+      "channel": "Organic Shopping",
+      "sessions": 66,
+      "totalUsers": 49
+    },
+    {
+      "channel": "Email",
+      "sessions": 4,
+      "totalUsers": 2
+    }
+  ],
+  "ecommerce": null,
+  "funnel": null
+}

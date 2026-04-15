@@ -1,0 +1,64 @@
+{
+  "revenue": {
+    "label": "Przychód (SHR)",
+    "value": 818474.57,
+    "format": "currency"
+  },
+  "aov": {
+    "label": "AOV",
+    "value": 211.93023562920766,
+    "format": "currency"
+  },
+  "cr": {
+    "label": "CR",
+    "value": 3.2030653883156948,
+    "format": "percent"
+  },
+  "transactions": {
+    "label": "Transakcje",
+    "value": 3862,
+    "format": "number"
+  },
+  "sessions": {
+    "label": "Sesje",
+    "value": 120572,
+    "format": "number"
+  },
+  "marketing": {
+    "totalSpend": {
+      "label": "Wydatki reklamowe",
+      "value": 86678.11,
+      "format": "currency"
+    },
+    "costShare": {
+      "label": "COS (Cost of Sale)",
+      "value": 10.590201965590698,
+      "format": "percent"
+    }
+  },
+  "platformSpend": [
+    {
+      "platform": "google-ads",
+      "spend": 37765.01,
+      "spendShare": 43.56925872056971
+    },
+    {
+      "platform": "meta-ads",
+      "spend": 44228.68,
+      "spendShare": 51.02635486629785
+    },
+    {
+      "platform": "criteo",
+      "spend": 4684.42,
+      "spendShare": 5.404386413132451
+    }
+  ],
+  "alerts": [],
+  "errors": {
+    "baselinker": null,
+    "ga4": null,
+    "googleAds": null,
+    "metaAds": null,
+    "criteo": null
+  }
+}
