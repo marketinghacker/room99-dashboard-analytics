@@ -80,6 +80,23 @@ export function getServerConfig(serverName: string): McpServerConfig {
 }
 
 /**
+ * Try to parse JSON from text that may have a prefix (e.g. "Found 26 results.\n\n[...]")
+ */
+function parseJsonFromText(text: string): unknown {
+  // Try direct parse first
+  try { return JSON.parse(text); } catch { /* continue */ }
+
+  // Try to find JSON array or object in the text
+  const jsonStart = text.search(/[\[{]/);
+  if (jsonStart >= 0) {
+    const jsonStr = text.substring(jsonStart);
+    try { return JSON.parse(jsonStr); } catch { /* continue */ }
+  }
+
+  return text; // Return as-is if no JSON found
+}
+
+/**
  * Extract tool result data from Claude's MCP response.
  * Looks for mcp_tool_result content blocks and returns the parsed text.
  */
@@ -106,24 +123,16 @@ function extractToolResult(response: Anthropic.Beta.Messages.BetaMessage): unkno
         .join('\n');
 
       if (textContent) {
-        try {
-          return JSON.parse(textContent);
-        } catch {
-          return textContent;
-        }
+        return parseJsonFromText(textContent);
       }
     }
 
     // Also check for text blocks that Haiku might produce with the result
     if (block.type === 'text') {
       const text = (block as Anthropic.Beta.Messages.BetaTextBlock).text;
-      try {
-        const parsed = JSON.parse(text);
-        if (parsed && typeof parsed === 'object') {
-          return parsed;
-        }
-      } catch {
-        // Not JSON, continue
+      const parsed = parseJsonFromText(text);
+      if (parsed !== null && typeof parsed === 'object') {
+        return parsed;
       }
     }
   }

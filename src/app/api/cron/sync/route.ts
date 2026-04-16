@@ -26,25 +26,30 @@ function getPeriodsToSync(): Array<{ key: string; start: string; end: string }> 
 }
 
 async function fetchGA4(start: string, end: string) {
-  const [sessions, traffic] = await Promise.allSettled([
-    callMcpTool('ga4', `Call the run_report tool with these exact parameters:
+  // Sequential to avoid API rate limits
+  let sessionsData = null;
+  let trafficData = null;
+
+  try {
+    sessionsData = await callMcpTool('ga4', `Call the run_report tool with these exact parameters:
 - property_id: "${GA4_PROPERTY}"
 - start_date: "${start}"
 - end_date: "${end}"
 - metrics: ["sessions", "totalUsers", "newUsers", "engagementRate", "screenPageViews"]
 - dimensions: ["date"]
-Return ONLY the raw tool output as JSON.`),
-    callMcpTool('ga4', `Call the get_traffic_sources tool with these exact parameters:
+Return ONLY the raw tool output as JSON.`);
+  } catch (e) { console.error('GA4 sessions error:', e); }
+
+  try {
+    trafficData = await callMcpTool('ga4', `Call the get_traffic_sources tool with these exact parameters:
 - property_id: "${GA4_PROPERTY}"
 - start_date: "${start}"
 - end_date: "${end}"
 - dimensions: ["sessionDefaultChannelGroup"]
-Return ONLY the raw tool output as JSON.`),
-  ]);
-  return {
-    sessions: sessions.status === 'fulfilled' ? sessions.value : null,
-    traffic: traffic.status === 'fulfilled' ? traffic.value : null,
-  };
+Return ONLY the raw tool output as JSON.`);
+  } catch (e) { console.error('GA4 traffic error:', e); }
+
+  return { sessions: sessionsData, traffic: trafficData };
 }
 
 async function fetchGoogleAds(start: string, end: string) {
