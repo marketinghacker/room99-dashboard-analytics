@@ -25,7 +25,8 @@
       "Bash(git push:*)",
       "Bash(vercel --prod --yes)",
       "Bash(pnpm ls:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(pnpm test:*)"
     ]
   }
 }

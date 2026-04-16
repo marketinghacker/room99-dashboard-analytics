@@ -15,10 +15,7 @@ export type CallMCPOptions = {
 };
 
 export type MCPCaller = {
-  callTool: (args: { name: string; arguments: Record<string, unknown> }) => Promise<{
-    isError?: boolean;
-    content?: Array<{ type: string; text?: string }>;
-  }>;
+  callTool: (args: { name: string; arguments: Record<string, unknown> }) => Promise<any>;
 };
 
 /**
