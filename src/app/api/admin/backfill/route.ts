@@ -7,6 +7,7 @@
  * Typical use:
  *   curl "https://DOMAIN/api/admin/backfill?key=$CRON_SECRET&start=2026-03-01&end=2026-04-16"
  */
+import { syncMeta } from '@/lib/sync/meta';
 import { syncGoogleAds } from '@/lib/sync/google-ads';
 import { syncCriteo } from '@/lib/sync/criteo';
 import { syncGA4 } from '@/lib/sync/ga4';
@@ -51,7 +52,7 @@ export async function GET(req: Request) {
   }
   const range: DateRange = { start, end };
 
-  const sourcesRaw = (url.searchParams.get('sources') ?? 'sellrocket,google_ads,criteo,ga4,pinterest')
+  const sourcesRaw = (url.searchParams.get('sources') ?? 'meta,sellrocket,google_ads,criteo,ga4,pinterest')
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean);
@@ -59,6 +60,11 @@ export async function GET(req: Request) {
   const jobs: Array<{ source: string; fn: () => Promise<{ rowsWritten: number }> }> = [];
   for (const source of sourcesRaw) {
     switch (source) {
+      case 'meta':
+        // Meta MCP doesn't support arbitrary ranges — ignores the date range
+        // and always pulls last_30d preset (spread across 30 days in DB).
+        jobs.push({ source, fn: () => syncMeta({ preset: 'last_30d' }) });
+        break;
       case 'sellrocket':
         jobs.push({ source, fn: () => syncSellRocket(range) });
         break;
