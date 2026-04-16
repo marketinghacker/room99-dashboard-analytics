@@ -21,6 +21,17 @@ export function formatPLN(n: number | null | undefined): string {
   return `${formatInt(Math.round(n))} zł`;
 }
 
+/** Two-decimal PLN for small amounts (CPC, CPM, per-click rates). */
+export function formatPLN2(n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(n)) return PLACEHOLDER;
+  return nbspToSpace(
+    new Intl.NumberFormat('pl-PL', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(n),
+  ) + ' zł';
+}
+
 export function formatPct(n: number | null | undefined): string {
   if (n == null || !Number.isFinite(n)) return PLACEHOLDER;
   return nbspToSpace(
