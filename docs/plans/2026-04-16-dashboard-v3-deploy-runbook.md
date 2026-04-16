@@ -43,7 +43,23 @@ Lokalnie z załadowanym `.env.local`:
 node --env-file=.env.local --import=tsx scripts/db-migrate.ts
 ```
 
-To tworzy tabele `ads_daily`, `ga4_daily`, `dashboard_cache`, `sync_runs` (idempotentne — można puszczać wielokrotnie).
+To tworzy tabele `ads_daily`, `ga4_daily`, `sellrocket_daily`, `dashboard_cache`, `sync_runs` (idempotentne — można puszczać wielokrotnie).
+
+### 2.3b Backfill SellRocket (jednorazowo)
+
+SellRocket/BaseLinker paginuje wolno — jednorazowy backfill 30 dni trwa 15-20 min.
+Cron następnie tylko synchronizuje wczoraj (~30s).
+
+```bash
+# Ostatnie 30 dni, SHR (Shoper) + ALL (Allegro)
+node --env-file=.env.local --import=tsx scripts/sync-sellrocket-range.ts 2026-03-17 2026-04-16 shr,allegro
+
+# Pełny marzec (weryfikacja vs referencja)
+node --env-file=.env.local --import=tsx scripts/sync-sellrocket-range.ts 2026-03-01 2026-03-31 shr,allegro
+
+# Weryfikacja
+node --env-file=.env.local --import=tsx scripts/verify-march.ts
+```
 
 ### 2.4 Uruchom pierwszy sync
 
