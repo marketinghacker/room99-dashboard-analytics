@@ -12,6 +12,7 @@
  *
  * Account: act_295812916 (Room99) — override with META_ACCOUNT_ID.
  */
+import { sql } from 'drizzle-orm';
 import { db as defaultDb, type DB } from '@/lib/db';
 import { callMCPTool, connectMCP } from './mcp-client';
 import { toNum, toNumOrNull, upsertAdsDaily, type AdsDailyRow } from './upsert';
@@ -102,25 +103,83 @@ function rowsToAdsDaily(rows: MetaInsightRow[]): AdsDailyRow[] {
   return out;
 }
 
+/**
+ * Fetch `last_N` aggregate and distribute spend/impressions/clicks/conversions
+ * evenly across N dates. Because Meta MCP exposes only aggregate presets
+ * (never true daily), we spread the aggregate so that dashboard date-range
+ * queries (which SUM over dates) still yield the correct 7-day / 30-day total.
+ *
+ * This is a deliberate trade-off: daily lines for Meta look flat, but totals
+ * are accurate. GA4 / SellRocket provide the real daily granularity.
+ */
+async function fetchAndSpread(
+  client: Awaited<ReturnType<typeof connectMCP>>,
+  preset: 'last_7d' | 'last_30d',
+): Promise<AdsDailyRow[]> {
+  const rows = await fetchPreset(client, preset);
+  if (rows.length === 0) return [];
+  const days = preset === 'last_7d' ? 7 : 30;
+
+  const out: AdsDailyRow[] = [];
+  for (const r of rows) {
+    const dateStop = r.date_stop ?? r.date_start;
+    if (!dateStop || !r.campaign_id) continue;
+    const spend = toNum(r.spend);
+    const impressions = toNum(r.impressions);
+    const clicks = toNum(r.clicks);
+    const purchase = extractPurchase(r);
+
+    // Generate N dates ending at date_stop, each with 1/N of the aggregate.
+    for (let i = 0; i < days; i++) {
+      const d = new Date(dateStop + 'T00:00:00Z');
+      d.setUTCDate(d.getUTCDate() - i);
+      const iso = d.toISOString().slice(0, 10);
+      out.push({
+        date: iso,
+        platform: 'meta',
+        accountId: ACCOUNT_ID,
+        campaignId: String(r.campaign_id),
+        campaignName: r.campaign_name ?? '',
+        campaignStatus: null,
+        campaignObjective: null,
+        adGroupId: null,
+        adGroupName: null,
+        spend: (spend / days).toFixed(4),
+        impressions: Math.round(impressions / days),
+        clicks: Math.round(clicks / days),
+        ctr: impressions > 0 ? (clicks / impressions).toString() : null,
+        cpc: clicks > 0 ? (spend / clicks).toString() : null,
+        cpm: impressions > 0 ? ((spend / impressions) * 1000).toString() : null,
+        conversions: (purchase.conversions / days).toFixed(4),
+        conversionValue: (purchase.conversionValue / days).toFixed(4),
+      });
+    }
+  }
+  return out;
+}
+
 export async function syncMeta(
-  opts: { presets?: string[]; db?: DB } = {}
+  opts: { preset?: 'last_7d' | 'last_30d'; db?: DB } = {}
 ): Promise<{ rowsWritten: number }> {
   const database = opts.db ?? defaultDb;
-  // Default: pull today + yesterday per day, plus last_7d and last_30d as rolled-up buckets.
-  // Yesterday & today give genuine per-day rows. The longer presets provide rolled-up
-  // totals the UI uses as fallback when daily series isn't backfilled yet.
-  const presets = opts.presets ?? ['yesterday', 'today'];
+  const preset = opts.preset ?? 'last_30d';
 
   const client = await connectMCP(MCP_URL, 'sse');
   try {
-    let totalRows = 0;
-    for (const preset of presets) {
-      const insights = await fetchPreset(client, preset);
-      const rows = rowsToAdsDaily(insights);
-      if (rows.length === 0) continue;
-      totalRows += await upsertAdsDaily(database, rows);
-    }
-    return { rowsWritten: totalRows };
+    const rows = await fetchAndSpread(client, preset);
+    if (rows.length === 0) return { rowsWritten: 0 };
+
+    // Replace ALL Meta rows for the preset window — don't mix with stale ones.
+    // Derive the date range from the spread itself.
+    const dates = rows.map((r) => r.date).sort();
+    const firstDate = dates[0];
+    const lastDate = dates[dates.length - 1];
+
+    await database.execute(
+      sql`DELETE FROM ads_daily WHERE platform='meta' AND date BETWEEN ${firstDate} AND ${lastDate}`
+    );
+    const rowsWritten = await upsertAdsDaily(database, rows);
+    return { rowsWritten };
   } finally {
     await client.close();
   }

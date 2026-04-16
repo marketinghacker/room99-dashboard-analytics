@@ -26,14 +26,15 @@ export function SalesChannelsTab() {
     date: string; revenueShr: number; revenueAllegro: number; revenueOther: number;
   }>;
 
-  const shrShare = sbs.all.revenue > 0 ? sbs.shr.revenue / sbs.all.revenue : 0;
-  const allegroShare = sbs.all.revenue > 0 ? sbs.allegro.revenue / sbs.all.revenue : 0;
-  const otherShare = 1 - shrShare - allegroShare;
+  // Ignore other marketplaces — per Marcin's spec the dashboard only
+  // contrasts Shoper (agency scope) vs Allegro (benchmark).
+  const totalTracked = sbs.shr.revenue + sbs.allegro.revenue;
+  const shrShare = totalTracked > 0 ? sbs.shr.revenue / totalTracked : 0;
+  const allegroShare = totalTracked > 0 ? sbs.allegro.revenue / totalTracked : 0;
 
   const channelRows = [
     { key: 'shr', label: 'Shoper (Room99.pl)', ...sbs.shr, share: shrShare, color: 'var(--color-chart-3)', agency: true },
     { key: 'allegro', label: 'Allegro', ...sbs.allegro, share: allegroShare, color: 'var(--color-chart-4)', agency: false },
-    { key: 'other', label: 'Pozostałe (marketplace, B2B, ręczne)', ...sbs.other, share: otherShare, color: 'var(--color-chart-1)', agency: false },
   ];
 
   return (

@@ -71,6 +71,13 @@ export type RollupPayload = {
     transactions: number;
     ordersShr: number;
     ordersAllegro: number;
+    // Per-platform spend so UI can stack / compute COS-per-platform day-by-day
+    spendMeta: number;
+    spendGoogle: number;
+    spendCriteo: number;
+    spendPinterest: number;
+    /** COS = total spend / Shoper revenue — critical KPI for agency scope. */
+    cos: number | null;
   }>;
   campaigns: Array<{
     platform: string;
@@ -133,7 +140,7 @@ function deriveDerived(k: KPIs): KPIs {
 
 async function loadAdsKPIs(db: DB, range: DateRange, platform: Platform): Promise<{
   kpis: Partial<KPIs>;
-  timeSeries: Array<{ date: string; spend: number; revenue: number }>;
+  timeSeries: Array<{ date: string; spend: number; revenue: number; spendByPlatform: Record<string, number> }>;
   campaigns: RollupPayload['campaigns'];
 }> {
   const filter = platform === 'all' || platform === 'ga4'
@@ -152,21 +159,34 @@ async function loadAdsKPIs(db: DB, range: DateRange, platform: Platform): Promis
   `);
   const t = totals.rows?.[0] ?? totals[0] ?? {};
 
+  // Per-day, per-platform spend so Executive Summary can render a stacked COS
+  // breakdown (which platform contributes most to today's COS).
   const tsRes: any = await db.execute(sql`
     SELECT
       date::text AS date,
+      platform,
       COALESCE(SUM(spend), 0)::float AS spend,
       COALESCE(SUM(conversion_value), 0)::float AS revenue
     FROM ads_daily
     WHERE ${filter} AND date BETWEEN ${range.start} AND ${range.end}
-    GROUP BY date
+    GROUP BY date, platform
     ORDER BY date
   `);
-  const timeSeries = (tsRes.rows ?? tsRes).map((r: any) => ({
-    date: r.date,
-    spend: Number(r.spend),
-    revenue: Number(r.revenue),
-  }));
+  const byDate = new Map<string, { date: string; spend: number; revenue: number; spendByPlatform: Record<string, number> }>();
+  for (const r of (tsRes.rows ?? tsRes)) {
+    const d = r.date;
+    const spend = Number(r.spend);
+    const rev = Number(r.revenue);
+    let e = byDate.get(d);
+    if (!e) {
+      e = { date: d, spend: 0, revenue: 0, spendByPlatform: {} };
+      byDate.set(d, e);
+    }
+    e.spend += spend;
+    e.revenue += rev;
+    e.spendByPlatform[r.platform] = (e.spendByPlatform[r.platform] ?? 0) + spend;
+  }
+  const timeSeries = Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));
 
   const campRes: any = await db.execute(sql`
     SELECT
@@ -422,7 +442,7 @@ async function buildOne(
     }
   }
 
-  // Time series: spend (ads) + SHR revenue (sellrocket) + all-source revenue.
+  // Time series: spend (ads per-platform) + SHR revenue (sellrocket) + GA4 sessions.
   const tsMap = new Map<string, RollupPayload['timeSeries'][number]>();
   const ensure = (date: string) => {
     let existing = tsMap.get(date);
@@ -430,12 +450,21 @@ async function buildOne(
       existing = {
         date, spend: 0, revenue: 0, revenueAll: 0,
         sessions: 0, transactions: 0, ordersShr: 0, ordersAllegro: 0,
+        spendMeta: 0, spendGoogle: 0, spendCriteo: 0, spendPinterest: 0,
+        cos: null,
       };
       tsMap.set(date, existing);
     }
     return existing;
   };
-  for (const r of ads?.timeSeries ?? []) ensure(r.date).spend = r.spend;
+  for (const r of ads?.timeSeries ?? []) {
+    const e = ensure(r.date);
+    e.spend = r.spend;
+    e.spendMeta = r.spendByPlatform.meta ?? 0;
+    e.spendGoogle = r.spendByPlatform.google_ads ?? 0;
+    e.spendCriteo = r.spendByPlatform.criteo ?? 0;
+    e.spendPinterest = r.spendByPlatform.pinterest ?? 0;
+  }
   for (const r of ga4.timeSeries) {
     const e = ensure(r.date);
     e.sessions = r.sessions;
@@ -451,6 +480,10 @@ async function buildOne(
   }
   for (const r of sr.allTimeSeries) {
     ensure(r.date).revenueAll = r.revenue;
+  }
+  // Compute daily COS = spend / Shoper revenue (agency scope).
+  for (const e of tsMap.values()) {
+    e.cos = e.revenue > 0 ? e.spend / e.revenue : null;
   }
   const timeSeries = Array.from(tsMap.values()).sort((a, b) => a.date.localeCompare(b.date));
 

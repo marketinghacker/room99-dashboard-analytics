@@ -191,25 +191,33 @@ export function ChartArea({
 
 /* ---- Bar (horizontal or vertical) ----------------------------- */
 
+type BarSeries = { key: string; label: string; color?: string };
+
 export function ChartBar({
   data,
   xKey,
   yKey,
+  yKeys,
   label,
   height = 240,
   money = false,
   color = CHART_COLORS[1],
   horizontal = false,
+  stacked = false,
 }: {
   data: Array<Record<string, any>>;
   xKey: string;
-  yKey: string;
+  yKey?: string;
+  yKeys?: BarSeries[];
   label?: string;
   height?: number;
   money?: boolean;
   color?: string;
   horizontal?: boolean;
+  stacked?: boolean;
 }) {
+  const barSeries: BarSeries[] = yKeys
+    ?? (yKey ? [{ key: yKey, label: label ?? yKey, color }] : []);
   return (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart
@@ -239,7 +247,23 @@ export function ChartBar({
           </>
         )}
         <Tooltip content={(p) => <TooltipBox {...p} money={money} />} />
-        <Bar dataKey={yKey} name={label ?? yKey} fill={color} radius={[6, 6, 6, 6]} />
+        {barSeries.length > 1 && (
+          <Legend
+            iconType="circle"
+            iconSize={8}
+            wrapperStyle={{ fontSize: 11, color: 'var(--color-ink-secondary)', paddingTop: 8 }}
+          />
+        )}
+        {barSeries.map((s, i) => (
+          <Bar
+            key={s.key}
+            dataKey={s.key}
+            name={s.label}
+            stackId={stacked ? 'stack' : undefined}
+            fill={s.color ?? CHART_COLORS[i % CHART_COLORS.length]}
+            radius={stacked ? undefined : [6, 6, 6, 6]}
+          />
+        ))}
       </BarChart>
     </ResponsiveContainer>
   );

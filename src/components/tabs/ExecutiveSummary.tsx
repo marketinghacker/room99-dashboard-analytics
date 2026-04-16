@@ -4,7 +4,7 @@ import { useFilteredSWR } from '@/components/primitives/useFilteredSWR';
 import { HeroMetric } from '@/components/primitives/HeroMetric';
 import { ScoreCard } from '@/components/primitives/ScoreCard';
 import { ChartCard } from '@/components/primitives/ChartCard';
-import { ChartArea, ChartDonut } from '@/components/primitives/charts';
+import { ChartArea, ChartDonut, ChartLine, ChartBar } from '@/components/primitives/charts';
 import { LoadingCard, ErrorCard } from '@/components/primitives/StateCard';
 import { PlatformBadge } from '@/components/primitives/PlatformBadge';
 import { formatPLN, formatInt, formatPct } from '@/lib/format';
@@ -93,6 +93,39 @@ export function ExecutiveSummaryTab() {
             data={spendByPlatform.map((s: any) => ({ name: PLATFORM_NAMES[s.platform] ?? s.platform, value: s.spend }))}
             nameKey="name"
             valueKey="value"
+            height={260}
+          />
+        </ChartCard>
+      </div>
+
+      {/* COS day-by-day + platform contribution */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <ChartCard
+          title="COS dzień po dniu"
+          subtitle="Koszt / Przychód Shoper. Trend w czasie — im niżej tym lepiej."
+        >
+          <ChartLine
+            data={all.timeSeries?.map((r: any) => ({ date: r.date, cos: r.cos != null ? r.cos * 100 : null })) ?? []}
+            series={[{ key: 'cos', label: 'COS %', color: 'var(--color-chart-4)' }]}
+            height={260}
+          />
+        </ChartCard>
+
+        <ChartCard
+          title="Udział w COS per platforma"
+          subtitle="Ile każdy kanał reklamowy dokłada do dziennego COS"
+        >
+          <ChartBar
+            data={all.timeSeries ?? []}
+            xKey="date"
+            yKeys={[
+              { key: 'spendGoogle', label: 'Google', color: 'var(--color-chart-3)' },
+              { key: 'spendMeta', label: 'Meta', color: 'var(--color-chart-2)' },
+              { key: 'spendPinterest', label: 'Pinterest', color: 'var(--color-chart-1)' },
+              { key: 'spendCriteo', label: 'Criteo', color: 'var(--color-chart-4)' },
+            ]}
+            stacked
+            money
             height={260}
           />
         </ChartCard>
