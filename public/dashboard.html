@@ -3,395 +3,1199 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Room99 — Performance Dashboard</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1"></script>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<title>Room99 — Dashboard Performance Marketing | Tekstylia Domowe</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-:root{
-  --bg:#f5f6fa;--card:#fff;--border:#e5e7eb;
-  --text:#111827;--text2:#6b7280;--text3:#9ca3af;
-  --accent:#f97316;--accent-bg:rgba(249,115,22,0.08);
-  --green:#16a34a;--green-bg:rgba(22,163,74,0.08);
-  --red:#dc2626;--red-bg:rgba(220,38,38,0.08);
-  --blue:#3b82f6;--blue-bg:rgba(59,130,246,0.08);
-  --google:#4285f4;--meta:#0668e1;--criteo:#ff6b35;
-  --radius:12px;
-}
-body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
+  :root {
+    --bg: #f0f2f5;
+    --card: #ffffff;
+    --border: #dadce0;
+    --primary: #1a73e8;
+    --primary-light: #e8f0fe;
+    --text: #202124;
+    --text-secondary: #5f6368;
+    --green: #0d652d;
+    --green-bg: #e6f4ea;
+    --red: #c5221f;
+    --red-bg: #fce8e6;
+    --yellow: #e37400;
+    --yellow-bg: #fef7e0;
+    --google: #4285f4;
+    --meta: #0668E1;
+    --pinterest: #E60023;
+    --wire-bg: #f8f9fa;
+    --wire-line: #c4c7cc;
+  }
 
-/* Header */
-.header{background:#fff;border-bottom:1px solid var(--border);padding:0 32px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
-.logo{display:flex;align-items:center;gap:10px}
-.logo-mark{width:32px;height:32px;background:linear-gradient(135deg,#f97316,#ea580c);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:14px}
-.logo-text{font-weight:700;font-size:15px;color:var(--text)}
-.logo-sub{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin-top:1px}
-.header-right{display:flex;align-items:center;gap:16px}
-.status{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3)}
-.status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.period-badge{font-size:12px;font-weight:600;color:var(--text2);background:var(--bg);padding:4px 12px;border-radius:8px}
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
-/* Nav */
-.nav{background:#fff;border-bottom:1px solid var(--border);padding:0 32px;display:flex;gap:0;overflow-x:auto;position:sticky;top:56px;z-index:99}
-.nav a{padding:12px 16px;font-size:12px;font-weight:600;color:var(--text3);text-decoration:none;white-space:nowrap;position:relative;transition:color .15s}
-.nav a:hover{color:var(--text2)}
-.nav a.active{color:var(--accent)}
-.nav a.active::after{content:'';position:absolute;bottom:0;left:8px;right:8px;height:2px;background:var(--accent);border-radius:2px 2px 0 0}
+  body {
+    font-family: 'Google Sans', 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
 
-/* Container */
-.container{max-width:1320px;margin:0 auto;padding:24px 32px 80px}
+  .looker-header {
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
 
-/* Section */
-.section{margin-bottom:28px}
-.section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.8px;color:var(--text3);margin-bottom:14px;display:flex;align-items:center;gap:8px}
-.section-title::before{content:'';width:3px;height:14px;background:var(--accent);border-radius:2px}
+  .looker-logo {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
 
-/* KPI Grid */
-.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
-.kpi-grid-2{grid-template-columns:repeat(2,1fr)}
-.kpi-grid-3{grid-template-columns:repeat(3,1fr)}
+  .looker-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    flex: 1;
+  }
 
-.kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;position:relative;overflow:hidden;transition:box-shadow .2s,border-color .2s}
-.kpi:hover{box-shadow:0 4px 20px rgba(0,0,0,0.06);border-color:#d1d5db}
-.kpi-accent{border-top:3px solid var(--accent)}
-.kpi-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);margin-bottom:6px}
-.kpi-value{font-size:26px;font-weight:800;color:var(--text);line-height:1.1;font-variant-numeric:tabular-nums}
-.kpi-value.accent{color:var(--accent)}
-.kpi-value.green{color:var(--green)}
-.kpi-value.red{color:var(--red)}
-.kpi-suffix{font-size:13px;font-weight:500;color:var(--text3);margin-left:4px}
+  .looker-subtitle {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 400;
+  }
 
-/* Table */
-.table-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th{text-align:left;padding:12px 18px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);border-bottom:2px solid var(--border)}
-th.right{text-align:right}
-td{padding:14px 18px;border-bottom:1px solid #f3f4f6}
-td.right{text-align:right;font-variant-numeric:tabular-nums}
-tr:hover td{background:#fafbfc}
-tr:last-child td{border-bottom:none}
-.total-row td{background:#f9fafb;font-weight:700;border-top:2px solid var(--border)}
+  /* Tab navigation */
+  .page-tabs {
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    padding: 0 24px;
+    overflow-x: auto;
+    position: sticky;
+    top: 49px;
+    z-index: 99;
+  }
 
-/* Platform badge */
-.platform{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:4px 10px;border-radius:8px}
-.platform-dot{width:6px;height:6px;border-radius:50%}
-.p-google{background:rgba(66,133,244,.1);color:var(--google)}.p-google .platform-dot{background:var(--google)}
-.p-meta{background:rgba(6,104,225,.1);color:var(--meta)}.p-meta .platform-dot{background:var(--meta)}
-.p-criteo{background:rgba(255,107,53,.1);color:var(--criteo)}.p-criteo .platform-dot{background:var(--criteo)}
+  .page-tab {
+    padding: 12px 20px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    white-space: nowrap;
+    transition: all 0.15s;
+    user-select: none;
+  }
 
-/* Progress bar */
-.bar-track{width:100%;height:6px;background:#f3f4f6;border-radius:3px;overflow:hidden}
-.bar-fill{height:100%;border-radius:3px;transition:width .6s ease}
+  .page-tab:hover { color: var(--primary); background: var(--primary-light); }
+  .page-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
 
-/* Charts */
-.chart-grid{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:28px}
-.chart-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px}
-.chart-card h3{font-size:12px;font-weight:700;color:var(--text2);margin-bottom:14px;text-transform:uppercase;letter-spacing:1px}
-.chart-card canvas{max-height:260px}
+  /* Dashboard canvas */
+  .dashboard-canvas {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 20px 24px 60px;
+  }
 
-/* Responsive */
-@media(max-width:1024px){.kpi-grid{grid-template-columns:repeat(3,1fr)}.chart-grid{grid-template-columns:1fr}}
-@media(max-width:640px){.kpi-grid,.kpi-grid-2,.kpi-grid-3{grid-template-columns:repeat(2,1fr)}.container{padding:16px}.header{padding:0 16px}.nav{padding:0 16px}.chart-grid{grid-template-columns:1fr}}
+  .page-content { display: none; }
+  .page-content.active { display: block; }
+
+  /* Filter bar */
+  .filter-bar {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 20px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .filter-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .filter-select {
+    background: var(--wire-bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 12px;
+    color: var(--text);
+    font-weight: 500;
+    cursor: default;
+  }
+
+  .filter-divider {
+    width: 1px;
+    height: 24px;
+    background: var(--border);
+  }
+
+  /* Grid system */
+  .grid { display: grid; gap: 16px; margin-bottom: 16px; }
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .grid-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+  /* Cards */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+  }
+
+  .card-header {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .comparison-badge {
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+    background: var(--primary-light);
+    color: var(--primary);
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+
+  /* Scorecard widget */
+  .scorecard {
+    text-align: left;
+  }
+
+  .scorecard .value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.1;
+    margin-bottom: 6px;
+  }
+
+  .scorecard .change {
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+
+  .change.up { background: var(--green-bg); color: var(--green); }
+  .change.down { background: var(--red-bg); color: var(--red); }
+  .change.neutral { background: var(--wire-bg); color: var(--text-secondary); }
+
+  /* Tables */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  .data-table th {
+    text-align: left;
+    padding: 10px 12px;
+    background: var(--wire-bg);
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid var(--border);
+  }
+
+  .data-table td {
+    padding: 12px 12px;
+    border-bottom: 1px solid #f0f0f0;
+    color: var(--text);
+  }
+
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table .total { font-weight: 700; background: var(--wire-bg); }
+  .data-table .right { text-align: right; }
+
+  /* Platform badges */
+  .platform-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 12px;
+  }
+
+  .badge-google { background: #e8f0fe; color: var(--google); }
+  .badge-meta { background: #e7f0ff; color: var(--meta); }
+  .badge-pinterest { background: #fce8ec; color: var(--pinterest); }
+  .badge-criteo { background: #fff3e0; color: #ff6b35; }
+
+  /* Section title */
+  .section-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--primary);
+  }
+
+  .section-subtitle {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    font-weight: 400;
+  }
+
+  /* Toggle brand/non-brand */
+  .toggle-group { display: flex; gap: 4px; }
+  .toggle-btn {
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: default;
+    color: var(--text-secondary);
+    background: var(--wire-bg);
+    white-space: nowrap;
+  }
+  .toggle-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+  /* Campaign type badges */
+  .campaign-type {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 4px;
+    letter-spacing: 0.3px;
+  }
+  .ct-pmax     { background: #e8eaf6; color: #3949ab; }
+  .ct-shopping { background: #e0f2f1; color: #00695c; }
+  .ct-search   { background: #fff3e0; color: #e65100; }
+  .ct-display  { background: #fce4ec; color: #880e4f; }
+
+  /* Placeholder message */
+  .placeholder-msg {
+    padding: 48px 24px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 14px;
+  }
+  .placeholder-msg .icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+  }
+  .placeholder-msg .title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  /* Loading spinner */
+  .loading-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 48px;
+    gap: 12px;
+    color: var(--text-secondary);
+    font-size: 14px;
+  }
+  .spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid var(--border);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .dashboard-canvas { padding: 16px; }
+  }
 </style>
 </head>
 <body>
 
-<div class="header">
-  <div class="logo">
-    <div class="logo-mark">R</div>
-    <div>
-      <div class="logo-text">Room99</div>
-      <div class="logo-sub">Performance Dashboard</div>
-    </div>
+<!-- Header -->
+<div class="looker-header">
+  <div class="looker-logo">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/></svg>
+    Looker Studio
   </div>
-  <div class="header-right">
-    <span class="period-badge">1 — 15 kwietnia 2026</span>
-    <div class="status"><div class="status-dot"></div>Dane aktualne</div>
+  <div style="flex: 1;">
+    <div class="looker-title">Room99 &mdash; Dashboard Performance Marketing</div>
+    <div class="looker-subtitle">Tekstylia Domowe: Zas&#322;ony &bull; Firany &bull; Narzuty &bull; Po&#347;ciele</div>
   </div>
 </div>
 
-<div class="nav">
-  <a href="#" class="active">Executive Summary</a>
-  <a href="#marketing">Performance Marketing</a>
-  <a href="#google">Google Ads</a>
-  <a href="#meta">Meta Ads</a>
-  <a href="#criteo">Criteo</a>
-  <a href="#traffic">Zrodla ruchu</a>
+<!-- Tabs -->
+<div class="page-tabs">
+  <div class="page-tab active" onclick="showPage(1)">Executive Summary</div>
+  <div class="page-tab" onclick="showPage(2)">Performance Marketing</div>
+  <div class="page-tab" onclick="showPage(3)">Google Ads</div>
+  <div class="page-tab" onclick="showPage(4)">Meta Ads</div>
+  <div class="page-tab" onclick="showPage(5)">Pinterest Ads</div>
+  <div class="page-tab" onclick="showPage(6)">Criteo</div>
+  <div class="page-tab" onclick="showPage(7)">Katalogi Produktowe</div>
+  <div class="page-tab" onclick="showPage(8)">Lejek Konwersji</div>
+  <div class="page-tab" onclick="showPage(9)">&#377;r&#243;d&#322;a Ruchu (GA4)</div>
+  <div class="page-tab" onclick="showPage(10)">TOP Produkty</div>
 </div>
 
-<div class="container">
+<!-- Dashboard Canvas -->
+<div class="dashboard-canvas">
 
-  <!-- KPIs -->
-  <div class="section">
-    <div class="section-title">Kluczowe wskazniki</div>
-    <div class="kpi-grid">
-      <div class="kpi kpi-accent">
-        <div class="kpi-label">Przychod (SHR)</div>
-        <div class="kpi-value accent">818 475<span class="kpi-suffix">PLN</span></div>
+  <!-- PAGE 1: Executive Summary -->
+  <div class="page-content active" id="page-1">
+    <div class="filter-bar">
+      <div class="filter-item">
+        <span>Okres:</span>
+        <div class="filter-select">1 &ndash; 16 Kwietnia 2026</div>
       </div>
-      <div class="kpi">
-        <div class="kpi-label">Transakcje</div>
-        <div class="kpi-value">3 862</div>
+      <div class="filter-divider"></div>
+      <div class="filter-item" style="font-size: 11px; color: var(--text-secondary);">
+        <span>Dane z API: executive-summary, google-ads, meta-ads, criteo, ga4</span>
       </div>
-      <div class="kpi">
-        <div class="kpi-label">AOV</div>
-        <div class="kpi-value">211,93<span class="kpi-suffix">PLN</span></div>
+    </div>
+
+    <div class="section-title">Kluczowe wska&#378;niki biznesowe</div>
+
+    <div class="grid grid-3" id="exec-kpi-cards">
+      <div class="loading-indicator"><div class="spinner"></div> &#321;adowanie danych...</div>
+    </div>
+
+    <div class="section-title" style="margin-top: 32px;">Efektywno&#347;&#263; marketingu</div>
+
+    <div class="grid grid-3" id="exec-marketing-cards">
+      <div class="loading-indicator"><div class="spinner"></div> &#321;adowanie danych...</div>
+    </div>
+
+    <div class="section-title" style="margin-top: 32px;">Podzia&#322; wydatk&#243;w wg platform</div>
+
+    <div class="card" id="exec-platform-table">
+      <div class="loading-indicator"><div class="spinner"></div> &#321;adowanie danych...</div>
+    </div>
+  </div>
+
+  <!-- PAGE 2: Performance Marketing -->
+  <div class="page-content" id="page-2">
+    <div class="filter-bar">
+      <div class="filter-item">
+        <span>Okres:</span>
+        <div class="filter-select">1 &ndash; 16 Kwietnia 2026</div>
       </div>
-      <div class="kpi">
-        <div class="kpi-label">Sesje</div>
-        <div class="kpi-value">120 572</div>
+      <div class="filter-divider"></div>
+      <div class="filter-item">
+        <span>Dane:</span>
+        <div class="filter-select">Live API</div>
       </div>
-      <div class="kpi">
-        <div class="kpi-label">CR</div>
-        <div class="kpi-value">3,20<span class="kpi-suffix">%</span></div>
+    </div>
+
+    <div class="section-title">Bud&#380;et i udzia&#322; platform</div>
+
+    <div class="card" id="perf-budget-table">
+      <div class="loading-indicator"><div class="spinner"></div> &#321;adowanie danych...</div>
+    </div>
+
+    <div class="section-title" style="margin-top: 32px;">Efektywno&#347;&#263; platform</div>
+
+    <div class="card" id="perf-efficiency-table">
+      <div class="loading-indicator"><div class="spinner"></div> &#321;adowanie danych...</div>
+    </div>
+  </div>
+
+  <!-- PAGE 3: Google Ads -->
+  <div class="page-content" id="page-3">
+    <div class="filter-bar">
+      <div class="filter-item">
+        <span>Okres:</span>
+        <div class="filter-select">1 &ndash; 16 Kwietnia 2026</div>
+      </div>
+      <div class="filter-divider"></div>
+      <div class="filter-item">
+        <span>Dane:</span>
+        <div class="filter-select">Live API</div>
+      </div>
+      <div class="filter-divider"></div>
+      <div class="filter-item">
+        <span>Widok:</span>
+        <div class="toggle-group">
+          <div class="toggle-btn active">Wszystko</div>
+          <div class="toggle-btn">Brand</div>
+          <div class="toggle-btn">Non-Brand</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">Metryki og&#243;lne &mdash; Google Ads</div>
+
+    <div id="google-kpi-row1" class="grid grid-4">
+      <div class="loading-indicator"><div class="spinner"></div> &#321;adowanie danych...</div>
+    </div>
+
+    <div id="google-kpi-row2" class="grid grid-4"></div>
+
+    <div class="section-title" style="margin-top: 32px;">Podzia&#322; wg typu kampanii</div>
+
+    <div class="card" id="google-campaign-type-table">
+      <div class="loading-indicator"><div class="spinner"></div> &#321;adowanie danych...</div>
+    </div>
+
+    <div class="section-title" style="margin-top: 32px;">TOP 10 kampanii (wed&#322;ug ROAS)</div>
+
+    <div class="card" id="google-top-campaigns">
+      <div class="loading-indicator"><div class="spinner"></div> &#321;adowanie danych...</div>
+    </div>
+  </div>
+
+  <!-- PAGE 4: Meta Ads -->
+  <div class="page-content" id="page-4">
+    <div class="filter-bar">
+      <div class="filter-item">
+        <span>Okres:</span>
+        <div class="filter-select">1 &ndash; 16 Kwietnia 2026</div>
+      </div>
+      <div class="filter-divider"></div>
+      <div class="filter-item">
+        <span>Dane:</span>
+        <div class="filter-select">Live API</div>
+      </div>
+    </div>
+
+    <div class="section-title">Metryki og&#243;lne &mdash; Meta Ads</div>
+
+    <div id="meta-kpi-row1" class="grid grid-4">
+      <div class="loading-indicator"><div class="spinner"></div> &#321;adowanie danych...</div>
+    </div>
+
+    <div id="meta-kpi-row2" class="grid grid-4"></div>
+
+    <div class="section-title" style="margin-top: 32px;">Podsumowanie Meta Ads</div>
+
+    <div class="card" id="meta-summary-table">
+      <div class="loading-indicator"><div class="spinner"></div> &#321;adowanie danych...</div>
+    </div>
+  </div>
+
+  <!-- PAGE 5: Pinterest Ads -->
+  <div class="page-content" id="page-5">
+    <div class="filter-bar">
+      <div class="filter-item">
+        <span>Okres:</span>
+        <div class="filter-select">1 &ndash; 16 Kwietnia 2026</div>
+      </div>
+      <div class="filter-divider"></div>
+      <div class="filter-item">
+        <span>Status:</span>
+        <div class="filter-select">Wymaga importu danych</div>
+      </div>
+    </div>
+
+    <div class="section-title">Metryki og&#243;lne &mdash; Pinterest Ads</div>
+
+    <div class="card">
+      <div class="placeholder-msg">
+        <div class="icon">&#128204;</div>
+        <div class="title">Pinterest Ads &mdash; wymaga importu</div>
+        <p>Integracja z Pinterest Ads API nie jest jeszcze skonfigurowana.<br>
+        Dane wymagaj&#261; r&#281;cznego importu lub pod&#322;&#261;czenia konektora.</p>
       </div>
     </div>
   </div>
 
-  <!-- Marketing -->
-  <div class="section" id="marketing">
-    <div class="section-title">Efektywnosc marketingu</div>
-    <div class="kpi-grid kpi-grid-2">
-      <div class="kpi">
-        <div class="kpi-label">Wydatki reklamowe</div>
-        <div class="kpi-value">86 678<span class="kpi-suffix">PLN</span></div>
+  <!-- PAGE 6: Criteo -->
+  <div class="page-content" id="page-6">
+    <div class="filter-bar">
+      <div class="filter-item">
+        <span>Okres:</span>
+        <div class="filter-select">1 &ndash; 16 Kwietnia 2026</div>
       </div>
-      <div class="kpi" style="border-top:3px solid var(--green)">
-        <div class="kpi-label">COS (Cost of Sale)</div>
-        <div class="kpi-value green">10,59<span class="kpi-suffix">%</span></div>
+      <div class="filter-divider"></div>
+      <div class="filter-item">
+        <span>Dane:</span>
+        <div class="filter-select">Live API</div>
+      </div>
+    </div>
+
+    <div class="section-title">Metryki og&#243;lne &mdash; Criteo</div>
+
+    <div id="criteo-kpi-row1" class="grid grid-4">
+      <div class="loading-indicator"><div class="spinner"></div> &#321;adowanie danych...</div>
+    </div>
+
+    <div id="criteo-kpi-row2" class="grid grid-4"></div>
+
+    <div class="section-title" style="margin-top: 32px;">Podzia&#322; na kampanie</div>
+
+    <div class="card" id="criteo-campaigns-table">
+      <div class="loading-indicator"><div class="spinner"></div> &#321;adowanie danych...</div>
+    </div>
+  </div>
+
+  <!-- PAGE 7: Katalogi Produktowe -->
+  <div class="page-content" id="page-7">
+    <div class="filter-bar">
+      <div class="filter-item">
+        <span>Okres:</span>
+        <div class="filter-select">1 &ndash; 16 Kwietnia 2026</div>
+      </div>
+    </div>
+
+    <div class="section-title">Katalogi Produktowe</div>
+
+    <div class="card">
+      <div class="placeholder-msg">
+        <div class="icon">&#128218;</div>
+        <div class="title">Dane wymagaj&#261; synchronizacji</div>
+        <p>Brak danych &mdash; uruchom synchronizacj&#281; katalog&#243;w produktowych<br>
+        z platform reklamowych (Google Merchant Center, Meta Catalog).</p>
       </div>
     </div>
   </div>
 
-  <!-- Charts -->
-  <div class="chart-grid">
-    <div class="chart-card">
-      <h3>Sesje dzienne — GA4</h3>
-      <canvas id="sessionsChart"></canvas>
+  <!-- PAGE 8: Lejek Konwersji -->
+  <div class="page-content" id="page-8">
+    <div class="filter-bar">
+      <div class="filter-item">
+        <span>Okres:</span>
+        <div class="filter-select">1 &ndash; 16 Kwietnia 2026</div>
+      </div>
     </div>
-    <div class="chart-card">
-      <h3>Udzial platform w wydatkach</h3>
-      <canvas id="spendChart"></canvas>
+
+    <div class="section-title">Lejek Konwersji</div>
+
+    <div class="card">
+      <div class="placeholder-msg">
+        <div class="icon">&#127899;</div>
+        <div class="title">Dane wymagaj&#261; synchronizacji</div>
+        <p>Brak danych &mdash; uruchom synchronizacj&#281; danych lejka konwersji z GA4.<br>
+        Wymagana konfiguracja zdarze&#324; e-commerce w Google Analytics 4.</p>
+      </div>
     </div>
   </div>
 
-  <!-- Platform table -->
-  <div class="section">
-    <div class="section-title">Wydatki wg platformy</div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr>
-          <th>Platforma</th>
-          <th class="right">Wydatki</th>
-          <th class="right">Udzial</th>
-          <th style="width:25%">Rozklad</th>
-        </tr></thead>
-        <tbody>
-          <tr>
-            <td><span class="platform p-meta"><span class="platform-dot"></span>Meta Ads</span></td>
-            <td class="right"><strong>44 229 PLN</strong></td>
-            <td class="right">51,03%</td>
-            <td><div class="bar-track"><div class="bar-fill" style="width:51%;background:var(--meta)"></div></div></td>
-          </tr>
-          <tr>
-            <td><span class="platform p-google"><span class="platform-dot"></span>Google Ads</span></td>
-            <td class="right"><strong>37 765 PLN</strong></td>
-            <td class="right">43,57%</td>
-            <td><div class="bar-track"><div class="bar-fill" style="width:43.5%;background:var(--google)"></div></div></td>
-          </tr>
-          <tr>
-            <td><span class="platform p-criteo"><span class="platform-dot"></span>Criteo</span></td>
-            <td class="right"><strong>4 684 PLN</strong></td>
-            <td class="right">5,40%</td>
-            <td><div class="bar-track"><div class="bar-fill" style="width:5.4%;background:var(--criteo)"></div></div></td>
-          </tr>
-          <tr class="total-row">
-            <td>Razem</td>
-            <td class="right">86 678 PLN</td>
-            <td class="right">100%</td>
-            <td></td>
-          </tr>
-        </tbody>
-      </table>
+  <!-- PAGE 9: Zrodla Ruchu (GA4) -->
+  <div class="page-content" id="page-9">
+    <div class="filter-bar">
+      <div class="filter-item">
+        <span>Okres:</span>
+        <div class="filter-select">1 &ndash; 16 Kwietnia 2026</div>
+      </div>
+      <div class="filter-divider"></div>
+      <div class="filter-item">
+        <span>Dane:</span>
+        <div class="filter-select">Live API (GA4)</div>
+      </div>
+    </div>
+
+    <div class="section-title">Sesje dziennie (GA4)</div>
+
+    <div class="card" id="ga4-sessions-table">
+      <div class="loading-indicator"><div class="spinner"></div> &#321;adowanie danych...</div>
+    </div>
+
+    <div class="section-title" style="margin-top: 32px;">&#377;r&#243;d&#322;a ruchu &mdash; udzia&#322; kana&#322;&#243;w</div>
+
+    <div class="card" id="ga4-traffic-table">
+      <div class="loading-indicator"><div class="spinner"></div> &#321;adowanie danych...</div>
     </div>
   </div>
 
-  <!-- Google Ads section -->
-  <div class="section" id="google">
-    <div class="section-title">Google Ads — TOP kampanie</div>
-    <div class="kpi-grid kpi-grid-3" style="margin-bottom:14px">
-      <div class="kpi" style="border-top:3px solid var(--google)">
-        <div class="kpi-label">Wydatki Google</div>
-        <div class="kpi-value" style="color:var(--google)">37 765<span class="kpi-suffix">PLN</span></div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-label">Wartosc konwersji</div>
-        <div class="kpi-value">465 244<span class="kpi-suffix">PLN</span></div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-label">ROAS (platforma)</div>
-        <div class="kpi-value">12,32</div>
+  <!-- PAGE 10: TOP Produkty -->
+  <div class="page-content" id="page-10">
+    <div class="filter-bar">
+      <div class="filter-item">
+        <span>Okres:</span>
+        <div class="filter-select">1 &ndash; 16 Kwietnia 2026</div>
       </div>
     </div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Kampania</th><th>Typ</th><th class="right">Wydatki</th><th class="right">Konwersje</th><th class="right">Wart. konw.</th><th class="right">ROAS</th></tr></thead>
-        <tbody id="gads-table"></tbody>
-      </table>
+
+    <div class="section-title">TOP Produkty</div>
+
+    <div class="card">
+      <div class="placeholder-msg">
+        <div class="icon">&#127942;</div>
+        <div class="title">Dane wymagaj&#261; synchronizacji</div>
+        <p>Brak danych &mdash; uruchom synchronizacj&#281; danych produktowych.<br>
+        Wymagany import z platform e-commerce i Google Analytics 4.</p>
+      </div>
     </div>
   </div>
 
-  <!-- Meta Ads -->
-  <div class="section" id="meta">
-    <div class="section-title">Meta Ads</div>
-    <div class="kpi-grid kpi-grid-3" style="margin-bottom:14px">
-      <div class="kpi" style="border-top:3px solid var(--meta)">
-        <div class="kpi-label">Wydatki Meta</div>
-        <div class="kpi-value" style="color:var(--meta)">44 229<span class="kpi-suffix">PLN</span></div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-label">Przychod (platforma)</div>
-        <div class="kpi-value">314 868<span class="kpi-suffix">PLN</span></div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-label">Zakupy</div>
-        <div class="kpi-value">1 507</div>
-      </div>
-    </div>
-    <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">
-      <div class="kpi"><div class="kpi-label">Wyswietlenia</div><div class="kpi-value" style="font-size:20px">3 431 116</div></div>
-      <div class="kpi"><div class="kpi-label">Klikniecia</div><div class="kpi-value" style="font-size:20px">56 400</div></div>
-      <div class="kpi"><div class="kpi-label">CTR</div><div class="kpi-value" style="font-size:20px">1,64%</div></div>
-      <div class="kpi"><div class="kpi-label">CPC</div><div class="kpi-value" style="font-size:20px">0,78 PLN</div></div>
-    </div>
-  </div>
-
-  <!-- Criteo -->
-  <div class="section" id="criteo">
-    <div class="section-title">Criteo</div>
-    <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">
-      <div class="kpi" style="border-top:3px solid var(--criteo)">
-        <div class="kpi-label">Wydatki</div>
-        <div class="kpi-value" style="color:var(--criteo)">4 684<span class="kpi-suffix">PLN</span></div>
-      </div>
-      <div class="kpi"><div class="kpi-label">ROAS</div><div class="kpi-value">10,22</div></div>
-      <div class="kpi"><div class="kpi-label">Klikniecia</div><div class="kpi-value">5 029</div></div>
-      <div class="kpi"><div class="kpi-label">Wyswietlenia</div><div class="kpi-value" style="font-size:20px">943 038</div></div>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Kampania</th><th class="right">Wydatki</th><th class="right">Klikniecia</th><th class="right">ROAS</th></tr></thead>
-        <tbody>
-          <tr><td>Lower Funnel</td><td class="right"><strong>2 483 PLN</strong></td><td class="right">2 728</td><td class="right"><strong>10,58</strong></td></tr>
-          <tr><td>Retention-2024/12/10</td><td class="right"><strong>1 246 PLN</strong></td><td class="right">1 564</td><td class="right"><strong>8,57</strong></td></tr>
-          <tr><td>Retention - Non-buyers 30d</td><td class="right"><strong>955 PLN</strong></td><td class="right">737</td><td class="right"><strong>11,44</strong></td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Traffic sources -->
-  <div class="section" id="traffic">
-    <div class="section-title">Zrodla ruchu — GA4</div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Kanal</th><th class="right">Sesje</th><th class="right">Udzial</th><th style="width:25%">Rozklad</th></tr></thead>
-        <tbody id="traffic-table"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <footer style="text-align:center;padding:32px;font-size:11px;color:var(--text3)">
-    Room99 Performance Dashboard &middot; Dane z: GA4, Google Ads, Meta Ads, Criteo, BaseLinker SHR &middot; Ostatnia aktualizacja: 15 kwie 2026, 15:49
-  </footer>
 </div>
 
 <script>
-const COLORS = ['#3b82f6','#f97316','#16a34a','#8b5cf6','#ec4899','#06b6d4','#eab308','#ef4444'];
-const TRAFFIC_COLORS = {'Paid Social':'#0668e1','Cross-network':'#ff6b35','Paid Search':'#4285f4','Organic Search':'#16a34a','Direct':'#dc2626','Organic Social':'#ec4899','Paid Shopping':'#8b5cf6','Paid Other':'#d97706','Display':'#06b6d4','Referral':'#6366f1'};
+// ─── Tab switching (exact same as reference) ───
+function showPage(pageNum) {
+  // Hide all pages
+  var pages = document.querySelectorAll('.page-content');
+  pages.forEach(function(page) { page.classList.remove('active'); });
 
-// Sessions data
-const sessions = [
-  {d:'01.04',v:11261},{d:'02.04',v:8590},{d:'03.04',v:5335},{d:'04.04',v:5212},{d:'05.04',v:4746},
-  {d:'06.04',v:7056},{d:'07.04',v:8440},{d:'08.04',v:9698},{d:'09.04',v:8236},{d:'10.04',v:8899},
-  {d:'11.04',v:9563},{d:'12.04',v:11193},{d:'13.04',v:10288},{d:'14.04',v:9504},{d:'15.04',v:2551}
-];
+  // Remove active from all tabs
+  var tabs = document.querySelectorAll('.page-tab');
+  tabs.forEach(function(tab) { tab.classList.remove('active'); });
 
-// Sessions chart
-new Chart(document.getElementById('sessionsChart'),{
-  type:'line',
-  data:{labels:sessions.map(s=>s.d),datasets:[{label:'Sesje',data:sessions.map(s=>s.v),borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,0.08)',borderWidth:2,fill:true,tension:.3,pointRadius:3,pointHoverRadius:6,pointBackgroundColor:'#3b82f6'}]},
-  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.parsed.y.toLocaleString('pl-PL')} sesji`}}},scales:{x:{grid:{display:false}},y:{beginAtZero:false,ticks:{callback:v=>v>=1e3?(v/1e3).toFixed(0)+'k':v},grid:{color:'#f3f4f6'}}}}
-});
+  // Show selected page
+  document.getElementById('page-' + pageNum).classList.add('active');
 
-// Spend doughnut
-new Chart(document.getElementById('spendChart'),{
-  type:'doughnut',
-  data:{labels:['Meta Ads','Google Ads','Criteo'],datasets:[{data:[44229,37765,4684],backgroundColor:['#0668e1','#4285f4','#ff6b35'],borderWidth:0}]},
-  options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'bottom',labels:{usePointStyle:true,padding:12,font:{size:11}}},tooltip:{callbacks:{label:c=>{const t=c.dataset.data.reduce((a,b)=>a+b,0);return `${c.label}: ${c.parsed.toLocaleString('pl-PL')} PLN (${((c.parsed/t)*100).toFixed(1)}%)`}}}}}
-});
+  // Activate selected tab
+  tabs[pageNum - 1].classList.add('active');
+}
 
-// Google Ads campaigns
-const gads=[
-  {n:'Search Brand',t:'Search',s:1473,c:774,cv:168208,r:114.2},
-  {n:'CSS3 PM Perfo Labalizer',t:'PMax',s:5860,c:258,cv:52597,r:8.98},
-  {n:'CSS2 Oryginal Zaslony',t:'PMax',s:4910,c:168,cv:35761,r:7.28},
-  {n:'CSS3 PM Bestsellery',t:'PMax',s:3910,c:148,cv:32387,r:8.28},
-  {n:'CSS2 Boost 01.2026',t:'PMax',s:3143,c:128,cv:26428,r:8.41},
-  {n:'CSS1 Room99 (b)',t:'Shopping',s:2613,c:83,cv:16401,r:6.28},
-  {n:'PMAX Zaslony MH',t:'PMax',s:2472,c:96,cv:21695,r:8.78},
-  {n:'Search Tree Zaslony',t:'Search',s:1834,c:66,cv:14469,r:7.89},
-  {n:'CSS2 Sembot Narzuty',t:'PMax',s:1720,c:125,cv:17287,r:10.05},
-  {n:'CSS2 Sembot Zaslony',t:'PMax',s:1480,c:72,cv:15116,r:10.21},
-];
-const tColors={'PMax':'#7c3aed','Search':'#d97706','Shopping':'#059669'};
-const gTb=document.getElementById('gads-table');
-gads.forEach(c=>{
-  const tc=tColors[c.t]||'#6b7280';
-  gTb.innerHTML+=`<tr>
-    <td><strong>${c.n}</strong></td>
-    <td><span style="background:${tc}15;color:${tc};padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;text-transform:uppercase">${c.t}</span></td>
-    <td class="right">${c.s.toLocaleString('pl-PL')} PLN</td>
-    <td class="right">${Math.round(c.c)}</td>
-    <td class="right">${c.cv.toLocaleString('pl-PL')} PLN</td>
-    <td class="right"><strong>${c.r.toFixed(2)}</strong></td>
-  </tr>`;
-});
+// ─── Number formatting (Polish locale) ───
+function fmtNum(n, decimals) {
+  if (n === null || n === undefined || isNaN(n)) return '\u2014';
+  var d = (decimals !== undefined) ? decimals : 0;
+  var parts = Number(n).toFixed(d).split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '\u00A0');
+  return d > 0 ? parts[0] + ',' + parts[1] : parts[0];
+}
 
-// Traffic sources
-const traffic=[
-  {ch:'Paid Social',s:41512},{ch:'Cross-network',s:27282},{ch:'Paid Search',s:17207},
-  {ch:'Organic Search',s:10441},{ch:'Direct',s:8391},{ch:'Organic Social',s:5117},
-  {ch:'Paid Shopping',s:2908},{ch:'Paid Other',s:2806},{ch:'Display',s:1572},
-  {ch:'Referral',s:641}
-];
-const totalTraffic=traffic.reduce((a,b)=>a+b.s,0);
-const tTb=document.getElementById('traffic-table');
-traffic.forEach(t=>{
-  const pct=((t.s/totalTraffic)*100).toFixed(1);
-  const c=TRAFFIC_COLORS[t.ch]||'#9ca3af';
-  tTb.innerHTML+=`<tr>
-    <td><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:${c}"></span>${t.ch}</span></td>
-    <td class="right"><strong>${t.s.toLocaleString('pl-PL')}</strong></td>
-    <td class="right">${pct}%</td>
-    <td><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${c}"></div></div></td>
-  </tr>`;
-});
+function fmtPLN(n, decimals) {
+  var d = (decimals !== undefined) ? decimals : 0;
+  return fmtNum(n, d) + ' PLN';
+}
 
-// Smooth scroll for nav
-document.querySelectorAll('.nav a').forEach(a=>{
-  a.addEventListener('click',e=>{
-    const href=a.getAttribute('href');
-    if(href.startsWith('#')){
-      e.preventDefault();
-      const el=document.querySelector(href);
-      if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
-      document.querySelectorAll('.nav a').forEach(x=>x.classList.remove('active'));
-      a.classList.add('active');
+function fmtPct(n, decimals) {
+  var d = (decimals !== undefined) ? decimals : 2;
+  return fmtNum(n, d) + '%';
+}
+
+// ─── Build KPI card HTML ───
+function kpiCard(label, valueHTML) {
+  return '<div class="card"><div class="card-header">' + label + '</div>' +
+    '<div class="scorecard"><div class="value">' + valueHTML + '</div></div></div>';
+}
+
+// ─── Platform badge ───
+function platformBadge(platform) {
+  var map = {
+    'google-ads': '<span class="platform-badge badge-google">Google Ads</span>',
+    'meta-ads': '<span class="platform-badge badge-meta">Meta Ads</span>',
+    'criteo': '<span class="platform-badge badge-criteo">Criteo</span>',
+    'pinterest-ads': '<span class="platform-badge badge-pinterest">Pinterest Ads</span>'
+  };
+  return map[platform] || '<span class="platform-badge">' + platform + '</span>';
+}
+
+// ─── Campaign type badge ───
+function campaignTypeBadge(type) {
+  if (!type) return '';
+  var t = type.toLowerCase();
+  if (t === 'pmax' || t === 'performance max') return '<span class="campaign-type ct-pmax">PMax</span>';
+  if (t === 'shopping' || t === 'standard shopping') return '<span class="campaign-type ct-shopping">Shopping</span>';
+  if (t === 'search') return '<span class="campaign-type ct-search">Search</span>';
+  if (t === 'display' || t === 'gdn' || t === 'display/youtube') return '<span class="campaign-type ct-display">Display</span>';
+  return '<span class="campaign-type" style="background:#f3e8ff;color:#7c3aed;">' + type + '</span>';
+}
+
+// ─── Error/placeholder HTML ───
+function errorHTML(msg) {
+  return '<div class="placeholder-msg"><div class="icon">&#9888;</div>' +
+    '<div class="title">B\u0142\u0105d \u0142adowania danych</div><p>' + msg + '</p></div>';
+}
+
+function noDataHTML() {
+  return '<div class="placeholder-msg"><div class="icon">&#128269;</div>' +
+    '<div class="title">Brak danych</div><p>Brak danych \u2014 uruchom synchronizacj\u0119</p></div>';
+}
+
+// ─── API endpoints ───
+var BASE = '';
+var DATE_PARAMS = '?start=2026-04-01&end=2026-04-16';
+var endpoints = {
+  execSummary: '/api/data/executive-summary' + DATE_PARAMS,
+  googleAds: '/api/data/google-ads' + DATE_PARAMS,
+  metaAds: '/api/data/meta-ads' + DATE_PARAMS,
+  criteo: '/api/data/criteo' + DATE_PARAMS,
+  ga4: '/api/data/ga4' + DATE_PARAMS
+};
+
+// ─── Fetch wrapper ───
+function fetchData(url) {
+  return fetch(BASE + url)
+    .then(function(res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
+    })
+    .then(function(json) { return json.data || json; });
+}
+
+// ═══════════════════════════════════════════════
+//  RENDER FUNCTIONS
+// ═══════════════════════════════════════════════
+
+// ─── Page 1: Executive Summary ───
+function renderExecSummary(data) {
+  var sessVal = data.sessions ? data.sessions.value : 0;
+
+  // KPI cards row: sessions, spend, COS (no revenue, no ROAS at summary level)
+  var el1 = document.getElementById('exec-kpi-cards');
+  el1.innerHTML =
+    kpiCard('Sesje na sklepie', fmtNum(sessVal)) +
+    kpiCard('Wydatki marketingowe', fmtPLN(data.marketing ? data.marketing.totalSpend.value : 0, 2)) +
+    kpiCard('Udzia\u0142 koszt\u00f3w w przychodzie (COS)', fmtPct(data.marketing ? data.marketing.costShare.value : 0, 2));
+
+  // Marketing efficiency row (empty for now - no additional data from this endpoint)
+  var el2 = document.getElementById('exec-marketing-cards');
+  el2.innerHTML = '';
+  el2.style.display = 'none';
+
+  // Platform spend table
+  var el3 = document.getElementById('exec-platform-table');
+  var platforms = data.platformSpend || [];
+  if (platforms.length === 0) {
+    el3.innerHTML = noDataHTML();
+    return;
+  }
+  var totalSpend = 0;
+  platforms.forEach(function(p) { totalSpend += p.spend; });
+
+  var html = '<table class="data-table"><thead><tr>' +
+    '<th>Platforma</th><th class="right">Wydatki</th><th class="right">% udzia\u0142</th>' +
+    '</tr></thead><tbody>';
+
+  platforms.forEach(function(p) {
+    html += '<tr><td>' + platformBadge(p.platform) + '</td>' +
+      '<td class="right">' + fmtPLN(p.spend, 2) + '</td>' +
+      '<td class="right">' + fmtPct(p.spendShare, 1) + '</td></tr>';
+  });
+
+  html += '<tr class="total"><td><strong>\u0141\u0104CZNIE</strong></td>' +
+    '<td class="right"><strong>' + fmtPLN(totalSpend, 2) + '</strong></td>' +
+    '<td class="right"><strong>100%</strong></td></tr>';
+
+  html += '</tbody></table>';
+  el3.innerHTML = html;
+}
+
+// ─── Page 2: Performance Marketing ───
+function renderPerfMarketing(execData, googleData, metaData, criteoData) {
+  var platforms = execData.platformSpend || [];
+  var totalSpend = 0;
+  platforms.forEach(function(p) { totalSpend += p.spend; });
+
+  // Budget table
+  var el1 = document.getElementById('perf-budget-table');
+  var html = '<table class="data-table"><thead><tr>' +
+    '<th>Platforma</th><th class="right">Wydatki</th><th class="right">% udzia\u0142</th>' +
+    '</tr></thead><tbody>';
+
+  platforms.forEach(function(p) {
+    html += '<tr><td>' + platformBadge(p.platform) + '</td>' +
+      '<td class="right">' + fmtPLN(p.spend, 2) + '</td>' +
+      '<td class="right">' + fmtPct(p.spendShare, 1) + '</td></tr>';
+  });
+
+  html += '<tr class="total"><td><strong>\u0141\u0104CZNIE</strong></td>' +
+    '<td class="right"><strong>' + fmtPLN(totalSpend, 2) + '</strong></td>' +
+    '<td class="right"><strong>100%</strong></td></tr>';
+  html += '</tbody></table>';
+  el1.innerHTML = html;
+
+  // Efficiency table
+  var el2 = document.getElementById('perf-efficiency-table');
+  var rows = [];
+
+  if (googleData) {
+    rows.push({
+      badge: platformBadge('google-ads'),
+      revenue: googleData.totalConversionValue || 0,
+      roas: googleData.roas || 0,
+      conversions: googleData.totalConversions || 0,
+      spend: googleData.totalSpend || 0
+    });
+  }
+  if (metaData) {
+    rows.push({
+      badge: platformBadge('meta-ads'),
+      revenue: metaData.revenue || 0,
+      roas: metaData.roas || 0,
+      conversions: metaData.conversions || 0,
+      spend: metaData.totalSpend || 0
+    });
+  }
+  if (criteoData) {
+    rows.push({
+      badge: platformBadge('criteo'),
+      revenue: (criteoData.totalSpend || 0) * (criteoData.roas || 0),
+      roas: criteoData.roas || 0,
+      conversions: 0,
+      spend: criteoData.totalSpend || 0
+    });
+  }
+
+  html = '<table class="data-table"><thead><tr>' +
+    '<th>Platforma</th><th class="right">Przych\u00f3d</th><th class="right">ROAS</th>' +
+    '<th class="right">Konwersje</th><th class="right">Wydatki</th>' +
+    '</tr></thead><tbody>';
+
+  rows.forEach(function(r) {
+    html += '<tr><td>' + r.badge + '</td>' +
+      '<td class="right">' + fmtPLN(r.revenue, 0) + '</td>' +
+      '<td class="right"><strong>' + fmtNum(r.roas, 2) + '</strong></td>' +
+      '<td class="right">' + (r.conversions > 0 ? fmtNum(r.conversions) : '\u2014') + '</td>' +
+      '<td class="right">' + fmtPLN(r.spend, 2) + '</td></tr>';
+  });
+
+  html += '</tbody></table>';
+  el2.innerHTML = html;
+}
+
+// ─── Page 3: Google Ads ───
+function renderGoogleAds(data) {
+  if (!data) return;
+
+  // KPI row 1: spend, convValue, roas, conversions
+  var el1 = document.getElementById('google-kpi-row1');
+  el1.innerHTML =
+    kpiCard('Wydatki', fmtPLN(data.totalSpend, 2)) +
+    kpiCard('Warto\u015b\u0107 konwersji', fmtPLN(data.totalConversionValue, 0)) +
+    kpiCard('ROAS', fmtNum(data.roas, 2)) +
+    kpiCard('Konwersje', fmtNum(data.totalConversions));
+
+  // KPI row 2: computed from campaigns
+  var campaigns = data.campaigns || [];
+  var totalClicks = 0, totalImpressions = 0;
+  campaigns.forEach(function(c) {
+    totalClicks += (c.clicks || 0);
+    totalImpressions += (c.impressions || 0);
+  });
+  var ctr = totalImpressions > 0 ? (totalClicks / totalImpressions * 100) : 0;
+  var cpc = totalClicks > 0 ? (data.totalSpend / totalClicks) : 0;
+
+  var el2 = document.getElementById('google-kpi-row2');
+  el2.innerHTML =
+    kpiCard('Ods\u0142ony', fmtNum(totalImpressions)) +
+    kpiCard('Klikni\u0119cia', fmtNum(totalClicks)) +
+    kpiCard('CTR', fmtPct(ctr, 2)) +
+    kpiCard('CPC', fmtPLN(cpc, 2));
+
+  // Campaign type aggregation
+  var typeMap = {};
+  campaigns.forEach(function(c) {
+    var t = c.type || 'Inne';
+    if (!typeMap[t]) typeMap[t] = { spend: 0, convValue: 0, conversions: 0, clicks: 0, impressions: 0 };
+    typeMap[t].spend += (c.spend || 0);
+    typeMap[t].convValue += (c.convValue || 0);
+    typeMap[t].conversions += (c.conversions || 0);
+    typeMap[t].clicks += (c.clicks || 0);
+    typeMap[t].impressions += (c.impressions || 0);
+  });
+
+  var el3 = document.getElementById('google-campaign-type-table');
+  var html = '<table class="data-table"><thead><tr>' +
+    '<th>Typ kampanii</th><th class="right">Wydatki</th><th class="right">Warto\u015b\u0107 konw.</th>' +
+    '<th class="right">ROAS</th><th class="right">% bud\u017cetu</th>' +
+    '</tr></thead><tbody>';
+
+  var types = Object.keys(typeMap);
+  types.forEach(function(t) {
+    var d = typeMap[t];
+    var roas = d.spend > 0 ? (d.convValue / d.spend) : 0;
+    var budgetShare = data.totalSpend > 0 ? (d.spend / data.totalSpend * 100) : 0;
+    html += '<tr><td>' + campaignTypeBadge(t) + '</td>' +
+      '<td class="right">' + fmtPLN(d.spend, 0) + '</td>' +
+      '<td class="right">' + fmtPLN(d.convValue, 0) + '</td>' +
+      '<td class="right"><strong>' + fmtNum(roas, 1) + '</strong></td>' +
+      '<td class="right">' + fmtPct(budgetShare, 1) + '</td></tr>';
+  });
+
+  html += '<tr class="total"><td><strong>\u0141\u0104CZNIE</strong></td>' +
+    '<td class="right"><strong>' + fmtPLN(data.totalSpend, 0) + '</strong></td>' +
+    '<td class="right"><strong>' + fmtPLN(data.totalConversionValue, 0) + '</strong></td>' +
+    '<td class="right"><strong>' + fmtNum(data.roas, 2) + '</strong></td>' +
+    '<td class="right"><strong>100%</strong></td></tr>';
+  html += '</tbody></table>';
+  el3.innerHTML = html;
+
+  // TOP 10 campaigns sorted by ROAS descending
+  var sorted = campaigns.slice().sort(function(a, b) {
+    var roasA = a.spend > 0 ? (a.convValue / a.spend) : 0;
+    var roasB = b.spend > 0 ? (b.convValue / b.spend) : 0;
+    return roasB - roasA;
+  }).slice(0, 10);
+
+  var el4 = document.getElementById('google-top-campaigns');
+  html = '<table class="data-table"><thead><tr>' +
+    '<th>Kampania</th><th class="right">Wydatki</th><th class="right">Warto\u015b\u0107 konw.</th>' +
+    '<th class="right">ROAS</th><th class="right">Klikni\u0119cia</th><th class="right">Ods\u0142ony</th>' +
+    '</tr></thead><tbody>';
+
+  sorted.forEach(function(c) {
+    var roas = c.spend > 0 ? (c.convValue / c.spend) : 0;
+    html += '<tr><td><strong>' + (c.name || '\u2014') + '</strong></td>' +
+      '<td class="right">' + fmtPLN(c.spend, 0) + '</td>' +
+      '<td class="right">' + fmtPLN(c.convValue, 0) + '</td>' +
+      '<td class="right"><strong>' + fmtNum(roas, 1) + '</strong></td>' +
+      '<td class="right">' + fmtNum(c.clicks) + '</td>' +
+      '<td class="right">' + fmtNum(c.impressions) + '</td></tr>';
+  });
+
+  html += '</tbody></table>';
+  el4.innerHTML = html;
+}
+
+// ─── Page 4: Meta Ads ───
+function renderMetaAds(data) {
+  if (!data) return;
+
+  // KPI row 1
+  var el1 = document.getElementById('meta-kpi-row1');
+  el1.innerHTML =
+    kpiCard('Wydatki', fmtPLN(data.totalSpend, 2)) +
+    kpiCard('Przych\u00f3d', fmtPLN(data.revenue, 2)) +
+    kpiCard('ROAS', fmtNum(data.roas, 2)) +
+    kpiCard('Konwersje', fmtNum(data.conversions));
+
+  // KPI row 2
+  var el2 = document.getElementById('meta-kpi-row2');
+  el2.innerHTML =
+    kpiCard('Ods\u0142ony', fmtNum(data.impressions)) +
+    kpiCard('Klikni\u0119cia', fmtNum(data.clicks)) +
+    kpiCard('CTR', fmtPct(data.ctr, 2)) +
+    kpiCard('CPC', fmtPLN(data.cpc, 2));
+
+  // Summary table
+  var el3 = document.getElementById('meta-summary-table');
+  var html = '<table class="data-table"><thead><tr>' +
+    '<th>Metryka</th><th class="right">Warto\u015b\u0107</th>' +
+    '</tr></thead><tbody>';
+
+  var metrics = [
+    ['Wydatki', fmtPLN(data.totalSpend, 2)],
+    ['Ods\u0142ony', fmtNum(data.impressions)],
+    ['Klikni\u0119cia', fmtNum(data.clicks)],
+    ['CTR', fmtPct(data.ctr, 2)],
+    ['CPC', fmtPLN(data.cpc, 2)],
+    ['Konwersje', fmtNum(data.conversions)],
+    ['Przych\u00f3d', fmtPLN(data.revenue, 2)],
+    ['ROAS', fmtNum(data.roas, 2)]
+  ];
+
+  metrics.forEach(function(m) {
+    html += '<tr><td><strong>' + m[0] + '</strong></td><td class="right">' + m[1] + '</td></tr>';
+  });
+
+  html += '</tbody></table>';
+  el3.innerHTML = html;
+}
+
+// ─── Page 6: Criteo ───
+function renderCriteo(data) {
+  if (!data) return;
+
+  // KPI row 1
+  var el1 = document.getElementById('criteo-kpi-row1');
+  el1.innerHTML =
+    kpiCard('Wydatki', fmtPLN(data.totalSpend, 2)) +
+    kpiCard('ROAS', fmtNum(data.roas, 1)) +
+    kpiCard('Klikni\u0119cia', fmtNum(data.clicks)) +
+    kpiCard('Wy\u015bwietlenia', fmtNum(data.displays));
+
+  // KPI row 2
+  var el2 = document.getElementById('criteo-kpi-row2');
+  var ctr = data.displays > 0 ? (data.clicks / data.displays * 100) : 0;
+  var cpc = data.clicks > 0 ? (data.totalSpend / data.clicks) : 0;
+  var revenue = (data.totalSpend || 0) * (data.roas || 0);
+  el2.innerHTML =
+    kpiCard('CTR', fmtPct(ctr, 2)) +
+    kpiCard('CPC', fmtPLN(cpc, 2)) +
+    kpiCard('Przych\u00f3d (est.)', fmtPLN(revenue, 0)) +
+    kpiCard('CPM', fmtPLN(data.displays > 0 ? data.totalSpend / data.displays * 1000 : 0, 2));
+
+  // Campaign table
+  var campaigns = data.campaigns || [];
+  var el3 = document.getElementById('criteo-campaigns-table');
+
+  if (campaigns.length === 0) {
+    el3.innerHTML = noDataHTML();
+    return;
+  }
+
+  var html = '<table class="data-table"><thead><tr>' +
+    '<th>Kampania</th><th class="right">Wydatki</th><th class="right">Klikni\u0119cia</th>' +
+    '<th class="right">ROAS</th>' +
+    '</tr></thead><tbody>';
+
+  campaigns.forEach(function(c) {
+    html += '<tr><td><strong>' + (c.name || '\u2014') + '</strong></td>' +
+      '<td class="right">' + fmtPLN(c.spend, 0) + '</td>' +
+      '<td class="right">' + fmtNum(c.clicks) + '</td>' +
+      '<td class="right"><strong>' + fmtNum(c.roas, 1) + '</strong></td></tr>';
+  });
+
+  html += '<tr class="total"><td><strong>\u0141\u0104CZNIE</strong></td>' +
+    '<td class="right"><strong>' + fmtPLN(data.totalSpend, 2) + '</strong></td>' +
+    '<td class="right"><strong>' + fmtNum(data.clicks) + '</strong></td>' +
+    '<td class="right"><strong>' + fmtNum(data.roas, 1) + '</strong></td></tr>';
+
+  html += '</tbody></table>';
+  el3.innerHTML = html;
+}
+
+// ─── Page 9: GA4 Traffic Sources ───
+function renderGA4(data) {
+  if (!data) return;
+
+  // Sessions daily table
+  var sessRows = (data.sessions && data.sessions.rows) ? data.sessions.rows : [];
+  var el1 = document.getElementById('ga4-sessions-table');
+
+  if (sessRows.length > 0) {
+    var html = '<table class="data-table"><thead><tr>' +
+      '<th>Data</th><th class="right">Sesje</th><th class="right">U\u017cytkownicy</th>' +
+      '</tr></thead><tbody>';
+
+    var totalSess = 0, totalUsers = 0;
+    sessRows.forEach(function(r) {
+      var dateStr = String(r.date);
+      var formatted = dateStr.length === 8
+        ? dateStr.substr(0,4) + '-' + dateStr.substr(4,2) + '-' + dateStr.substr(6,2)
+        : dateStr;
+      totalSess += (r.sessions || 0);
+      totalUsers += (r.totalUsers || 0);
+      html += '<tr><td>' + formatted + '</td>' +
+        '<td class="right">' + fmtNum(r.sessions) + '</td>' +
+        '<td class="right">' + fmtNum(r.totalUsers) + '</td></tr>';
+    });
+
+    html += '<tr class="total"><td><strong>\u0141\u0104CZNIE</strong></td>' +
+      '<td class="right"><strong>' + fmtNum(totalSess) + '</strong></td>' +
+      '<td class="right"><strong>' + fmtNum(totalUsers) + '</strong></td></tr>';
+    html += '</tbody></table>';
+    el1.innerHTML = html;
+  } else {
+    el1.innerHTML = noDataHTML();
+  }
+
+  // Traffic sources table
+  var traffic = data.traffic || [];
+  var el2 = document.getElementById('ga4-traffic-table');
+
+  if (traffic.length > 0) {
+    var totalTrafficSessions = 0;
+    traffic.forEach(function(t) { totalTrafficSessions += (t.sessions || 0); });
+
+    var html2 = '<table class="data-table"><thead><tr>' +
+      '<th>Kana\u0142</th><th class="right">Sesje</th><th class="right">% udzia\u0142</th>' +
+      '</tr></thead><tbody>';
+
+    traffic.forEach(function(t) {
+      var share = totalTrafficSessions > 0 ? (t.sessions / totalTrafficSessions * 100) : 0;
+      html2 += '<tr><td><strong>' + (t.channel || '\u2014') + '</strong></td>' +
+        '<td class="right">' + fmtNum(t.sessions) + '</td>' +
+        '<td class="right">' + fmtPct(share, 1) + '</td></tr>';
+    });
+
+    html2 += '<tr class="total"><td><strong>\u0141\u0104CZNIE</strong></td>' +
+      '<td class="right"><strong>' + fmtNum(totalTrafficSessions) + '</strong></td>' +
+      '<td class="right"><strong>100%</strong></td></tr>';
+    html2 += '</tbody></table>';
+    el2.innerHTML = html2;
+  } else {
+    el2.innerHTML = noDataHTML();
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  LOAD ALL DATA ON PAGE LOAD
+// ═══════════════════════════════════════════════
+(function init() {
+  var execData = null, googleData = null, metaData = null, criteoData = null, ga4Data = null;
+
+  var promises = [
+    fetchData(endpoints.execSummary).then(function(d) { execData = d; }).catch(function(e) { console.error('exec-summary error:', e); }),
+    fetchData(endpoints.googleAds).then(function(d) { googleData = d; }).catch(function(e) { console.error('google-ads error:', e); }),
+    fetchData(endpoints.metaAds).then(function(d) { metaData = d; }).catch(function(e) { console.error('meta-ads error:', e); }),
+    fetchData(endpoints.criteo).then(function(d) { criteoData = d; }).catch(function(e) { console.error('criteo error:', e); }),
+    fetchData(endpoints.ga4).then(function(d) { ga4Data = d; }).catch(function(e) { console.error('ga4 error:', e); })
+  ];
+
+  Promise.all(promises).then(function() {
+    // Page 1: Executive Summary
+    if (execData) {
+      renderExecSummary(execData);
+    } else {
+      document.getElementById('exec-kpi-cards').innerHTML = errorHTML('Nie uda\u0142o si\u0119 za\u0142adowa\u0107 danych Executive Summary.');
+      document.getElementById('exec-marketing-cards').innerHTML = '';
+      document.getElementById('exec-platform-table').innerHTML = errorHTML('Brak danych platformowych.');
+    }
+
+    // Page 2: Performance Marketing
+    if (execData) {
+      renderPerfMarketing(execData, googleData, metaData, criteoData);
+    } else {
+      document.getElementById('perf-budget-table').innerHTML = errorHTML('Brak danych.');
+      document.getElementById('perf-efficiency-table').innerHTML = errorHTML('Brak danych.');
+    }
+
+    // Page 3: Google Ads
+    if (googleData) {
+      renderGoogleAds(googleData);
+    } else {
+      document.getElementById('google-kpi-row1').innerHTML = errorHTML('Nie uda\u0142o si\u0119 za\u0142adowa\u0107 danych Google Ads.');
+      document.getElementById('google-campaign-type-table').innerHTML = errorHTML('Brak danych.');
+      document.getElementById('google-top-campaigns').innerHTML = errorHTML('Brak danych.');
+    }
+
+    // Page 4: Meta Ads
+    if (metaData) {
+      renderMetaAds(metaData);
+    } else {
+      document.getElementById('meta-kpi-row1').innerHTML = errorHTML('Nie uda\u0142o si\u0119 za\u0142adowa\u0107 danych Meta Ads.');
+      document.getElementById('meta-summary-table').innerHTML = errorHTML('Brak danych.');
+    }
+
+    // Page 6: Criteo
+    if (criteoData) {
+      renderCriteo(criteoData);
+    } else {
+      document.getElementById('criteo-kpi-row1').innerHTML = errorHTML('Nie uda\u0142o si\u0119 za\u0142adowa\u0107 danych Criteo.');
+      document.getElementById('criteo-campaigns-table').innerHTML = errorHTML('Brak danych.');
+    }
+
+    // Page 9: GA4
+    if (ga4Data) {
+      renderGA4(ga4Data);
+    } else {
+      document.getElementById('ga4-sessions-table').innerHTML = errorHTML('Nie uda\u0142o si\u0119 za\u0142adowa\u0107 danych GA4.');
+      document.getElementById('ga4-traffic-table').innerHTML = errorHTML('Brak danych.');
     }
   });
-});
+})();
 </script>
+
 </body>
 </html>
