@@ -107,23 +107,77 @@ export function SalesChannelsTab() {
         </div>
       </div>
 
-      <ChartCard title="Przychód dzień po dniu" subtitle="Shoper vs Allegro vs pozostałe">
-        <ChartLine
-          data={timeSeries}
-          series={[
-            { key: 'revenueShr', label: 'Shoper', color: 'var(--color-chart-3)' },
-            { key: 'revenueAllegro', label: 'Allegro', color: 'var(--color-chart-4)' },
-            { key: 'revenueOther', label: 'Pozostałe', color: 'var(--color-chart-1)' },
-          ]}
-          height={300}
-        />
-      </ChartCard>
+      {/* Day-by-day lead monitor — Shoper MUST lead Allegro. Alert if not. */}
+      {(() => {
+        const daysAllegroWins = timeSeries.filter((t) => t.revenueAllegro > t.revenueShr).length;
+        const totalDays = timeSeries.filter((t) => t.revenueShr > 0 || t.revenueAllegro > 0).length;
+        const alertDays = timeSeries.filter((t) => t.revenueAllegro > t.revenueShr);
+        return (
+          <>
+            <ChartCard
+              title="Shoper vs Allegro — dzień po dniu"
+              subtitle="Sklep własny (Shoper) powinien prowadzić nad Allegro każdego dnia"
+              right={
+                daysAllegroWins === 0 ? (
+                  <span className="chip bg-[var(--color-accent-positive-bg)] text-[var(--color-accent-positive)] border-[var(--color-accent-positive)]/30">
+                    ✓ Shoper prowadzi przez wszystkie {totalDays} dni
+                  </span>
+                ) : (
+                  <span className="chip bg-[var(--color-accent-negative-bg)] text-[var(--color-accent-negative)] border-[var(--color-accent-negative)]/30">
+                    ⚠ Allegro przewyższa Shoper w {daysAllegroWins} / {totalDays} dni
+                  </span>
+                )
+              }
+            >
+              <ChartLine
+                data={timeSeries}
+                series={[
+                  { key: 'revenueShr', label: 'Shoper', color: 'var(--color-chart-3)' },
+                  { key: 'revenueAllegro', label: 'Allegro', color: 'var(--color-chart-4)' },
+                ]}
+                height={300}
+              />
+            </ChartCard>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <ScoreCard label="AOV — Shoper" value={sbs.shr.aov} format="pln" hint="Średnie zamówienie na sklepie" />
-        <ScoreCard label="AOV — Allegro" value={sbs.allegro.aov} format="pln" />
-        <ScoreCard label="AOV — Pozostałe" value={sbs.other.aov} format="pln" />
-        <ScoreCard label="AOV — Łącznie" value={sbs.all.aov} format="pln" />
+            {alertDays.length > 0 && (
+              <div className="card p-4 border-[var(--color-accent-negative)]/40 bg-[var(--color-accent-negative-bg)]">
+                <div className="flex items-start gap-3">
+                  <div className="w-1 h-full min-h-[48px] rounded-full bg-[var(--color-accent-negative)]" />
+                  <div className="flex-1">
+                    <div className="text-[13px] font-semibold text-[var(--color-ink-primary)]">
+                      ⚠ Alert: {alertDays.length} {alertDays.length === 1 ? 'dzień' : 'dni'} gdy Allegro &gt; Shoper
+                    </div>
+                    <div className="text-[12px] text-[var(--color-ink-secondary)] mt-1 grid grid-cols-2 md:grid-cols-4 gap-2">
+                      {alertDays.map((d) => (
+                        <div key={d.date} className="numeric">
+                          <span className="font-mono text-[11px]">{d.date}</span>
+                          <span className="ml-1 text-[var(--color-accent-negative)] font-semibold">
+                            +{formatPLN(d.revenueAllegro - d.revenueShr)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="text-[11px] text-[var(--color-ink-tertiary)] mt-2">
+                      Sklep Room99.pl powinien mieć przewagę — sprawdź co napędzało sprzedaż Allegro w tych dniach
+                      i czy to da się przenieść do kampanii Shopera (SEM, Meta retargeting).
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        );
+      })()}
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <ScoreCard label="AOV — Shoper" value={sbs.shr.aov} format="pln" hint="Średnie zamówienie — sklep" />
+        <ScoreCard label="AOV — Allegro" value={sbs.allegro.aov} format="pln" hint="Średnie zamówienie — Allegro" />
+        <ScoreCard
+          label="Przewaga Shopera"
+          value={sbs.allegro.revenue > 0 ? (sbs.shr.revenue - sbs.allegro.revenue) / sbs.allegro.revenue : null}
+          format="pct"
+          hint="(Shoper − Allegro) / Allegro"
+        />
       </div>
 
       <div className="card overflow-hidden">
@@ -161,10 +215,16 @@ export function SalesChannelsTab() {
               </tr>
             ))}
             <tr className="bg-[var(--color-bg-elevated)] font-semibold">
-              <td className="px-5 py-3 overline text-[12px]">Razem</td>
-              <td className="px-5 py-3 text-right numeric">{formatPLN(sbs.all.revenue)}</td>
-              <td className="px-5 py-3 text-right numeric">{formatInt(sbs.all.orders)}</td>
-              <td className="px-5 py-3 text-right numeric">{formatPLN(sbs.all.aov)}</td>
+              <td className="px-5 py-3 overline text-[12px]">Razem (Shoper + Allegro)</td>
+              <td className="px-5 py-3 text-right numeric">{formatPLN(sbs.shr.revenue + sbs.allegro.revenue)}</td>
+              <td className="px-5 py-3 text-right numeric">{formatInt(sbs.shr.orders + sbs.allegro.orders)}</td>
+              <td className="px-5 py-3 text-right numeric">
+                {formatPLN(
+                  sbs.shr.orders + sbs.allegro.orders > 0
+                    ? (sbs.shr.revenue + sbs.allegro.revenue) / (sbs.shr.orders + sbs.allegro.orders)
+                    : null
+                )}
+              </td>
               <td className="px-5 py-3 text-right numeric">100%</td>
             </tr>
           </tbody>
