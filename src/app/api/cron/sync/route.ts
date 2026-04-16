@@ -177,16 +177,17 @@ export async function GET(request: NextRequest) {
     const periods = getPeriodsToSync();
     const results: Record<string, unknown> = {};
 
-    for (const period of periods) {
+    // Only sync the first period (this_month) to avoid rate limits
+    // Cron runs every 30 min so it will catch up
+    const period = periods[0];
+    {
       const platformResults: Record<string, string> = {};
 
-      // Fetch all platforms in parallel
-      const [ga4, gads, meta, criteo] = await Promise.allSettled([
-        fetchGA4(period.start, period.end),
-        fetchGoogleAds(period.start, period.end),
-        fetchMeta(period.start, period.end),
-        fetchCriteo(period.start, period.end),
-      ]);
+      // Fetch SEQUENTIALLY to avoid Anthropic API rate limits (500 errors on parallel)
+      const ga4 = await fetchGA4(period.start, period.end).then(v => ({ status: 'fulfilled' as const, value: v })).catch(e => ({ status: 'rejected' as const, reason: e }));
+      const gads = await fetchGoogleAds(period.start, period.end).then(v => ({ status: 'fulfilled' as const, value: v })).catch(e => ({ status: 'rejected' as const, reason: e }));
+      const meta = await fetchMeta(period.start, period.end).then(v => ({ status: 'fulfilled' as const, value: v })).catch(e => ({ status: 'rejected' as const, reason: e }));
+      const criteo = await fetchCriteo(period.start, period.end).then(v => ({ status: 'fulfilled' as const, value: v })).catch(e => ({ status: 'rejected' as const, reason: e }));
 
       if (ga4.status === 'fulfilled') {
         await saveData('ga4', period.key, ga4.value);
@@ -244,7 +245,7 @@ export async function GET(request: NextRequest) {
       results[period.key] = platformResults;
     }
 
-    return Response.json({ success: true, periods: results, syncedAt: new Date().toISOString() });
+    return Response.json({ success: true, period: period.key, results, syncedAt: new Date().toISOString() });
   } catch (error) {
     console.error('Sync error:', error);
     return Response.json(
