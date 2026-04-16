@@ -23,7 +23,9 @@
       "Bash(git commit -m ':*)",
       "Bash(rm -f /Users/marcinmichalski/Downloads/room99-dashboard-analytics/.git/index.lock)",
       "Bash(git push:*)",
-      "Bash(vercel --prod --yes)"
+      "Bash(vercel --prod --yes)",
+      "Bash(pnpm ls:*)",
+      "Bash(git commit:*)"
     ]
   }
 }
