@@ -56,7 +56,7 @@ type DailyRevenue = {
   avg_order_value?: number;
 };
 
-function enumerateDates(range: DateRange): string[] {
+function enumerateDates(range: DateRange, reverse = false): string[] {
   const out: string[] = [];
   const start = new Date(range.start + 'T00:00:00Z');
   const end = new Date(range.end + 'T00:00:00Z');
@@ -65,21 +65,18 @@ function enumerateDates(range: DateRange): string[] {
     out.push(cursor.toISOString().slice(0, 10));
     cursor.setUTCDate(cursor.getUTCDate() + 1);
   }
-  return out;
+  return reverse ? out.reverse() : out;
 }
 
 export async function syncSellRocket(
   range: DateRange,
-  opts: { db?: DB; concurrency?: number; sources?: SellRocketSource[] } = {}
+  opts: { db?: DB; concurrency?: number; sources?: SellRocketSource[]; newestFirst?: boolean } = {}
 ): Promise<{ rowsWritten: number }> {
   const database = opts.db ?? defaultDb;
-  // BaseLinker paginated revenue scans are slow (~10-30s/day for busy shops).
-  // Sequential per MCP connection avoids SSE drops. We parallelize by opening
-  // a fresh connection per source bucket.
   const concurrency = opts.concurrency ?? 1;
   const sources = opts.sources ?? DEFAULT_SOURCES;
-
-  const dates = enumerateDates(range);
+  // Default: newest-first so the user's "today" / "last week" populate first.
+  const dates = enumerateDates(range, opts.newestFirst ?? true);
 
   const upsertOne = async (row: typeof sellrocketDaily.$inferInsert) => {
     await database
