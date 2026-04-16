@@ -1,25 +1,16 @@
 type Platform = 'google' | 'meta' | 'pinterest' | 'criteo';
 
-interface PlatformBadgeProps {
-  platform: Platform | string;
-}
-
-const CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  google: { label: 'Google Ads', color: 'var(--google)', bg: 'var(--google-subtle)' },
-  meta: { label: 'Meta Ads', color: 'var(--meta)', bg: 'var(--meta-subtle)' },
-  pinterest: { label: 'Pinterest', color: 'var(--pinterest)', bg: 'var(--pinterest-subtle)' },
-  criteo: { label: 'Criteo', color: 'var(--criteo)', bg: 'var(--criteo-subtle)' },
+const CONFIG: Record<string, { label: string; className: string }> = {
+  google: { label: 'Google Ads', className: 'bg-[#e8f0fe] text-[#4285f4]' },
+  meta: { label: 'Meta Ads', className: 'bg-[#e7f0ff] text-[#0668E1]' },
+  pinterest: { label: 'Pinterest', className: 'bg-[#fce8ec] text-[#E60023]' },
+  criteo: { label: 'Criteo', className: 'bg-[#fff3e0] text-[#ff6b35]' },
 };
 
-export default function PlatformBadge({ platform }: PlatformBadgeProps) {
-  const c = CONFIG[platform] || { label: platform, color: '#888', bg: 'rgba(255,255,255,0.06)' };
-
+export default function PlatformBadge({ platform }: { platform: Platform | string }) {
+  const c = CONFIG[platform] || { label: platform, className: 'bg-gray-100 text-gray-600' };
   return (
-    <span
-      className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap"
-      style={{ backgroundColor: c.bg, color: c.color }}
-    >
-      <span className="w-[5px] h-[5px] rounded-full" style={{ backgroundColor: c.color, boxShadow: `0 0 6px ${c.color}` }} />
+    <span className={`inline-flex items-center gap-1 rounded-[12px] px-2.5 py-0.5 text-[11px] font-semibold ${c.className}`}>
       {c.label}
     </span>
   );

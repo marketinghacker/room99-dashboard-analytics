@@ -4,33 +4,23 @@ interface ChangeIndicatorProps {
   size?: 'sm' | 'md';
 }
 
-export default function ChangeIndicator({
-  value,
-  direction,
-  size = 'md',
-}: ChangeIndicatorProps) {
-  const dir =
-    direction ??
-    (typeof value === 'number'
-      ? value > 0 ? 'up' : value < 0 ? 'down' : 'neutral'
-      : 'neutral');
+export default function ChangeIndicator({ value, direction, size = 'md' }: ChangeIndicatorProps) {
+  const dir = direction ?? (typeof value === 'number' ? value > 0 ? 'up' : value < 0 ? 'down' : 'neutral' : 'neutral');
+  const arrow = dir === 'up' ? '\u2191' : dir === 'down' ? '\u2193' : '\u2192';
+  const displayValue = typeof value === 'number'
+    ? `${arrow} ${Math.abs(value).toLocaleString('pl-PL', { maximumFractionDigits: 1 })}%`
+    : `${arrow} ${value}`;
 
-  const displayValue =
-    typeof value === 'number'
-      ? `${dir === 'up' ? '+' : ''}${value.toLocaleString('pl-PL', { maximumFractionDigits: 1 })}%`
-      : String(value);
-
-  const styles = {
-    up: 'text-green bg-green-subtle',
-    down: 'text-red bg-red-subtle',
-    neutral: 'text-text-muted bg-surface',
+  const colorClasses = {
+    up: 'bg-green-bg text-green',
+    down: 'bg-red-bg text-red',
+    neutral: 'bg-wire-bg text-text-secondary',
   }[dir];
 
-  const sizeClass = size === 'sm' ? 'text-[10px] px-2 py-0.5' : 'text-[11px] px-2.5 py-1';
+  const sizeClasses = size === 'sm' ? 'text-[12px] px-2 py-0.5' : 'text-[12px] px-2 py-0.5';
 
   return (
-    <span className={`inline-flex items-center gap-1 rounded-md font-bold tabular-nums ${styles} ${sizeClass}`}>
-      <span className="text-[8px]">{dir === 'up' ? '▲' : dir === 'down' ? '▼' : '●'}</span>
+    <span className={`inline-flex items-center gap-1 rounded-[10px] font-semibold ${colorClasses} ${sizeClasses}`}>
       {displayValue}
     </span>
   );

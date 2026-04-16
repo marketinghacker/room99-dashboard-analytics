@@ -9,8 +9,8 @@ export default function TabNavigation() {
   const activeTab = pathname === '/' ? 'executive-summary' : pathname.replace(/^\//, '');
 
   return (
-    <nav className="sticky z-40 border-b border-glass-border bg-bg/50 backdrop-blur-xl overflow-x-auto" style={{ top: 52 }}>
-      <div className="max-w-[1400px] mx-auto flex min-w-max px-6">
+    <nav className="sticky z-[99] bg-white border-b border-border overflow-x-auto" style={{ top: 49 }}>
+      <div className="flex min-w-max px-6">
         {TABS.map((tab) => {
           const href = tab.id === 'executive-summary' ? '/' : `/${tab.id}`;
           const isActive = activeTab === tab.id;
@@ -20,17 +20,14 @@ export default function TabNavigation() {
               key={tab.id}
               href={href}
               className={`
-                relative px-4 py-3 text-[12px] font-medium whitespace-nowrap transition-all duration-200
+                px-5 py-3 text-[13px] font-medium whitespace-nowrap transition-all border-b-[3px]
                 ${isActive
-                  ? 'text-accent'
-                  : 'text-text-muted hover:text-text-secondary'
+                  ? 'text-primary border-primary'
+                  : 'text-text-secondary border-transparent hover:text-primary hover:bg-primary-light'
                 }
               `}
             >
               {tab.label}
-              {isActive && (
-                <span className="absolute bottom-0 left-2 right-2 h-[2px] bg-gradient-to-r from-accent/80 to-accent rounded-t-full" />
-              )}
             </Link>
           );
         })}

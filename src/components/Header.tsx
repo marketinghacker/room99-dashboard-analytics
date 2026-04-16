@@ -2,28 +2,14 @@
 
 export default function Header() {
   return (
-    <header className="sticky top-0 z-50 border-b border-glass-border bg-bg/70 backdrop-blur-xl" style={{ minHeight: 52 }}>
-      <div className="max-w-[1400px] mx-auto px-6 flex items-center justify-between h-[52px]">
-        {/* Brand */}
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-accent to-amber-600 flex items-center justify-center shadow-md shadow-accent/20">
-              <span className="text-black text-[14px] font-extrabold">R</span>
-            </div>
-          </div>
-          <div>
-            <div className="text-[15px] font-bold text-text tracking-tight leading-none">Room99</div>
-            <div className="text-[10px] font-medium text-text-muted tracking-wide uppercase mt-0.5">Performance Dashboard</div>
-          </div>
-        </div>
-
-        {/* Status */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 text-[11px] text-text-muted">
-            <div className="w-1.5 h-1.5 rounded-full bg-green shadow-sm shadow-green/50 animate-pulse" />
-            <span>Live</span>
-          </div>
-        </div>
+    <header className="sticky top-0 z-[100] bg-white border-b border-border flex items-center gap-4 px-6 py-3">
+      <div className="text-[14px] text-text-secondary font-medium flex items-center gap-1.5">
+        <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/></svg>
+        Room99
+      </div>
+      <div className="flex-1">
+        <div className="text-[16px] font-semibold text-text">Room99 — Dashboard Performance Marketing</div>
+        <div className="text-[12px] text-text-secondary">Tekstylia Domowe: Zaslony &bull; Firany &bull; Narzuty &bull; Posciele</div>
       </div>
     </header>
   );

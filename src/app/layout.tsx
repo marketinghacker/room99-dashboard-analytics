@@ -16,18 +16,14 @@ export const metadata: Metadata = {
   description: "Dashboard Performance Marketing dla Room99.pl — Tekstylia Domowe",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="pl" className={`${geistSans.variable}`}>
-      <body className="min-h-screen relative">
+    <html lang="pl" className={geistSans.variable}>
+      <body className="min-h-screen bg-bg text-text">
         <ClientProviders>
           <Header />
           <TabNavigation />
-          <main className="max-w-[1400px] mx-auto px-6 pt-6 pb-20 space-y-6 relative z-10">
+          <main className="max-w-[1280px] mx-auto px-6 py-5 pb-16">
             <FilterBar />
             {children}
           </main>

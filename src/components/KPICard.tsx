@@ -13,49 +13,18 @@ interface KPICardProps {
   glow?: boolean;
 }
 
-export default function KPICard({
-  label,
-  value,
-  change,
-  changeDirection,
-  prefix,
-  suffix,
-  accent,
-  glow,
-}: KPICardProps) {
+export default function KPICard({ label, value, change, changeDirection, suffix }: KPICardProps) {
   return (
-    <div
-      className={`glass-card p-5 flex flex-col gap-2 relative overflow-hidden ${glow ? 'kpi-glow' : ''}`}
-    >
-      {/* Accent top line */}
-      {accent && (
-        <div
-          className="absolute top-0 left-0 right-0 h-[2px]"
-          style={{ background: `linear-gradient(90deg, ${accent}, transparent)` }}
-        />
-      )}
-
-      {/* Label */}
-      <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted">
+    <div className="bg-card border border-border rounded-lg p-4 px-5">
+      <div className="text-[11px] font-semibold uppercase tracking-[0.8px] text-text-secondary mb-3">
         {label}
-      </span>
-
-      {/* Value */}
-      <div className="text-[28px] font-extrabold leading-none tracking-tight tabular-nums" style={{ color: accent || 'var(--text)' }}>
-        {prefix && (
-          <span className="text-[18px] font-semibold text-text-secondary mr-1">{prefix}</span>
-        )}
-        {value}
-        {suffix && (
-          <span className="text-[12px] font-medium text-text-muted ml-2">{suffix}</span>
-        )}
       </div>
-
-      {/* Change */}
+      <div className="text-[28px] font-bold text-text leading-[1.1] mb-1.5" style={{ fontVariantNumeric: 'tabular-nums' }}>
+        {value}
+        {suffix && <span className="text-[14px] font-normal text-text-secondary ml-1">{suffix}</span>}
+      </div>
       {change !== undefined && (
-        <div>
-          <ChangeIndicator value={change} direction={changeDirection} size="sm" />
-        </div>
+        <ChangeIndicator value={change} direction={changeDirection} size="sm" />
       )}
     </div>
   );
