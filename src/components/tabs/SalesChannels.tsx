@@ -62,10 +62,10 @@ export function SalesChannelsTab() {
           sublabel={`${formatPct(allegroShare)} sprzedaży · ${formatInt(sbs.allegro.orders)} zamówień`}
         />
         <HeroMetric
-          label="Pozostałe"
-          value={sbs.other.revenue}
-          format="pln"
-          sublabel={`${formatPct(otherShare)} sprzedaży · ${formatInt(sbs.other.orders)} zamówień`}
+          label="Stosunek Shoper vs Allegro"
+          value={sbs.allegro.revenue > 0 ? sbs.shr.revenue / sbs.allegro.revenue : null}
+          format="decimal"
+          sublabel="Ile razy Shoper > Allegro"
         />
       </div>
 
