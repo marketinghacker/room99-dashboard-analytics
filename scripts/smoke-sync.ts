@@ -38,6 +38,18 @@ switch (platform) {
     result = await syncPinterest({ start: daysAgo(30), end: daysAgo(1) });
     break;
   }
+  case 'sellrocket': {
+    const { syncSellRocket } = await import('../src/lib/sync/sellrocket.ts');
+    // 3rd arg optional: 'shr' | 'allegro' | 'all' — default runs all three.
+    const sources = (process.argv[3]?.split(',') as any) ?? undefined;
+    const days = Number(process.argv[4]) || 30;
+    console.log(`Syncing ${sources ? sources.join(', ') : 'all sources'} for last ${days} days`);
+    result = await syncSellRocket(
+      { start: daysAgo(days), end: daysAgo(0) },
+      { sources }
+    );
+    break;
+  }
   default:
     console.error(`Unknown platform: ${platform}`);
     process.exit(1);

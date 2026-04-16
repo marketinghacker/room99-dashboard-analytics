@@ -149,11 +149,11 @@ export function PlatformTab({ endpoint, platformLabel, accountHint, accentColor,
       </div>
 
       {/* Time series */}
-      <ChartCard title="Wydatki & przychód dzień po dniu" subtitle="Pokazuje korelację inwestycji z przychodem (GA4 na tle)">
+      <ChartCard title="Wydatki & przychód dzień po dniu" subtitle="Korelacja inwestycji z przychodem Shopera (sklep własny)">
         <ChartArea
           data={payload.timeSeries ?? []}
           series={[
-            { key: 'revenue', label: 'Przychód (GA4)', color: 'var(--color-chart-3)' },
+            { key: 'revenue', label: 'Przychód Shoper', color: 'var(--color-chart-3)' },
             { key: 'spend', label: 'Wydatki platformy', color: accentColor ?? 'var(--color-chart-1)' },
           ]}
           height={260}

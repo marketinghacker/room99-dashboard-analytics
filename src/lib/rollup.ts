@@ -16,6 +16,13 @@ import {
   type DateRange,
 } from '@/lib/periods';
 
+/**
+ * Room99 canonical revenue source: Shoper (BaseLinker source code 'shr').
+ * This is what the agency is paid to grow. Anything Allegro/marketplace is
+ * outside the agency's scope but we track it as a benchmark.
+ */
+export const REVENUE_SOURCE = 'shr';
+
 export type KPIs = {
   spend: number;
   impressions: number;
@@ -40,6 +47,14 @@ export type KPIs = {
   aov: number | null;
 };
 
+export type SalesBySource = {
+  shr: { revenue: number; orders: number; aov: number | null };
+  allegro: { revenue: number; orders: number; aov: number | null };
+  all: { revenue: number; orders: number; aov: number | null };
+  /** Derived = all - shr - allegro (marketplaces, B2B, manual etc.) */
+  other: { revenue: number; orders: number; aov: number | null };
+};
+
 export type RollupPayload = {
   range: DateRange;
   compareRange: DateRange | null;
@@ -50,9 +65,12 @@ export type RollupPayload = {
   timeSeries: Array<{
     date: string;
     spend: number;
-    revenue: number;
+    revenue: number;    // Shoper revenue (primary)
+    revenueAll: number; // All channels combined (reference)
     sessions: number;
     transactions: number;
+    ordersShr: number;
+    ordersAllegro: number;
   }>;
   campaigns: Array<{
     platform: string;
@@ -77,11 +95,13 @@ export type RollupPayload = {
     transactions: number;
     revenue: number;
   }>;
+  /** Sales by BaseLinker order source — only meaningful on platform='all' / 'sellrocket'. */
+  salesBySource: SalesBySource;
   warnings: string[];
 };
 
 export type Platform =
-  | 'all' | 'meta' | 'google_ads' | 'criteo' | 'pinterest' | 'ga4';
+  | 'all' | 'meta' | 'google_ads' | 'criteo' | 'pinterest' | 'ga4' | 'sellrocket';
 
 const AD_PLATFORMS: Array<Exclude<Platform, 'all' | 'ga4'>> = [
   'meta', 'google_ads', 'criteo', 'pinterest',
@@ -200,6 +220,65 @@ async function loadAdsKPIs(db: DB, range: DateRange, platform: Platform): Promis
   };
 }
 
+async function loadSellRocketKPIs(db: DB, range: DateRange): Promise<{
+  salesBySource: SalesBySource;
+  shrTimeSeries: Array<{ date: string; revenue: number; orders: number }>;
+  allegroTimeSeries: Array<{ date: string; revenue: number; orders: number }>;
+  allTimeSeries: Array<{ date: string; revenue: number; orders: number }>;
+}> {
+  const totals: any = await db.execute(sql`
+    SELECT
+      source,
+      COALESCE(SUM(order_count), 0)::int AS orders,
+      COALESCE(SUM(revenue), 0)::float AS revenue
+    FROM sellrocket_daily
+    WHERE date BETWEEN ${range.start} AND ${range.end}
+    GROUP BY source
+  `);
+  const rows = (totals.rows ?? totals) as Array<{ source: string; orders: number; revenue: number }>;
+
+  const get = (s: string) => {
+    const r = rows.find((x) => x.source === s);
+    const revenue = Number(r?.revenue ?? 0);
+    const orders = Number(r?.orders ?? 0);
+    return { revenue, orders, aov: orders > 0 ? revenue / orders : null };
+  };
+
+  const shr = get('shr');
+  const allegro = get('allegro');
+  const all = get('all');
+  const otherRevenue = Math.max(0, all.revenue - shr.revenue - allegro.revenue);
+  const otherOrders = Math.max(0, all.orders - shr.orders - allegro.orders);
+  const other = {
+    revenue: otherRevenue,
+    orders: otherOrders,
+    aov: otherOrders > 0 ? otherRevenue / otherOrders : null,
+  };
+
+  const tsRes: any = await db.execute(sql`
+    SELECT
+      date::text AS date,
+      source,
+      revenue::float AS revenue,
+      order_count AS orders
+    FROM sellrocket_daily
+    WHERE date BETWEEN ${range.start} AND ${range.end}
+    ORDER BY date ASC
+  `);
+  const tsRows = (tsRes.rows ?? tsRes) as Array<{ date: string; source: string; revenue: number; orders: number }>;
+
+  const filterBy = (src: string) => tsRows
+    .filter((r) => r.source === src)
+    .map((r) => ({ date: r.date, revenue: Number(r.revenue), orders: Number(r.orders) }));
+
+  return {
+    salesBySource: { shr, allegro, all, other },
+    shrTimeSeries: filterBy('shr'),
+    allegroTimeSeries: filterBy('allegro'),
+    allTimeSeries: filterBy('all'),
+  };
+}
+
 async function loadGA4KPIs(db: DB, range: DateRange): Promise<{
   kpis: Partial<KPIs>;
   timeSeries: Array<{ date: string; sessions: number; revenue: number; transactions: number }>;
@@ -286,40 +365,49 @@ async function buildOne(
 ): Promise<RollupPayload> {
   const warnings: string[] = [];
 
-  // Pinterest has the Windsor 30-day cap.
   const rangeDays = Math.round(
     (new Date(range.end).getTime() - new Date(range.start).getTime()) / 86400000
   ) + 1;
   if (platform === 'pinterest' && rangeDays > 30) warnings.push('pinterest_30d_cap');
 
-  // Ads metrics
+  // Ads metrics (all platforms except ga4 have their own spend)
   const needsAds = platform !== 'ga4';
   const ads = needsAds ? await loadAdsKPIs(db, range, platform) : null;
   const adsCompare = needsAds && compareRange ? await loadAdsKPIs(db, compareRange, platform) : null;
 
-  // GA4 metrics (always included so revenue reflects real site transactions when available)
+  // GA4 — site traffic only: sessions, users, bounce, funnel events.
+  // NOT revenue/transactions (those come from SellRocket).
   const ga4 = await loadGA4KPIs(db, range);
   const ga4Compare = compareRange ? await loadGA4KPIs(db, compareRange) : null;
 
-  // Merge current
-  const mergedBase: KPIs = {
-    ...EMPTY_KPIS,
-    ...(ads?.kpis ?? {}),
-    ...(ga4.kpis ?? {}),
-  };
-  // For platform != ga4, prefer GA4 revenue/transactions/sessions as site-level truth.
-  // For platform === ga4, same.
-  const kpis = deriveDerived(mergedBase);
+  // SellRocket — the source of truth for sales, filtered to Shoper (SHR).
+  const sr = await loadSellRocketKPIs(db, range);
+  const srCompare = compareRange ? await loadSellRocketKPIs(db, compareRange) : null;
 
-  let compareKpis: KPIs | null = null;
-  if (compareRange && (adsCompare || ga4Compare)) {
-    const mergedCmp: KPIs = {
+  // Merge: ads gives spend + ad-platform conversionValue/conversions.
+  //        GA4 gives sessions/users/newUsers/engagedSessions/bounce + funnel events.
+  //        SellRocket gives the authoritative revenue/transactions/AOV (SHR).
+  const build = (
+    a: typeof ads | null,
+    g: typeof ga4 | null,
+    s: typeof sr | null,
+  ): KPIs => {
+    const merged: KPIs = {
       ...EMPTY_KPIS,
-      ...(adsCompare?.kpis ?? {}),
-      ...(ga4Compare?.kpis ?? {}),
+      ...(a?.kpis ?? {}),
+      ...(g?.kpis ?? {}),
+      // Override GA4 revenue/transactions with Shoper SellRocket data.
+      revenue: s?.salesBySource.shr.revenue ?? 0,
+      transactions: s?.salesBySource.shr.orders ?? 0,
     };
-    compareKpis = deriveDerived(mergedCmp);
-  }
+    // Re-derive AOV/COS/ROAS based on the Shoper numbers.
+    return deriveDerived(merged);
+  };
+
+  const kpis = build(ads, ga4, sr);
+  const compareKpis = compareRange
+    ? build(adsCompare, ga4Compare, srCompare)
+    : null;
 
   const deltas: Partial<Record<keyof KPIs, number>> = {};
   if (compareKpis) {
@@ -329,25 +417,40 @@ async function buildOne(
       if (typeof cur === 'number' && typeof prev === 'number' && prev !== 0) {
         deltas[key] = (cur - prev) / prev;
       } else if (typeof cur === 'number' && typeof prev === 'number' && prev === 0 && cur > 0) {
-        deltas[key] = 1; // 100% growth from zero
+        deltas[key] = 1;
       }
     }
   }
 
-  // Merge ads time series with GA4 time series on date.
-  const tsMap = new Map<string, { date: string; spend: number; revenue: number; sessions: number; transactions: number }>();
-  for (const r of ads?.timeSeries ?? []) {
-    tsMap.set(r.date, { date: r.date, spend: r.spend, revenue: r.revenue, sessions: 0, transactions: 0 });
-  }
-  for (const r of ga4.timeSeries) {
-    const existing = tsMap.get(r.date) ?? { date: r.date, spend: 0, revenue: 0, sessions: 0, transactions: 0 };
-    // Prefer GA4 revenue for site-level when platform is 'all' or 'ga4'.
-    if (platform === 'all' || platform === 'ga4') {
-      existing.revenue = Math.max(existing.revenue, r.revenue);
+  // Time series: spend (ads) + SHR revenue (sellrocket) + all-source revenue.
+  const tsMap = new Map<string, RollupPayload['timeSeries'][number]>();
+  const ensure = (date: string) => {
+    let existing = tsMap.get(date);
+    if (!existing) {
+      existing = {
+        date, spend: 0, revenue: 0, revenueAll: 0,
+        sessions: 0, transactions: 0, ordersShr: 0, ordersAllegro: 0,
+      };
+      tsMap.set(date, existing);
     }
-    existing.sessions = r.sessions;
-    existing.transactions = r.transactions;
-    tsMap.set(r.date, existing);
+    return existing;
+  };
+  for (const r of ads?.timeSeries ?? []) ensure(r.date).spend = r.spend;
+  for (const r of ga4.timeSeries) {
+    const e = ensure(r.date);
+    e.sessions = r.sessions;
+  }
+  for (const r of sr.shrTimeSeries) {
+    const e = ensure(r.date);
+    e.revenue = r.revenue;
+    e.transactions = r.orders;
+    e.ordersShr = r.orders;
+  }
+  for (const r of sr.allegroTimeSeries) {
+    ensure(r.date).ordersAllegro = r.orders;
+  }
+  for (const r of sr.allTimeSeries) {
+    ensure(r.date).revenueAll = r.revenue;
   }
   const timeSeries = Array.from(tsMap.values()).sort((a, b) => a.date.localeCompare(b.date));
 
@@ -361,12 +464,13 @@ async function buildOne(
     timeSeries,
     campaigns: ads?.campaigns ?? [],
     channelBreakdown: ga4.channels,
+    salesBySource: sr.salesBySource,
     warnings,
   };
 }
 
 const COMPARE_KEYS: CompareKey[] = ['previous_period', 'same_period_last_year', 'none'];
-const ALL_PLATFORMS: Platform[] = ['all', 'meta', 'google_ads', 'criteo', 'pinterest', 'ga4'];
+const ALL_PLATFORMS: Platform[] = ['all', 'meta', 'google_ads', 'criteo', 'pinterest', 'ga4', 'sellrocket'];
 
 export async function buildRollups(dbIn: DB = defaultDb): Promise<{ cached: number }> {
   let cached = 0;

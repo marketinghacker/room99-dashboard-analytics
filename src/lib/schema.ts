@@ -92,6 +92,27 @@ export const dashboardCache = pgTable(
   })
 );
 
+/**
+ * SellRocket (BaseLinker) daily sales rollup.
+ * `source` is the BaseLinker order source name (allegro, SHR, MORELE, …)
+ * or 'all' for the day's aggregate across every source.
+ */
+export const sellrocketDaily = pgTable(
+  'sellrocket_daily',
+  {
+    date: date('date').notNull(),
+    source: text('source').notNull().default('all'),
+    orderCount: integer('order_count').notNull().default(0),
+    revenue: numeric('revenue', { precision: 14, scale: 4 }).notNull().default('0'),
+    avgOrderValue: numeric('avg_order_value', { precision: 14, scale: 4 }).notNull().default('0'),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.date, t.source] }),
+    dateIdx: index('sellrocket_daily_date_idx').on(t.date),
+  })
+);
+
 export const syncRuns = pgTable('sync_runs', {
   id: uuid('id').defaultRandom().primaryKey(),
   startedAt: timestamp('started_at', { withTimezone: true }).defaultNow().notNull(),

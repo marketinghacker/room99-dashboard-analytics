@@ -10,6 +10,7 @@ import { syncGoogleAds } from '@/lib/sync/google-ads';
 import { syncCriteo } from '@/lib/sync/criteo';
 import { syncGA4 } from '@/lib/sync/ga4';
 import { syncPinterest } from '@/lib/sync/pinterest';
+import { syncSellRocket } from '@/lib/sync/sellrocket';
 import { startRun, finishRun } from '@/lib/sync/run-tracker';
 import { resolvePeriod } from '@/lib/periods';
 import { buildRollups } from '@/lib/rollup';
@@ -17,7 +18,7 @@ import { buildRollups } from '@/lib/rollup';
 export const runtime = 'nodejs';
 export const maxDuration = 300; // 5 min
 
-type Source = 'meta' | 'google_ads' | 'criteo' | 'ga4' | 'pinterest';
+type Source = 'meta' | 'google_ads' | 'criteo' | 'ga4' | 'pinterest' | 'sellrocket';
 
 async function runWithTracking<T>(
   source: Source,
@@ -51,6 +52,7 @@ export async function GET(req: Request) {
     runWithTracking('criteo', () => syncCriteo(range)),
     runWithTracking('ga4', () => syncGA4(range)),
     runWithTracking('pinterest', () => syncPinterest(range)),
+    runWithTracking('sellrocket', () => syncSellRocket(range)),
   ]);
 
   const rollupStart = Date.now();

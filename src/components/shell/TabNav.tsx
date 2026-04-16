@@ -9,6 +9,7 @@ type TabDef = { id: TabId; label: string; short?: string };
 const TABS: TabDef[] = [
   { id: 'executive-summary', label: 'Podsumowanie' },
   { id: 'performance-marketing', label: 'Performance' },
+  { id: 'sales-channels', label: 'Kanały' },
   { id: 'google-ads', label: 'Google Ads' },
   { id: 'meta-ads', label: 'Meta Ads' },
   { id: 'pinterest', label: 'Pinterest' },

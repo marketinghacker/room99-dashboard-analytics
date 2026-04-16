@@ -5,6 +5,7 @@ import { Header } from './Header';
 import { TabNav } from './TabNav';
 import { ExecutiveSummaryTab } from '@/components/tabs/ExecutiveSummary';
 import { PerformanceMarketingTab } from '@/components/tabs/PerformanceMarketing';
+import { SalesChannelsTab } from '@/components/tabs/SalesChannels';
 import { GoogleAdsTab } from '@/components/tabs/GoogleAds';
 import { MetaAdsTab } from '@/components/tabs/MetaAds';
 import { PinterestTab } from '@/components/tabs/Pinterest';
@@ -34,6 +35,7 @@ export function DashboardShell() {
           >
             {tab === 'executive-summary' && <ExecutiveSummaryTab />}
             {tab === 'performance-marketing' && <PerformanceMarketingTab />}
+            {tab === 'sales-channels' && <SalesChannelsTab />}
             {tab === 'google-ads' && <GoogleAdsTab />}
             {tab === 'meta-ads' && <MetaAdsTab />}
             {tab === 'pinterest' && <PinterestTab />}

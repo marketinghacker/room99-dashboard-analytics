@@ -41,11 +41,12 @@ export function ExecutiveSummaryTab() {
       {/* Hero row — the "wow" numbers */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 stagger">
         <HeroMetric
-          label="Przychód (GA4)"
+          label="Przychód (Shoper / Room99.pl)"
           value={kpis.revenue}
           format="pln"
           delta={deltas.revenue}
           tone="primary"
+          sublabel="Sklep własny — zakres agencji"
         />
         <HeroMetric
           label="Wydatki marketingowe"
@@ -72,12 +73,12 @@ export function ExecutiveSummaryTab() {
       <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-5">
         <ChartCard
           title="Przychód vs Wydatki"
-          subtitle="Dzień po dniu — GA4 revenue (niebieska) vs wszystkie reklamy (sage)"
+          subtitle="Dzień po dniu — Shoper revenue (niebieska) vs wszystkie reklamy (sage)"
         >
           <ChartArea
             data={all.timeSeries ?? []}
             series={[
-              { key: 'revenue', label: 'Przychód (GA4)', color: 'var(--color-chart-3)' },
+              { key: 'revenue', label: 'Przychód Shoper', color: 'var(--color-chart-3)' },
               { key: 'spend', label: 'Wydatki reklamowe', color: 'var(--color-chart-2)' },
             ]}
             height={280}
@@ -101,7 +102,7 @@ export function ExecutiveSummaryTab() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 stagger">
         <ScoreCard label="Sesje" value={kpis.sessions} format="int" delta={deltas.sessions} />
         <ScoreCard label="Transakcje" value={kpis.transactions} format="int" delta={deltas.transactions} />
-        <ScoreCard label="AOV (GA4)" value={kpis.aov} format="pln" delta={deltas.aov} hint="Średnia wartość zamówienia" />
+        <ScoreCard label="AOV (Shoper)" value={kpis.aov} format="pln" delta={deltas.aov} hint="Średnia wartość zamówienia" />
         <ScoreCard label="Współczynnik konwersji" value={kpis.transactions && kpis.sessions ? kpis.transactions / kpis.sessions : null} format="pct" />
       </div>
 

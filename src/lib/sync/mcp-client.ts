@@ -6,16 +6,32 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import { Agent, setGlobalDispatcher } from 'undici';
+
+// Node's default undici Agent has a 60s headersTimeout that kills SSE
+// connections when BaseLinker/MCP takes a long time to stream next event.
+// Bump both timeouts to 10 minutes for data-heavy MCPs. Applied at module load.
+setGlobalDispatcher(
+  new Agent({
+    headersTimeout: 600_000,
+    bodyTimeout: 600_000,
+    keepAliveTimeout: 600_000,
+    connectTimeout: 30_000,
+  }),
+);
 
 export type MCPTransport = 'sse' | 'http';
 
 export type CallMCPOptions = {
   retries?: number;
   initialBackoffMs?: number;
+  /** Per-call timeout in ms. SDK default is 60_000; some tools (BaseLinker
+   *  pagination) need longer. */
+  timeoutMs?: number;
 };
 
 export type MCPCaller = {
-  callTool: (args: { name: string; arguments: Record<string, unknown> }) => Promise<any>;
+  callTool: (...args: any[]) => Promise<any>;
 };
 
 /**
@@ -51,10 +67,16 @@ export async function callMCPTool<T = unknown>(
   const retries = opts.retries ?? 3;
   const baseBackoff = opts.initialBackoffMs ?? 500;
 
+  const requestOpts = opts.timeoutMs ? { timeout: opts.timeoutMs } : undefined;
+
   let lastError: unknown;
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
-      const res = await client.callTool({ name: tool, arguments: args });
+      const res = await client.callTool(
+        { name: tool, arguments: args },
+        undefined,
+        requestOpts,
+      );
       if (res.isError) {
         const errText = res.content?.[0]?.text ?? 'unknown MCP error';
         throw new Error(`MCP tool ${tool} failed: ${errText}`);

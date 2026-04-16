@@ -8,6 +8,13 @@
       "when": 1776369179800,
       "tag": "0000_previous_unicorn",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1776372107394,
+      "tag": "0001_fixed_abomination",
+      "breakpoints": true
     }
   ]
 }
