@@ -36,10 +36,11 @@ describe('callMCPTool (with injected client)', () => {
     };
     const out = await callMCPTool(fakeClient as any, 'list_stuff', { limit: 10 });
     expect(out).toEqual({ rows: [{ id: 1 }] });
-    expect(fakeClient.callTool).toHaveBeenCalledWith({
-      name: 'list_stuff',
-      arguments: { limit: 10 },
-    });
+    expect(fakeClient.callTool).toHaveBeenCalledWith(
+      { name: 'list_stuff', arguments: { limit: 10 } },
+      undefined,
+      undefined,
+    );
   });
 
   it('throws if response has isError=true', async () => {
