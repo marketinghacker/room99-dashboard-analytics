@@ -1,6 +1,14 @@
 # Dashboard v3 — Railway deployment runbook
 
-**Ostatnia aktualizacja:** 2026-04-17 (deploy 00:00)
+**Ostatnia aktualizacja:** 2026-04-17 00:19 — DEPLOY LIVE
+
+**Live URL:** `https://nextjs-web-production-30aa.up.railway.app`
+
+**Railway project:** `room99-dashboard-sync` (workspace: MarketingHackers)
+- `nextjs-web` — Next.js dashboard (id=`5921b7ba-cf2d-4e30-807c-1fccfda07e90`)
+- `cron-sync` — Alpine+curl cron runner `*/30 * * * *` (id=`d197a07c-6d21-454f-b129-620604a9b3d2`)
+- `Postgres` — shared DB (id=`80958546-9ed4-4e28-9044-b5b965df4526`)
+- `room99-dashboard-sync` — OLD legacy worker (DECOMMISSION po 48h stabilności)
 
 ## TL;DR
 
