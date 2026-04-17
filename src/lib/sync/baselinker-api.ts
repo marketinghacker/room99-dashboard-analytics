@@ -37,16 +37,20 @@ export type BaseLinkerOrder = {
 };
 
 /**
- * Best-available revenue figure for an order.
- * Prefers `payment_done` (matches SellRocket UI's "Łączna wartość").
- * Falls back to summed products + delivery if payment_done is 0/missing
- * (some channels don't report it).
+ * Best-available revenue figure for an order — PRODUCT revenue only,
+ * delivery excluded. This matches SellRocket UI's reported "wartość
+ * sprzedaży" column (merchandise value). With delivery included we
+ * were +7% over user reference on Allegro (152k fee across 6k orders).
+ *
+ * If `payment_done` is present we still respect it for accuracy on
+ * channels that discount at checkout, but subtract delivery so the
+ * unit stays product-only.
  */
 export function orderRevenue(o: BaseLinkerOrder): number {
+  const delivery = Number(o.delivery_price ?? 0);
   const paid = Number(o.payment_done ?? 0);
-  if (paid > 0) return paid;
-  const products = o.products.reduce((s, p) => s + p.price_brutto * p.quantity, 0);
-  return products + Number(o.delivery_price ?? 0);
+  if (paid > 0) return Math.max(0, paid - delivery);
+  return o.products.reduce((s, p) => s + p.price_brutto * p.quantity, 0);
 }
 
 type GetOrdersResponse = {
