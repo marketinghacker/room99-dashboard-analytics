@@ -12,7 +12,7 @@ import { mutate } from 'swr';
 import { useTab } from '@/stores/tab';
 import { useRole } from '@/stores/role';
 import { FilterBar } from './FilterBar';
-import { RefreshCw, Download } from 'lucide-react';
+import { RefreshCw, Download, RotateCw } from 'lucide-react';
 
 const TAB_LABELS: Record<string, string> = {
   'executive-summary':     '§01 · Podsumowanie',
@@ -71,6 +71,8 @@ function RoleSegmented() {
 export function Topbar() {
   const tab = useTab((s) => s.tab);
   const [refreshing, setRefreshing] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncNotice, setSyncNotice] = useState<string | null>(null);
 
   async function onRefresh() {
     setRefreshing(true);
@@ -78,33 +80,52 @@ export function Topbar() {
     setTimeout(() => setRefreshing(false), 600);
   }
 
+  async function onSync() {
+    setSyncing(true);
+    setSyncNotice(null);
+    try {
+      const res = await fetch('/api/sync-now', { method: 'POST' });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? 'sync failed');
+      setSyncNotice('Sync uruchomiony (2–3 min)');
+      setTimeout(() => setSyncNotice(null), 5000);
+    } catch (e) {
+      setSyncNotice((e as Error).message);
+    } finally {
+      setSyncing(false);
+    }
+  }
+
   return (
     <header
-      className="sticky top-0 z-10 backdrop-blur-header"
-      style={{ borderBottom: '1px solid var(--color-line-soft)' }}
+      className="sticky top-0 z-30"
+      style={{
+        borderBottom: '1px solid var(--color-line-soft)',
+        // Solid bg — translucent backdrop-blur was letting content bleed through.
+        background: 'var(--color-bg-base)',
+      }}
     >
-      <div className="flex items-center gap-4 px-8 h-14">
+      <div className="flex items-center gap-4 px-8 h-14 whitespace-nowrap overflow-x-auto">
         <div
-          className="text-[12px] font-mono tracking-[0.08em] uppercase"
+          className="text-[12px] font-mono tracking-[0.08em] uppercase shrink-0"
           style={{ color: 'var(--color-ink-tertiary)' }}
         >
           {TAB_LABELS[tab] ?? tab}
         </div>
 
-        <div className="ml-auto flex items-center gap-3">
+        <div className="ml-auto flex items-center gap-3 shrink-0">
           <RoleSegmented />
 
-          <div className="h-5 w-px" style={{ background: 'var(--color-line-soft)' }} />
+          <div className="h-5 w-px shrink-0" style={{ background: 'var(--color-line-soft)' }} />
 
           <FilterBar />
 
-          <div className="h-5 w-px" style={{ background: 'var(--color-line-soft)' }} />
+          <div className="h-5 w-px shrink-0" style={{ background: 'var(--color-line-soft)' }} />
 
           <button
             type="button"
             onClick={onRefresh}
-            title="Odśwież"
-            className="h-8 px-2.5 rounded-[6px] flex items-center gap-1.5 text-[12px]"
+            title="Odśwież widok (pobiera cache z serwera)"
+            className="h-8 px-2.5 rounded-[6px] flex items-center gap-1.5 text-[12px] shrink-0"
             style={{ color: 'var(--color-ink-secondary)' }}
             onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
             onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
@@ -115,8 +136,30 @@ export function Topbar() {
 
           <button
             type="button"
-            title="Eksport CSV"
-            className="h-8 px-2.5 rounded-[6px] flex items-center gap-1.5 text-[12px]"
+            onClick={onSync}
+            disabled={syncing}
+            title="Zsynchronizuj na nowo (pobiera świeże dane z Meta/Google/Allegro)"
+            className="agency-only h-8 px-2.5 rounded-[6px] flex items-center gap-1.5 text-[12px] shrink-0 disabled:opacity-50"
+            style={{ color: 'var(--color-ink-secondary)' }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+          >
+            <RotateCw className={syncing ? 'w-3.5 h-3.5 animate-spin' : 'w-3.5 h-3.5'} />
+            Sync
+          </button>
+          {syncNotice && (
+            <span
+              className="text-[11px] font-mono tracking-[0.06em] uppercase shrink-0"
+              style={{ color: 'var(--color-accent)' }}
+            >
+              {syncNotice}
+            </span>
+          )}
+
+          <button
+            type="button"
+            title="Eksport CSV (wkrótce)"
+            className="h-8 px-2.5 rounded-[6px] flex items-center gap-1.5 text-[12px] shrink-0"
             style={{ color: 'var(--color-ink-secondary)' }}
             onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
             onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}

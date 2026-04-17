@@ -79,13 +79,13 @@ export function FilterBar() {
   };
 
   return (
-    <div className="flex items-center gap-2 relative">
-      {/* Period pill */}
+    <div className="flex items-center gap-2 relative whitespace-nowrap">
+      {/* Period pill — clickable, opens a small preset popover */}
       <div className="relative">
         <button
           type="button"
           onClick={() => setShowPicker((v) => !v)}
-          className="h-8 px-3 flex items-center gap-2 rounded-[6px] text-[12px] border transition-colors"
+          className="h-8 px-3 flex items-center gap-2 rounded-[6px] text-[12px] border transition-colors whitespace-nowrap"
           style={{
             background: 'var(--color-bg-card)',
             borderColor: 'var(--color-line-soft)',
@@ -94,55 +94,54 @@ export function FilterBar() {
           onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--color-line-hard)')}
           onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--color-line-soft)')}
         >
-          <Calendar className="w-3.5 h-3.5" strokeWidth={1.4} />
+          <Calendar className="w-3.5 h-3.5 shrink-0" strokeWidth={1.4} />
           <span className="numeric font-medium">
             {formatDateRangePL(periodRange.start, periodRange.end)}
           </span>
-          <span
-            className="font-mono text-[10px] tracking-[0.06em] uppercase"
-            style={{ color: 'var(--color-ink-tertiary)' }}
-          >
-            {PERIODS.find((p) => p.value === selectValue)?.label.slice(0, 8) ?? ''}
-          </span>
         </button>
         {showPicker && (
-          <div className="absolute right-0 top-full mt-2 z-50 flex gap-2" onClick={(e) => e.stopPropagation()}>
-            <div className="w-[220px]">
-              <Select label="Okres" value={selectValue} options={periodOptions} onChange={onPeriodChange} />
-            </div>
-            {selectValue === '__custom__' && (
-              <div className="z-50">
-                <DateRangePicker
-                  initial={isCustom ? periodKeyToRange(period) : undefined}
-                  onSelect={(key) => {
-                    setPeriod(key as PeriodKey);
-                    setShowPicker(false);
-                  }}
-                  onClose={() => setShowPicker(false)}
+          <>
+            {/* Backdrop to close on outside click */}
+            <div
+              className="fixed inset-0 z-40"
+              onClick={() => setShowPicker(false)}
+            />
+            <div
+              className="absolute right-0 top-full mt-2 z-50 flex gap-2"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="w-[240px]">
+                <Select
+                  value={selectValue}
+                  options={periodOptions}
+                  onChange={onPeriodChange}
                 />
               </div>
-            )}
-          </div>
+              {selectValue === '__custom__' && (
+                <div className="z-50">
+                  <DateRangePicker
+                    initial={isCustom ? periodKeyToRange(period) : undefined}
+                    onSelect={(key) => {
+                      setPeriod(key as PeriodKey);
+                      setShowPicker(false);
+                    }}
+                    onClose={() => setShowPicker(false)}
+                  />
+                </div>
+              )}
+            </div>
+          </>
         )}
       </div>
 
-      {/* Compare pill */}
-      <div className="relative min-w-[200px]">
+      {/* Compare pill — inline select, no label */}
+      <div className="relative w-[180px] shrink-0">
         <Select
           value={compare}
           options={compareOptions}
           onChange={(v) => setCompare(v as CompareKey)}
         />
       </div>
-
-      {compareRange && (
-        <span
-          className="font-mono text-[10px] tracking-[0.06em] uppercase"
-          style={{ color: 'var(--color-ink-tertiary)' }}
-        >
-          vs {formatDateRangePL(compareRange.start, compareRange.end)}
-        </span>
-      )}
     </div>
   );
 }
