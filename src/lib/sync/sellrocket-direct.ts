@@ -10,10 +10,10 @@
  *
  * Env: BASELINKER_API_TOKEN
  */
-import { sql } from 'drizzle-orm';
+import { sql, eq } from 'drizzle-orm';
 import { db as defaultDb, type DB } from '@/lib/db';
-import { sellrocketDaily } from '@/lib/schema';
-import { BaseLinkerAPI } from './baselinker-api';
+import { sellrocketDaily, orderStatusConfig } from '@/lib/schema';
+import { BaseLinkerAPI, orderRevenue } from './baselinker-api';
 import { type DateRange } from '@/lib/periods';
 
 /**
@@ -49,6 +49,10 @@ export async function syncSellRocketDirect(
   let rowsWritten = 0;
   const t0 = Date.now();
 
+  const validRows = await database.select().from(orderStatusConfig).where(eq(orderStatusConfig.isValidSale, true));
+  const validSet = new Set(validRows.map((r) => r.statusId));
+  console.log(`[baselinker] valid sale statuses: ${validSet.size > 0 ? [...validSet].join(',') : 'none — counting ALL orders'}`);
+
   for (const bucket of buckets) {
     const sources = SOURCE_BUCKETS[bucket];
     console.log(`[baselinker] bucket=${bucket} sources=${JSON.stringify(sources)} range=${range.start}..${range.end}`);
@@ -56,18 +60,25 @@ export async function syncSellRocketDirect(
     // Sum across source ids within the bucket.
     const byDate = new Map<string, { orders: number; revenue: number }>();
     for (const src of sources) {
-      const rows = await api.dailyRevenueBySource({
-        start: range.start,
-        end: range.end,
-        sources: [src],
+      const fromTs = Math.floor(new Date(range.start + 'T00:00:00Z').getTime() / 1000);
+      const toTs = Math.floor(new Date(range.end + 'T23:59:59Z').getTime() / 1000);
+      const allOrders = await api.getOrdersRange({
+        fromTs, toTs, sourceType: src.sourceType, sourceId: src.sourceId,
       });
-      for (const r of rows) {
-        let e = byDate.get(r.date);
-        if (!e) { e = { orders: 0, revenue: 0 }; byDate.set(r.date, e); }
-        e.orders += r.orders;
-        e.revenue += r.revenue;
+      const filtered = validSet.size > 0
+        ? allOrders.filter((o) => validSet.has(o.order_status_id))
+        : allOrders;
+
+      for (const o of filtered) {
+        const d = new Date(o.date_confirmed * 1000).toISOString().slice(0, 10);
+        // skip if outside range (timezone edge)
+        if (d < range.start || d > range.end) continue;
+        let e = byDate.get(d);
+        if (!e) { e = { orders: 0, revenue: 0 }; byDate.set(d, e); }
+        e.orders += 1;
+        e.revenue += orderRevenue(o);
       }
-      console.log(`[baselinker]   ${src.sourceType}/${src.sourceId}: ${rows.reduce((s, x) => s + x.orders, 0)} orders, ${rows.reduce((s, x) => s + x.revenue, 0).toFixed(2)} zł`);
+      console.log(`[baselinker]   ${src.sourceType}/${src.sourceId}: ${filtered.length}/${allOrders.length} orders kept after status filter`);
     }
 
     // Upsert one row per date.
