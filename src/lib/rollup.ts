@@ -514,10 +514,36 @@ async function buildOne(
 const COMPARE_KEYS: CompareKey[] = ['previous_period', 'same_period_last_year', 'none'];
 const ALL_PLATFORMS: Platform[] = ['all', 'meta', 'google_ads', 'criteo', 'pinterest', 'ga4', 'sellrocket'];
 
-export async function buildRollups(dbIn: DB = defaultDb): Promise<{ cached: number }> {
+/**
+ * Given a set of ISO dates that changed, returns the preset period keys whose
+ * resolved date range includes at least one of those dates. Used for incremental
+ * rollup rebuilds — only invalidate caches that actually cover changed data.
+ */
+export function affectedPeriods(dates: string[], now: Date = new Date()): PeriodKey[] {
+  const affected: PeriodKey[] = [];
+  for (const pk of PERIOD_KEYS) {
+    const range = resolvePeriod(pk as PeriodKey, now);
+    for (const d of dates) {
+      if (d >= range.start && d <= range.end) {
+        affected.push(pk as PeriodKey);
+        break;
+      }
+    }
+  }
+  return affected;
+}
+
+export async function buildRollups(
+  dbIn: DB = defaultDb,
+  opts: { onlyDates?: string[] } = {},
+): Promise<{ cached: number }> {
   let cached = 0;
 
-  for (const periodKey of PERIOD_KEYS) {
+  const periodKeys = opts.onlyDates
+    ? (affectedPeriods(opts.onlyDates) as readonly string[])
+    : (PERIOD_KEYS as readonly string[]);
+
+  for (const periodKey of periodKeys) {
     const range = resolvePeriod(periodKey as PeriodKey);
     for (const compareKey of COMPARE_KEYS) {
       const compareRange = resolveCompare(range, compareKey);
