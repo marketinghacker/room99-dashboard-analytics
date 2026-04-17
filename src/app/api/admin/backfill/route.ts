@@ -7,7 +7,7 @@
  * Typical use:
  *   curl "https://DOMAIN/api/admin/backfill?key=$CRON_SECRET&start=2026-03-01&end=2026-04-16"
  */
-import { syncMeta } from '@/lib/sync/meta';
+import { syncMetaGraph } from '@/lib/sync/meta-graph';
 import { syncGoogleAds } from '@/lib/sync/google-ads';
 import { syncCriteo } from '@/lib/sync/criteo';
 import { syncGA4 } from '@/lib/sync/ga4';
@@ -62,9 +62,8 @@ export async function GET(req: Request) {
   for (const source of sourcesRaw) {
     switch (source) {
       case 'meta':
-        // Meta MCP doesn't support arbitrary ranges — ignores the date range
-        // and always pulls last_30d preset (spread across 30 days in DB).
-        jobs.push({ source, fn: () => syncMeta({ preset: 'last_30d' }) });
+        // Meta Graph API supports arbitrary ranges via time_range + time_increment=1.
+        jobs.push({ source, fn: () => syncMetaGraph(range) });
         break;
       case 'sellrocket':
         // Prefer direct BaseLinker API when token is set — accurate Allegro.

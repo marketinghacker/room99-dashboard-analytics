@@ -8,7 +8,7 @@
  * For longer ranges (initial backfill, historical repair) use
  * /api/admin/backfill which is fire-and-forget (non-blocking).
  */
-import { syncMeta } from '@/lib/sync/meta';
+import { syncMetaGraph } from '@/lib/sync/meta-graph';
 import { syncGoogleAds } from '@/lib/sync/google-ads';
 import { syncCriteo } from '@/lib/sync/criteo';
 import { syncGA4 } from '@/lib/sync/ga4';
@@ -56,9 +56,9 @@ export async function GET(req: Request) {
   if (!secret) return Response.json({ error: 'CRON_SECRET not configured' }, { status: 500 });
   if (key !== secret) return new Response('Unauthorized', { status: 401 });
 
-  // Ad platforms: last 7 days (Google Ads, Criteo, GA4 handle arbitrary ranges;
-  // Meta uses yesterday preset internally; Pinterest is a local adapter over
-  // ad_performance_daily populated by Windsor).
+  // Ad platforms: last 7 days (Google Ads, Criteo, GA4, Meta handle arbitrary
+  // ranges; Pinterest is a local adapter over ad_performance_daily populated
+  // by Windsor). Meta uses Graph API directly with time_increment=1.
   const last7 = resolvePeriod('last_7d');
 
   // SellRocket is the bottleneck — only sync the tightest window needed
@@ -66,7 +66,7 @@ export async function GET(req: Request) {
   const sellRocketRange = { start: toIsoDate(-1), end: toIsoDate(0) };
 
   const results = await Promise.all([
-    runWithTracking('meta', () => syncMeta()),
+    runWithTracking('meta', () => syncMetaGraph(last7)),
     runWithTracking('google_ads', () => syncGoogleAds(last7)),
     runWithTracking('criteo', () => syncCriteo(last7)),
     runWithTracking('ga4', () => syncGA4(last7)),
