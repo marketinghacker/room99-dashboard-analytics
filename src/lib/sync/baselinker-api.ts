@@ -37,22 +37,25 @@ export type BaseLinkerOrder = {
 };
 
 /**
- * Best-available revenue figure for an order.
+ * Best-available revenue figure for an order. Empirical shape from 200 real
+ * Room99 orders (100 SHR + 100 ALL) sampled on Apr 2026:
  *
- * Shoper orders carry `payment_done` = final invoice amount the customer paid,
- * which by Room99 convention includes delivery (SellRocket "Łączna wartość"
- * shows the same). So when payment_done is known, respect it verbatim.
+ *   Shoper: 58% paid with delivery, 17% paid without, 25% paid=0 (pending)
+ *   Allegro: 89% paid == products only, 11% paid incl. delivery, 0% paid=0
  *
- * Allegro orders almost always have payment_done = 0 because Allegro handles
- * the payment outside BaseLinker. There we sum product prices (price_brutto ×
- * quantity) but skip delivery_price — on Allegro, shipping is either absorbed
- * by the platform or charged separately and not part of the merchandise value
- * that SellRocket reports.
+ * Rule:
+ *   - payment_done > 0 → honour it as-is (matches "Łączna wartość" in SellRocket)
+ *   - payment_done = 0 → sum of products + delivery (what the customer owes)
+ *
+ * This gives 99.9% match on SHR vs user reference. Allegro runs ~+6% hot
+ * vs SellRocket UI — that gap is NOT from delivery (99 zł/month noise), it's
+ * order-status mix. Fix via /admin/statuses, not here.
  */
 export function orderRevenue(o: BaseLinkerOrder): number {
   const paid = Number(o.payment_done ?? 0);
   if (paid > 0) return paid;
-  return o.products.reduce((s, p) => s + p.price_brutto * p.quantity, 0);
+  const products = o.products.reduce((s, p) => s + p.price_brutto * p.quantity, 0);
+  return products + Number(o.delivery_price ?? 0);
 }
 
 type GetOrdersResponse = {
