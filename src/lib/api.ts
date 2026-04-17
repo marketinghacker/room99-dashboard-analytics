@@ -7,7 +7,13 @@
 import { db as defaultDb, type DB } from '@/lib/db';
 import { and, eq } from 'drizzle-orm';
 import { dashboardCache } from '@/lib/schema';
-import { PERIOD_KEYS, type PeriodKey, type CompareKey } from '@/lib/periods';
+import {
+  PERIOD_KEYS,
+  resolvePeriod,
+  resolveCompare,
+  type PeriodKey,
+  type CompareKey,
+} from '@/lib/periods';
 import { type RollupPayload, type Platform } from '@/lib/rollup';
 
 const ALL_COMPARES: readonly CompareKey[] = [
@@ -41,6 +47,14 @@ export async function getCached(
   compare: CompareKey,
   db: DB = defaultDb
 ): Promise<RollupPayload | null> {
+  // Custom ranges aren't pre-cached — compute on the fly.
+  if (typeof period === 'string' && period.startsWith('custom_')) {
+    const { buildOneLive } = await import('@/lib/rollup');
+    const range = resolvePeriod(period);
+    const compareRange = resolveCompare(range, compare);
+    return buildOneLive(db, platform, range, compareRange);
+  }
+
   const rows = await db
     .select({ payload: dashboardCache.payload })
     .from(dashboardCache)

@@ -386,11 +386,11 @@ async function loadGA4KPIs(db: DB, range: DateRange): Promise<{
   };
 }
 
-async function buildOne(
+export async function buildOneLive(
   db: DB,
   platform: Platform,
   range: DateRange,
-  compareRange: DateRange | null
+  compareRange: DateRange | null,
 ): Promise<RollupPayload> {
   const warnings: string[] = [];
 
@@ -548,7 +548,7 @@ export async function buildRollups(
     for (const compareKey of COMPARE_KEYS) {
       const compareRange = resolveCompare(range, compareKey);
       for (const platform of ALL_PLATFORMS) {
-        const payload = await buildOne(dbIn, platform, range, compareRange);
+        const payload = await buildOneLive(dbIn, platform, range, compareRange);
         await dbIn
           .insert(dashboardCache)
           .values({
