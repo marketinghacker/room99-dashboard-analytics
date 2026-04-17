@@ -1,72 +1,84 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import useSWR from 'swr';
 import { type ColumnDef } from '@tanstack/react-table';
-import { useFilteredSWR } from '@/components/primitives/useFilteredSWR';
+import { useFilters } from '@/stores/filters';
 import { HeroMetric } from '@/components/primitives/HeroMetric';
-import { ScoreCard } from '@/components/primitives/ScoreCard';
 import { DataTable } from '@/components/primitives/DataTable';
-import { ChartCard } from '@/components/primitives/ChartCard';
-import { ChartBar } from '@/components/primitives/charts';
-import { LoadingCard, ErrorCard, EmptyCard } from '@/components/primitives/StateCard';
 import { DeltaBadge } from '@/components/primitives/DeltaBadge';
-import { formatPLN, formatInt, formatPct } from '@/lib/format';
+import { LoadingCard, ErrorCard, EmptyCard } from '@/components/primitives/StateCard';
+import { formatPLN, formatInt } from '@/lib/format';
 import { cn } from '@/components/ui/cn';
 
-type CategoryRow = {
-  category: string;
-  viewed: number;
-  addedToCart: number;
-  purchased: number;
-  revenue: number;
-  productCount: number;
-  yoyRevenue: number | null;
+type Item = {
+  group: string;
+  shrRevenue: number;
+  allegroRevenue: number;
+  shrQty: number;
+  allegroQty: number;
+  total: number;
+  yoyTotal: number | null;
   yoyDelta: number | null;
   alerts: string[];
 };
 
-type ItemRow = {
-  name: string;
-  category: string;
-  viewed: number;
-  addedToCart: number;
-  purchased: number;
-  revenue: number;
-  yoyRevenue: number | null;
-  yoyDelta: number | null;
-};
+type Level = 'category' | 'collection' | 'sku';
 
 export function TopProductsTab() {
-  const { data, error, isLoading } = useFilteredSWR<any>('/api/data/top-products');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const { period, compare } = useFilters();
+  const [level, setLevel] = useState<Level>('category');
+  const [drillCategory, setDrillCategory] = useState<string | null>(null);
 
-  const catColumns = useMemo<ColumnDef<CategoryRow, any>[]>(
+  const params = new URLSearchParams({ period, compare, level });
+  if (drillCategory && level !== 'category') params.set('category', drillCategory);
+  const { data, error, isLoading } = useSWR<any>(`/api/data/top-products?${params.toString()}`);
+
+  const columns = useMemo<ColumnDef<Item, any>[]>(
     () => [
       {
-        accessorKey: 'category',
-        header: 'Kategoria',
-        cell: ({ row }) => (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setSelectedCategory(row.original.category)}
-              className="font-medium text-[var(--color-accent-primary)] hover:underline text-left"
-            >
-              {row.original.category}
-            </button>
-            {row.original.alerts.length > 0 && (
-              <span className="chip bg-[var(--color-accent-negative-bg)] text-[var(--color-accent-negative)] border-[var(--color-accent-negative)]/30 text-[10px] py-0 px-1.5">
-                ⚠ {row.original.alerts.length}
-              </span>
-            )}
-          </div>
-        ),
+        accessorKey: 'group',
+        header: level === 'category' ? 'Kategoria' : level === 'collection' ? 'Kolekcja' : 'SKU',
+        cell: ({ row }) => {
+          const isCategoryLevel = level === 'category';
+          const isCollectionLevel = level === 'collection';
+          const canDrill = isCategoryLevel || isCollectionLevel;
+          const onClick = () => {
+            if (isCategoryLevel) {
+              setDrillCategory(row.original.group);
+              setLevel('collection');
+            } else if (isCollectionLevel) {
+              setLevel('sku');
+            }
+          };
+          return (
+            <div className="flex items-center gap-2">
+              {canDrill ? (
+                <button
+                  onClick={onClick}
+                  className="font-medium text-[var(--color-accent-primary)] hover:underline text-left"
+                >
+                  {row.original.group}
+                </button>
+              ) : (
+                <span className="font-medium truncate max-w-[360px]">{row.original.group}</span>
+              )}
+              {row.original.alerts.length > 0 && (
+                <span className="chip text-[10px] py-0 px-1.5 bg-[var(--color-accent-negative-bg)] text-[var(--color-accent-negative)] border-[var(--color-accent-negative)]/30">
+                  ⚠ {row.original.alerts.length}
+                </span>
+              )}
+            </div>
+          );
+        },
       },
-      { accessorKey: 'productCount', header: 'Produkty', meta: { numeric: true }, cell: (i) => formatInt(i.getValue() as number) },
-      { accessorKey: 'viewed', header: 'Wyświetlenia', meta: { numeric: true }, cell: (i) => formatInt(i.getValue() as number) },
-      { accessorKey: 'purchased', header: 'Sprzedane szt.', meta: { numeric: true }, cell: (i) => formatInt(i.getValue() as number) },
-      { accessorKey: 'revenue', header: 'Przychód', meta: { numeric: true }, cell: (i) => formatPLN(i.getValue() as number) },
+      { accessorKey: 'shrRevenue', header: 'Shoper', meta: { numeric: true }, cell: (i) => formatPLN(i.getValue() as number) },
+      { accessorKey: 'allegroRevenue', header: 'Allegro', meta: { numeric: true }, cell: (i) => formatPLN(i.getValue() as number) },
+      { accessorKey: 'total', header: 'Razem', meta: { numeric: true }, cell: (i) => formatPLN(i.getValue() as number) },
+      { accessorKey: 'shrQty', header: 'Sztuk Shoper', meta: { numeric: true }, cell: (i) => formatInt(i.getValue() as number) },
+      { accessorKey: 'allegroQty', header: 'Sztuk Allegro', meta: { numeric: true }, cell: (i) => formatInt(i.getValue() as number) },
       {
-        accessorKey: 'yoyRevenue',
+        accessorKey: 'yoyTotal',
         header: 'Rok temu',
         meta: { numeric: true },
         cell: (i) => formatPLN(i.getValue() as number | null),
@@ -76,150 +88,100 @@ export function TopProductsTab() {
         header: 'YoY',
         meta: { numeric: true },
         cell: ({ row }) =>
-          row.original.yoyDelta == null ? (
-            <span className="text-[var(--color-ink-tertiary)]">—</span>
-          ) : (
-            <DeltaBadge pct={row.original.yoyDelta} size="xs" />
-          ),
+          row.original.yoyDelta == null
+            ? <span className="text-[var(--color-ink-tertiary)]">—</span>
+            : <DeltaBadge pct={row.original.yoyDelta} size="xs" />,
       },
     ],
-    []
-  );
-
-  const itemColumns = useMemo<ColumnDef<ItemRow, any>[]>(
-    () => [
-      {
-        accessorKey: 'name',
-        header: 'Produkt',
-        cell: ({ row }) => (
-          <div className="flex flex-col">
-            <span className="font-medium truncate max-w-[340px]" title={row.original.name}>{row.original.name}</span>
-            {row.original.category && (
-              <span className="text-[11px] text-[var(--color-ink-tertiary)]">{row.original.category}</span>
-            )}
-          </div>
-        ),
-      },
-      { accessorKey: 'viewed', header: 'Wyświetleń', meta: { numeric: true }, cell: (i) => formatInt(i.getValue() as number) },
-      { accessorKey: 'addedToCart', header: 'Do koszyka', meta: { numeric: true }, cell: (i) => formatInt(i.getValue() as number) },
-      { accessorKey: 'purchased', header: 'Zakupów', meta: { numeric: true }, cell: (i) => formatInt(i.getValue() as number) },
-      { accessorKey: 'revenue', header: 'Przychód', meta: { numeric: true }, cell: (i) => formatPLN(i.getValue() as number) },
-      {
-        accessorKey: 'yoyDelta',
-        header: 'YoY',
-        meta: { numeric: true },
-        cell: ({ row }) =>
-          row.original.yoyDelta == null ? (
-            <span className="text-[var(--color-ink-tertiary)]">—</span>
-          ) : (
-            <DeltaBadge pct={row.original.yoyDelta} size="xs" />
-          ),
-      },
-    ],
-    []
+    [level]
   );
 
   if (isLoading) return <LoadingCard minHeight={360} />;
-  if (error) return <ErrorCard error={String(error.message ?? error)} />;
-  if (!data?.categories?.length) return <EmptyCard title="Brak danych produktowych" subtitle="GA4 nie zwrócił danych items-level dla tego okresu" />;
+  if (error) return <ErrorCard error={String((error as Error).message ?? error)} />;
+  if (!data?.items?.length) {
+    return <EmptyCard
+      title="Brak danych produktowych"
+      subtitle="Uruchom backfill: /api/admin/backfill?sources=products. products_daily musi być zsynchronizowane z BaseLinker."
+    />;
+  }
 
-  const s = data.summary;
-  const categories: CategoryRow[] = data.categories;
-  const items: ItemRow[] = data.items;
-  const alerts: CategoryRow[] = data.alerts ?? [];
+  const items: Item[] = data.items;
+  const summary = data.summary;
+  const alerts: Item[] = data.alerts ?? [];
 
-  const filteredItems = selectedCategory
-    ? items.filter((i) => i.category === selectedCategory)
-    : items;
+  const breadcrumbs = (
+    <div className="flex items-center gap-2 text-[12px] text-[var(--color-ink-tertiary)]">
+      <button
+        onClick={() => { setLevel('category'); setDrillCategory(null); }}
+        className={cn('hover:underline', level === 'category' && 'font-semibold text-[var(--color-ink-primary)]')}
+      >
+        Kategorie
+      </button>
+      {drillCategory && (
+        <>
+          <span>›</span>
+          <button
+            onClick={() => setLevel('collection')}
+            className={cn('hover:underline', level === 'collection' && 'font-semibold text-[var(--color-ink-primary)]')}
+          >
+            {drillCategory}
+          </button>
+        </>
+      )}
+      {level === 'sku' && (
+        <>
+          <span>›</span>
+          <span className="font-semibold text-[var(--color-ink-primary)]">Produkty</span>
+        </>
+      )}
+    </div>
+  );
 
   return (
     <div className="flex flex-col gap-5 animate-fade-up">
       <div>
         <h2 className="text-[24px] font-semibold tracking-[-0.02em]">Produkty & kategorie</h2>
         <p className="text-[13px] text-[var(--color-ink-tertiary)] mt-0.5">
-          Źródło: GA4 Items Report · porównanie rok-do-roku (YoY: {data.yoyRange.start} → {data.yoyRange.end})
+          Źródło: BaseLinker products · porównanie YoY: {data.yoyRange.start} → {data.yoyRange.end}
         </p>
+        <div className="mt-2">{breadcrumbs}</div>
       </div>
 
-      {/* Alerts banner */}
       {alerts.length > 0 && (
         <div className="card p-4 border-[var(--color-accent-negative)]/40 bg-[var(--color-accent-negative-bg)]">
           <div className="flex items-start gap-3">
             <div className="w-1 min-h-12 rounded-full bg-[var(--color-accent-negative)]" />
             <div className="flex-1">
-              <div className="text-[13px] font-semibold">
-                ⚠ {alerts.length} {alerts.length === 1 ? 'alert' : 'alertów'} kategoryjnych
-              </div>
+              <div className="text-[13px] font-semibold">⚠ {alerts.length} alertów</div>
               <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 text-[12px]">
-                {alerts.map((a) => (
-                  <div key={a.category} className="flex items-center gap-2">
-                    <button
-                      onClick={() => setSelectedCategory(a.category)}
-                      className="font-medium hover:underline text-left"
-                    >
-                      {a.category}
-                    </button>
+                {alerts.slice(0, 12).map((a) => (
+                  <div key={a.group} className="flex items-center gap-2">
+                    <span className="font-medium">{a.group}</span>
                     <span className="text-[var(--color-ink-tertiary)]">{a.alerts.join(', ')}</span>
                     {a.yoyDelta != null && <DeltaBadge pct={a.yoyDelta} size="xs" />}
                   </div>
                 ))}
               </div>
+              {alerts.length > 12 && (
+                <div className="mt-2 text-[11px] text-[var(--color-ink-tertiary)]">…i {alerts.length - 12} więcej w tabeli poniżej</div>
+              )}
             </div>
           </div>
         </div>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <HeroMetric label="Produkty (unikatowe)" value={s.totalProducts} format="int" tone="primary" />
-        <HeroMetric label="Kategorie" value={s.categoriesCount} format="int" />
-        <HeroMetric label="Przychód produktów (GA4)" value={s.totalRevenue} format="pln" />
-        <HeroMetric label="Sprzedane sztuki" value={s.totalPurchased} format="int" />
-      </div>
-
-      <ChartCard title="Top 10 kategorii wg przychodu" subtitle="YoY comparison per category">
-        <ChartBar
-          data={categories.slice(0, 10).map((c) => ({
-            name: c.category.length > 28 ? c.category.slice(0, 25) + '…' : c.category,
-            value: c.revenue,
-            yoy: c.yoyRevenue ?? 0,
-          }))}
-          xKey="name"
-          yKeys={[
-            { key: 'value', label: 'Aktualnie', color: 'var(--color-chart-3)' },
-            { key: 'yoy', label: 'Rok temu', color: 'var(--color-chart-1)' },
-          ]}
-          money
-          horizontal
-          height={Math.max(280, categories.slice(0, 10).length * 36)}
+        <HeroMetric label="Grupy" value={summary.groups} format="int" />
+        <HeroMetric label="Shoper revenue" value={summary.totalShrRevenue} format="pln" tone="primary" />
+        <HeroMetric label="Allegro revenue" value={summary.totalAllegroRevenue} format="pln" />
+        <HeroMetric
+          label="Razem (Shoper + Allegro)"
+          value={summary.totalRevenue}
+          format="pln"
         />
-      </ChartCard>
-
-      {/* Categories table */}
-      <div className="flex flex-col gap-2">
-        <div className="flex items-baseline justify-between">
-          <h3 className="text-[15px] font-semibold">Kategorie ({categories.length})</h3>
-          <p className="text-[12px] text-[var(--color-ink-tertiary)]">Kliknij kategorię aby zobaczyć produkty</p>
-        </div>
-        <DataTable data={categories} columns={catColumns} pageSize={20} />
       </div>
 
-      {/* Products table (filtered) */}
-      <div className="flex flex-col gap-2">
-        <div className="flex items-baseline justify-between">
-          <h3 className="text-[15px] font-semibold">
-            Produkty {selectedCategory ? `w kategorii "${selectedCategory}"` : ''} ({filteredItems.length})
-          </h3>
-          {selectedCategory && (
-            <button
-              onClick={() => setSelectedCategory(null)}
-              className="text-[12px] text-[var(--color-accent-primary)] hover:underline"
-            >
-              ← pokaż wszystkie
-            </button>
-          )}
-        </div>
-        <DataTable data={filteredItems} columns={itemColumns} pageSize={25} />
-      </div>
+      <DataTable data={items} columns={columns} pageSize={25} />
     </div>
   );
 }
