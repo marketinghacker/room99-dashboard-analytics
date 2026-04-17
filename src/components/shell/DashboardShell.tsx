@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useTab } from '@/stores/tab';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
@@ -18,8 +19,42 @@ import { TrafficSourcesTab } from '@/components/tabs/TrafficSources';
 import { TopProductsTab } from '@/components/tabs/TopProducts';
 import { motion, AnimatePresence } from 'framer-motion';
 
+/**
+ * Skip the first render entirely, so client content never has to match
+ * server-rendered HTML. Fixes hydration mismatches coming from
+ *  - new Date() in render,
+ *  - pl-PL locale-dependent date formatting (differs between Node + browser),
+ *  - zustand persist rehydrate,
+ * without the dynamic(ssr:false) approach which code-split zustand into two
+ * module instances (tab state got stuck).
+ */
+function useMounted() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  return mounted;
+}
+
 export function DashboardShell() {
   const tab = useTab((s) => s.tab);
+  const mounted = useMounted();
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen">
+        <div
+          className="fixed top-0 left-0 bottom-0 w-[260px]"
+          style={{ background: 'var(--color-bg-side)', borderRight: '1px solid var(--color-line-soft)' }}
+        />
+        <div className="pl-[260px]">
+          <div className="h-14" style={{ background: 'var(--color-bg-base)', borderBottom: '1px solid var(--color-line-soft)' }} />
+          <main style={{ padding: '28px 40px 80px' }} className="max-w-[1440px] mx-auto">
+            <div className="skeleton h-[32px] w-[260px] mb-3" />
+            <div className="skeleton h-[96px] w-full" />
+          </main>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
