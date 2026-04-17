@@ -56,17 +56,21 @@ export async function GET(req: Request) {
   if (!secret) return Response.json({ error: 'CRON_SECRET not configured' }, { status: 500 });
   if (key !== secret) return new Response('Unauthorized', { status: 401 });
 
-  // Ad platforms: last 7 days (Google Ads, Criteo, GA4, Meta handle arbitrary
-  // ranges; Pinterest is a local adapter over ad_performance_daily populated
-  // by Windsor). Meta uses Graph API directly with time_increment=1.
+  // Ad platforms: last 7 days by default. Meta gets last 30d because Facebook's
+  // attribution window keeps updating historical conversion data for ~28 days,
+  // so we need to re-pull the full window on every cron to self-heal any
+  // earlier bad values (e.g. aggregate-spread fallback from a previous sync).
+  // Graph API with time_increment=1 returns clean per-day rows — 30 days is
+  // still one API call per campaign so it stays fast.
   const last7 = resolvePeriod('last_7d');
+  const last30 = resolvePeriod('last_30d');
 
   // SellRocket is the bottleneck — only sync the tightest window needed
   // (today + yesterday). Historical repair goes through /api/admin/backfill.
   const sellRocketRange = { start: toIsoDate(-1), end: toIsoDate(0) };
 
   const results = await Promise.all([
-    runWithTracking('meta', () => syncMetaGraph(last7)),
+    runWithTracking('meta', () => syncMetaGraph(last30)),
     runWithTracking('google_ads', () => syncGoogleAds(last7)),
     runWithTracking('criteo', () => syncCriteo(last7)),
     runWithTracking('ga4', () => syncGA4(last7)),
@@ -90,6 +94,7 @@ export async function GET(req: Request) {
   return Response.json({
     ok: results.every((r) => r.status === 'success'),
     last7Range: last7,
+    last30Range: last30,
     sellRocketRange,
     platforms: results,
     rollup: 'started in background',
