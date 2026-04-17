@@ -57,7 +57,10 @@ export function Providers({ children }: { children: ReactNode }) {
       value={{
         fetcher,
         revalidateOnFocus: true,
-        dedupingInterval: 30_000,
+        revalidateOnReconnect: true,
+        refreshInterval: 30_000,       // poll every 30s while tab is visible
+        refreshWhenHidden: false,
+        dedupingInterval: 10_000,
         errorRetryCount: 2,
         errorRetryInterval: 1500,
       }}
