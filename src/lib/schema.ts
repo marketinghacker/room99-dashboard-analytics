@@ -127,6 +127,34 @@ export const orderStatusConfig = pgTable('order_status_config', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
+/**
+ * Per-SKU daily sales aggregated from BaseLinker order line items.
+ * `source` ∈ {'shr', 'allegro'} — same buckets as sellrocket_daily.
+ * Powers the Categories / Collections / SKU drill-down tab + YoY alerts.
+ */
+export const productsDaily = pgTable(
+  'products_daily',
+  {
+    date: date('date').notNull(),
+    sku: text('sku').notNull(),
+    productName: text('product_name').notNull(),
+    category: text('category'),    // parsed from product_name
+    collection: text('collection'),
+    source: text('source').notNull(),
+    quantity: integer('quantity').notNull().default(0),
+    revenue: numeric('revenue', { precision: 14, scale: 4 }).notNull().default('0'),
+    orders: integer('orders').notNull().default(0),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.date, t.sku, t.source] }),
+    skuIdx: index('products_daily_sku_idx').on(t.sku),
+    categoryIdx: index('products_daily_category_idx').on(t.category),
+    collectionIdx: index('products_daily_collection_idx').on(t.collection),
+    dateIdx: index('products_daily_date_idx').on(t.date),
+  })
+);
+
 export const syncRuns = pgTable('sync_runs', {
   id: uuid('id').defaultRandom().primaryKey(),
   startedAt: timestamp('started_at', { withTimezone: true }).defaultNow().notNull(),
