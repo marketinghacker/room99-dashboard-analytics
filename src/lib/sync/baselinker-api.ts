@@ -5,10 +5,13 @@
  * individual Allegro sub-accounts (Room99_Official, e_homeconcept, …) can't
  * be queried accurately. The official BaseLinker API respects the parameter.
  *
- * Auth: `X-BLToken` header (create in BaseLinker → My Account → API).
+ * Auth: `X-BLToken` header.
+ * Default endpoint: https://api.baselinker.com/connector.php
+ * Override via BASELINKER_API_URL env var — Room99 uses a dedicated
+ * SellRocket enterprise endpoint (https://*.enterprise.sellrocket.pl/connector.php).
  * Docs: https://api.baselinker.com/
  */
-const API_URL = 'https://api.baselinker.com/connector.php';
+const DEFAULT_API_URL = 'https://api.baselinker.com/connector.php';
 
 export type BaseLinkerOrder = {
   order_id: number;
@@ -39,8 +42,10 @@ type GetOrdersResponse = {
 };
 
 export class BaseLinkerAPI {
-  constructor(private token: string) {
+  private apiUrl: string;
+  constructor(private token: string, apiUrl?: string) {
     if (!token) throw new Error('BaseLinker API token missing');
+    this.apiUrl = apiUrl ?? process.env.BASELINKER_API_URL ?? DEFAULT_API_URL;
   }
 
   /**
@@ -54,7 +59,7 @@ export class BaseLinkerAPI {
       parameters: JSON.stringify(parameters),
     });
 
-    const res = await fetch(API_URL, {
+    const res = await fetch(this.apiUrl, {
       method: 'POST',
       headers: {
         'X-BLToken': this.token,
@@ -89,7 +94,7 @@ export class BaseLinkerAPI {
   }): Promise<BaseLinkerOrder[]> {
     const orders: BaseLinkerOrder[] = [];
     let idFrom = 0;
-    let dateConfirmedFrom = opts.fromTs;
+    const dateConfirmedFrom = opts.fromTs;
     let iterations = 0;
 
     while (iterations++ < 500) {
@@ -98,8 +103,10 @@ export class BaseLinkerAPI {
         get_unconfirmed_orders: opts.getUnconfirmed ? true : false,
       };
       if (idFrom > 0) params.id_from = idFrom;
-      if (opts.sourceId !== undefined) params.filter_order_source_id = opts.sourceId;
+      // BaseLinker REQUIRES filter_order_source (string category) to be set
+      // before filter_order_source_id (numeric) — otherwise it errors.
       if (opts.sourceType) params.filter_order_source = opts.sourceType;
+      if (opts.sourceId !== undefined) params.filter_order_source_id = opts.sourceId;
 
       const res = await this.call<GetOrdersResponse>('getOrders', params);
       const batch = res.orders ?? [];
@@ -129,14 +136,14 @@ export class BaseLinkerAPI {
   async dailyRevenueBySource(opts: {
     start: string;  // YYYY-MM-DD
     end: string;    // YYYY-MM-DD
-    sourceIds: number[];
+    sources: Array<{ sourceType: string; sourceId: number }>;
   }): Promise<Array<{ date: string; sourceId: number; orders: number; revenue: number }>> {
     const fromTs = Math.floor(new Date(opts.start + 'T00:00:00Z').getTime() / 1000);
     const toTs = Math.floor(new Date(opts.end + 'T23:59:59Z').getTime() / 1000);
 
     const results: Array<{ date: string; sourceId: number; orders: number; revenue: number }> = [];
-    for (const sourceId of opts.sourceIds) {
-      const all = await this.getOrdersRange({ fromTs, toTs, sourceId });
+    for (const { sourceType, sourceId } of opts.sources) {
+      const all = await this.getOrdersRange({ fromTs, toTs, sourceType, sourceId });
       const byDate = new Map<string, { orders: number; revenue: number }>();
       for (const o of all) {
         const d = new Date(o.date_confirmed * 1000).toISOString().slice(0, 10);

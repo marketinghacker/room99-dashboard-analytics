@@ -20,9 +20,12 @@ import { type DateRange } from '@/lib/periods';
  * Logical buckets mapped to BaseLinker order_source_id(s).
  * Extend as new Allegro sub-accounts appear in BaseLinker.
  */
-export const SOURCE_BUCKETS: Record<'shr' | 'allegro', number[]> = {
-  shr: [9],        // Room99.pl Shoper
-  allegro: [8, 7], // Room99_Official + e_homeconcept (both ALLEGRO category)
+export const SOURCE_BUCKETS: Record<'shr' | 'allegro', Array<{ sourceType: string; sourceId: number }>> = {
+  shr:     [{ sourceType: 'SHR', sourceId: 9 }],         // Room99.pl Shoper
+  allegro: [                                             // both ALLEGRO category ('ALL')
+    { sourceType: 'ALL', sourceId: 8 },                  // Room99_Official
+    { sourceType: 'ALL', sourceId: 7 },                  // e_homeconcept
+  ],
 };
 
 export type Bucket = keyof typeof SOURCE_BUCKETS;
@@ -47,16 +50,16 @@ export async function syncSellRocketDirect(
   const t0 = Date.now();
 
   for (const bucket of buckets) {
-    const sourceIds = SOURCE_BUCKETS[bucket];
-    console.log(`[baselinker] bucket=${bucket} source_ids=[${sourceIds.join(',')}] range=${range.start}..${range.end}`);
+    const sources = SOURCE_BUCKETS[bucket];
+    console.log(`[baselinker] bucket=${bucket} sources=${JSON.stringify(sources)} range=${range.start}..${range.end}`);
 
     // Sum across source ids within the bucket.
     const byDate = new Map<string, { orders: number; revenue: number }>();
-    for (const sourceId of sourceIds) {
+    for (const src of sources) {
       const rows = await api.dailyRevenueBySource({
         start: range.start,
         end: range.end,
-        sourceIds: [sourceId],
+        sources: [src],
       });
       for (const r of rows) {
         let e = byDate.get(r.date);
@@ -64,7 +67,7 @@ export async function syncSellRocketDirect(
         e.orders += r.orders;
         e.revenue += r.revenue;
       }
-      console.log(`[baselinker]   id=${sourceId}: ${rows.reduce((s, x) => s + x.orders, 0)} orders, ${rows.reduce((s, x) => s + x.revenue, 0).toFixed(2)} zł`);
+      console.log(`[baselinker]   ${src.sourceType}/${src.sourceId}: ${rows.reduce((s, x) => s + x.orders, 0)} orders, ${rows.reduce((s, x) => s + x.revenue, 0).toFixed(2)} zł`);
     }
 
     // Upsert one row per date.
