@@ -16,7 +16,8 @@ const fraunces = Fraunces({
   style: ['normal', 'italic'],
   display: 'swap',
   variable: '--font-fraunces',
-  axes: ['opsz'],
+  // Opsz axis is auto-included via `font-optical-sizing: auto` in CSS; when
+  // specific weights are pinned Next.js disallows manual axes opt-in.
 });
 
 const inter = Inter({

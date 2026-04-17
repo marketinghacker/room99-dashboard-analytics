@@ -1,5 +1,5 @@
 /**
- * Route protection middleware.
+ * Route protection proxy (Next 16 renamed middleware → proxy).
  *
  *  - Public (no auth needed):
  *      /login, /api/auth/*, /api/health, /api/cron/*, /api/admin/*
@@ -43,7 +43,7 @@ function isAgencyOnly(pathname: string): boolean {
   return AGENCY_ONLY_PREFIXES.some((p) => pathname.startsWith(p));
 }
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   if (isPublic(pathname)) return NextResponse.next();
 
