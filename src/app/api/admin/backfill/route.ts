@@ -14,6 +14,7 @@ import { syncGA4 } from '@/lib/sync/ga4';
 import { syncPinterest } from '@/lib/sync/pinterest';
 import { syncSellRocket } from '@/lib/sync/sellrocket';
 import { syncSellRocketDirect } from '@/lib/sync/sellrocket-direct';
+import { syncProducts } from '@/lib/sync/products';
 import { startRun, finishRun } from '@/lib/sync/run-tracker';
 import { buildRollups } from '@/lib/rollup';
 import { type DateRange } from '@/lib/periods';
@@ -53,7 +54,7 @@ export async function GET(req: Request) {
   }
   const range: DateRange = { start, end };
 
-  const sourcesRaw = (url.searchParams.get('sources') ?? 'meta,sellrocket,google_ads,criteo,ga4,pinterest')
+  const sourcesRaw = (url.searchParams.get('sources') ?? 'meta,sellrocket,products,google_ads,criteo,ga4,pinterest')
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean);
@@ -75,6 +76,9 @@ export async function GET(req: Request) {
               ? syncSellRocketDirect(range)
               : syncSellRocket(range),
         });
+        break;
+      case 'products':
+        jobs.push({ source, fn: () => syncProducts(range) });
         break;
       case 'google_ads':
         jobs.push({ source, fn: () => syncGoogleAds(range) });
