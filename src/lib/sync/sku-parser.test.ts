@@ -88,4 +88,19 @@ describe('parseSkuToCategoryCollection', () => {
       collection: 'MOLLY',
     });
   });
+
+  it('consolidates Polish plurals in category (ZASŁONY → ZASŁONA)', () => {
+    expect(parseSkuToCategoryCollection('ZASŁONY AURA - BEŻOWA 140x250')).toEqual({
+      category: 'ZASŁONA',
+      collection: 'AURA',
+    });
+    expect(parseSkuToCategoryCollection('FIRANY NOVELIA - BIAŁA')).toEqual({
+      category: 'FIRANA',
+      collection: 'NOVELIA',
+    });
+    expect(parseSkuToCategoryCollection('POSZEWKI MOLLY - BEŻOWA 45x45')).toEqual({
+      category: 'POSZEWKA',
+      collection: 'MOLLY',
+    });
+  });
 });

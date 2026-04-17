@@ -1,4 +1,29 @@
 /**
+ * Polish plural → singular consolidation for Room99 textile categories.
+ * Without this, ZASŁONA and ZASŁONY show up as two separate categories.
+ */
+const CATEGORY_LEMMA: Record<string, string> = {
+  ZASŁONY: 'ZASŁONA',
+  FIRANY: 'FIRANA',
+  POSZEWKI: 'POSZEWKA',
+  PODUSZKI: 'PODUSZKA',
+  NARZUTY: 'NARZUTA',
+  OBRUSY: 'OBRUS',
+  KOCE: 'KOC',
+  PLEDY: 'PLED',
+  BIEŻNIKI: 'BIEŻNIK',
+  RĘCZNIKI: 'RĘCZNIK',
+  DYWANY: 'DYWAN',
+  KOMPLETY: 'KOMPLET',
+  KARNISZE: 'KARNISZ',
+  ROLETY: 'ROLETA',
+  PANELE: 'PANEL',
+  ZAPACHY: 'ZAPACH',
+  SZARFY: 'SZARFA',
+  ZAWIESZKI: 'ZAWIESZKA',
+};
+
+/**
  * Heuristic parser for Room99 product names.
  *
  * Observed patterns in BaseLinker:
@@ -42,7 +67,8 @@ export function parseSkuToCategoryCollection(name: string): {
   // Category: first token that's a real alpha word with ≥3 letters.
   const firstAlpha = beforeTokens.find((t) => isAlpha(t) && t.length >= 3);
   if (!firstAlpha) return { category: null, collection: null };
-  const category = firstAlpha.toUpperCase();
+  const rawCategory = firstAlpha.toUpperCase();
+  const category = CATEGORY_LEMMA[rawCategory] ?? rawCategory;
 
   // Collection: walk backward from last before-dash token, pick first proper name
   // that isn't the category itself.
@@ -50,8 +76,10 @@ export function parseSkuToCategoryCollection(name: string): {
   if (beforeTokens.length >= 2) {
     for (let i = beforeTokens.length - 1; i >= 1; i--) {
       const t = beforeTokens[i];
-      if (isProperName(t) && t.toUpperCase() !== category) {
-        collection = t.toUpperCase();
+      const up = t.toUpperCase();
+      // Skip if it's the category or a plural form of it.
+      if (isProperName(t) && up !== category && up !== rawCategory) {
+        collection = up;
         break;
       }
     }
