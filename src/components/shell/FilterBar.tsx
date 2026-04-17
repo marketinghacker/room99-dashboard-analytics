@@ -107,18 +107,54 @@ export function FilterBar() {
               onClick={() => setShowPicker(false)}
             />
             <div
-              className="absolute right-0 top-full mt-2 z-50 flex gap-2"
+              className="absolute right-0 top-full mt-2 z-50 flex gap-0"
               onClick={(e) => e.stopPropagation()}
+              style={{
+                background: 'var(--color-bg-card)',
+                border: '1px solid var(--color-line-soft)',
+                borderRadius: 10,
+                boxShadow: 'var(--shadow-popover)',
+                padding: 6,
+              }}
             >
-              <div className="w-[240px]">
-                <Select
-                  value={selectValue}
-                  options={periodOptions}
-                  onChange={onPeriodChange}
-                />
+              {/* Preset list — always-open, no nested Select click */}
+              <div className="flex flex-col w-[220px]">
+                {PERIODS.map((p) => {
+                  const selected = p.value === selectValue;
+                  const range = p.value === '__custom__'
+                    ? (isCustom ? periodRange : null)
+                    : resolvePeriod(p.value as PeriodKey);
+                  return (
+                    <button
+                      key={p.value}
+                      type="button"
+                      onClick={() => onPeriodChange(p.value)}
+                      className="text-left px-2.5 py-1.5 rounded-[6px] flex items-center justify-between gap-3 transition-colors"
+                      style={{
+                        background: selected ? 'var(--color-bg-elevated)' : 'transparent',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!selected) e.currentTarget.style.background = 'var(--color-bg-hover)';
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!selected) e.currentTarget.style.background = 'transparent';
+                      }}
+                    >
+                      <span className="text-[13px]">{p.label}</span>
+                      {range && (
+                        <span
+                          className="font-mono text-[10px] numeric"
+                          style={{ color: 'var(--color-ink-tertiary)' }}
+                        >
+                          {formatDateRangePL(range.start, range.end)}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
               {selectValue === '__custom__' && (
-                <div className="z-50">
+                <div className="pl-2 ml-2 border-l" style={{ borderColor: 'var(--color-line-soft)' }}>
                   <DateRangePicker
                     initial={isCustom ? periodKeyToRange(period) : undefined}
                     onSelect={(key) => {
