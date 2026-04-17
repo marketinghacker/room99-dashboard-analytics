@@ -37,19 +37,21 @@ export type BaseLinkerOrder = {
 };
 
 /**
- * Best-available revenue figure for an order — PRODUCT revenue only,
- * delivery excluded. This matches SellRocket UI's reported "wartość
- * sprzedaży" column (merchandise value). With delivery included we
- * were +7% over user reference on Allegro (152k fee across 6k orders).
+ * Best-available revenue figure for an order.
  *
- * If `payment_done` is present we still respect it for accuracy on
- * channels that discount at checkout, but subtract delivery so the
- * unit stays product-only.
+ * Shoper orders carry `payment_done` = final invoice amount the customer paid,
+ * which by Room99 convention includes delivery (SellRocket "Łączna wartość"
+ * shows the same). So when payment_done is known, respect it verbatim.
+ *
+ * Allegro orders almost always have payment_done = 0 because Allegro handles
+ * the payment outside BaseLinker. There we sum product prices (price_brutto ×
+ * quantity) but skip delivery_price — on Allegro, shipping is either absorbed
+ * by the platform or charged separately and not part of the merchandise value
+ * that SellRocket reports.
  */
 export function orderRevenue(o: BaseLinkerOrder): number {
-  const delivery = Number(o.delivery_price ?? 0);
   const paid = Number(o.payment_done ?? 0);
-  if (paid > 0) return Math.max(0, paid - delivery);
+  if (paid > 0) return paid;
   return o.products.reduce((s, p) => s + p.price_brutto * p.quantity, 0);
 }
 
