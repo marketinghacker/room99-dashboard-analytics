@@ -19,6 +19,7 @@ export type PlatformTabProps = {
   accountHint?: string;
   accentColor?: string;
   warningBanner?: string | null;
+  infoBanner?: string | null;
   objective?: 'pln' | 'roas';
 };
 
@@ -39,7 +40,7 @@ type CampaignRow = {
   roas: number | null;
 };
 
-export function PlatformTab({ endpoint, platformLabel, accountHint, accentColor, warningBanner }: PlatformTabProps) {
+export function PlatformTab({ endpoint, platformLabel, accountHint, accentColor, warningBanner, infoBanner }: PlatformTabProps) {
   const { data, error, isLoading } = useFilteredSWR<any>(endpoint);
 
   const campaignColumns = useMemo<ColumnDef<CampaignRow, any>[]>(
@@ -112,6 +113,16 @@ export function PlatformTab({ endpoint, platformLabel, accountHint, accentColor,
           <div className="flex-1">
             <div className="text-[13px] font-semibold text-[var(--color-ink-primary)]">Pinterest</div>
             <div className="text-[12px] text-[var(--color-ink-secondary)]">{warningBanner}</div>
+          </div>
+        </div>
+      )}
+
+      {infoBanner && (
+        <div className="card p-4 flex items-start gap-3 border-[var(--color-accent-primary)]/30 bg-[var(--color-accent-primary)]/5">
+          <div className="w-1 h-10 rounded-full bg-[var(--color-accent-primary)]" />
+          <div className="flex-1">
+            <div className="text-[13px] font-semibold text-[var(--color-ink-primary)]">Informacja</div>
+            <div className="text-[12px] text-[var(--color-ink-secondary)]">{infoBanner}</div>
           </div>
         </div>
       )}
