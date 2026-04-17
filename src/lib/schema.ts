@@ -1,5 +1,5 @@
 import {
-  pgTable, text, date, integer, numeric, timestamp, jsonb, uuid, index, primaryKey, doublePrecision,
+  pgTable, text, date, integer, numeric, timestamp, jsonb, uuid, index, primaryKey, doublePrecision, boolean,
 } from 'drizzle-orm/pg-core';
 
 export const adsDaily = pgTable(
@@ -112,6 +112,20 @@ export const sellrocketDaily = pgTable(
     dateIdx: index('sellrocket_daily_date_idx').on(t.date),
   })
 );
+
+/**
+ * User-configured allow-list of BaseLinker order statuses that count as
+ * "valid sale" revenue. Populated from `getOrderStatusList` and editable
+ * via /admin/statuses. Sync layers (sellrocket-direct, products) filter
+ * orders by `isValidSale` before aggregating.
+ */
+export const orderStatusConfig = pgTable('order_status_config', {
+  statusId: integer('status_id').primaryKey(),
+  label: text('label').notNull(),
+  sourceType: text('source_type'),  // optional grouping ('SHR', 'ALL', etc.)
+  isValidSale: boolean('is_valid_sale').notNull().default(false),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
 
 export const syncRuns = pgTable('sync_runs', {
   id: uuid('id').defaultRandom().primaryKey(),

@@ -15,6 +15,13 @@
       "when": 1776372107394,
       "tag": "0001_fixed_abomination",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1776390183036,
+      "tag": "0002_massive_goblin_queen",
+      "breakpoints": true
     }
   ]
 }
