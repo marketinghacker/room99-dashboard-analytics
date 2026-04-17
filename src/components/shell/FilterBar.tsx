@@ -1,14 +1,15 @@
 'use client';
 
+import { useState } from 'react';
 import { Select, type SelectOption } from '@/components/ui/Select';
+import { DateRangePicker, periodKeyToRange } from '@/components/ui/DateRangePicker';
 import { useFilters } from '@/stores/filters';
 import { resolvePeriod, resolveCompare, type PeriodKey, type CompareKey } from '@/lib/periods';
 import { formatDateRangePL } from '@/lib/format';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Calendar } from 'lucide-react';
 import { mutate } from 'swr';
-import { useState } from 'react';
 
-const PERIODS: Array<{ value: PeriodKey; label: string }> = [
+const PERIODS: Array<{ value: string; label: string }> = [
   { value: 'today', label: 'Dzisiaj' },
   { value: 'yesterday', label: 'Wczoraj' },
   { value: 'last_7d', label: 'Ostatnie 7 dni' },
@@ -21,6 +22,7 @@ const PERIODS: Array<{ value: PeriodKey; label: string }> = [
   { value: 'this_quarter', label: 'Ten kwartał' },
   { value: 'last_quarter', label: 'Poprzedni kwartał' },
   { value: 'ytd', label: 'Od początku roku' },
+  { value: '__custom__', label: 'Zakres niestandardowy…' },
 ];
 
 const COMPARES: Array<{ value: CompareKey; label: string }> = [
@@ -33,15 +35,29 @@ const COMPARES: Array<{ value: CompareKey; label: string }> = [
 export function FilterBar() {
   const { period, compare, setPeriod, setCompare } = useFilters();
   const [refreshing, setRefreshing] = useState(false);
+  const [showPicker, setShowPicker] = useState(false);
 
+  const isCustom = typeof period === 'string' && period.startsWith('custom_');
   const periodRange = resolvePeriod(period);
   const compareRange = resolveCompare(periodRange, compare);
 
-  const periodOptions: SelectOption[] = PERIODS.map((p) => ({
-    value: p.value,
-    label: p.label,
-    hint: formatDateRangePL(resolvePeriod(p.value).start, resolvePeriod(p.value).end),
-  }));
+  const selectValue = isCustom ? '__custom__' : period;
+
+  const periodOptions: SelectOption[] = PERIODS.map((p) => {
+    if (p.value === '__custom__') {
+      return {
+        value: '__custom__',
+        label: p.label,
+        hint: isCustom ? formatDateRangePL(periodRange.start, periodRange.end) : undefined,
+      };
+    }
+    const r = resolvePeriod(p.value as PeriodKey);
+    return {
+      value: p.value,
+      label: p.label,
+      hint: formatDateRangePL(r.start, r.end),
+    };
+  });
 
   const compareOptions: SelectOption[] = COMPARES.map((c) => ({
     value: c.value,
@@ -55,6 +71,15 @@ export function FilterBar() {
           })(),
   }));
 
+  const onPeriodChange = (v: string) => {
+    if (v === '__custom__') {
+      setShowPicker(true);
+    } else {
+      setPeriod(v as PeriodKey);
+      setShowPicker(false);
+    }
+  };
+
   const handleRefresh = async () => {
     setRefreshing(true);
     await mutate(() => true, undefined, { revalidate: true });
@@ -62,14 +87,28 @@ export function FilterBar() {
   };
 
   return (
-    <div className="flex flex-wrap items-end gap-3">
-      <Select
-        label="Okres"
-        value={period}
-        options={periodOptions}
-        onChange={(v) => setPeriod(v as PeriodKey)}
-        className="min-w-[200px]"
-      />
+    <div className="flex flex-wrap items-end gap-3 relative">
+      <div className="min-w-[200px] relative">
+        <Select
+          label="Okres"
+          value={selectValue}
+          options={periodOptions}
+          onChange={onPeriodChange}
+        />
+        {showPicker && (
+          <div className="absolute left-0 top-full mt-2 z-50">
+            <DateRangePicker
+              initial={isCustom ? periodKeyToRange(period) : undefined}
+              onSelect={(key) => {
+                setPeriod(key as PeriodKey);
+                setShowPicker(false);
+              }}
+              onClose={() => setShowPicker(false)}
+            />
+          </div>
+        )}
+      </div>
+
       <Select
         label="Porównanie"
         value={compare}
@@ -84,6 +123,16 @@ export function FilterBar() {
           <span className="text-[13px] font-medium text-[var(--color-ink-primary)] numeric">
             {formatDateRangePL(periodRange.start, periodRange.end)}
           </span>
+          {isCustom && (
+            <button
+              type="button"
+              onClick={() => setShowPicker(true)}
+              className="ml-1 p-1 rounded hover:bg-[var(--color-bg-card)]"
+              title="Edytuj zakres"
+            >
+              <Calendar className="w-3 h-3 text-[var(--color-ink-tertiary)]" />
+            </button>
+          )}
           {compareRange && (
             <span className="text-[11px] text-[var(--color-ink-tertiary)] numeric">
               vs {formatDateRangePL(compareRange.start, compareRange.end)}
