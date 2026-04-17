@@ -129,14 +129,40 @@ export function PlatformTab({ endpoint, platformLabel, accountHint, accentColor,
       {/* Hero KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 stagger">
         <HeroMetric label="Wydatki" value={kpis.spend} format="pln" delta={deltas.spend} deltaInverted />
-        <HeroMetric label="Wartość konwersji" value={kpis.conversionValue} format="pln" delta={deltas.conversionValue} tone="primary" />
         <HeroMetric
-          label="ROAS"
-          value={kpis.roas}
-          format="decimal"
-          delta={deltas.roas}
-          sublabel={kpis.cos != null ? `COS: ${formatPct(kpis.cos)}` : undefined}
+          label={`Wartość konwersji (${platformLabel})`}
+          value={kpis.conversionValue}
+          format="pln"
+          delta={deltas.conversionValue}
+          tone="primary"
+          sublabel="Atrybucja platformy"
         />
+        <HeroMetric
+          label="ROAS platformy"
+          value={kpis.platformRoas}
+          format="decimal"
+          delta={deltas.platformRoas}
+          sublabel={kpis.platformCos != null ? `COS: ${formatPct(kpis.platformCos)} · ${platformLabel} attribution` : undefined}
+        />
+      </div>
+
+      {/* Agency-scope KPIs (Shoper revenue context) */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <ScoreCard
+          label="Udział w przychodzie Shopera"
+          value={kpis.revenue > 0 ? kpis.spend / kpis.revenue : null}
+          format="pct"
+          hint={`Wydatki ${platformLabel} / Przychód Shopera`}
+          deltaInverted
+        />
+        <ScoreCard
+          label="Wkład w Shoper revenue"
+          value={kpis.spend > 0 ? kpis.revenue / kpis.spend : null}
+          format="decimal"
+          hint="ROAS względem Shoper revenue"
+        />
+        <ScoreCard label="Konwersje (platforma)" value={kpis.conversions} format="int" delta={deltas.conversions} hint="Atrybucja platformy" />
+        <ScoreCard label="Średnia wartość konwersji" value={kpis.conversions > 0 ? kpis.conversionValue / kpis.conversions : null} format="pln" />
       </div>
 
       {/* Scorecards */}
@@ -145,7 +171,7 @@ export function PlatformTab({ endpoint, platformLabel, accountHint, accentColor,
         <ScoreCard label="Kliki" value={kpis.clicks} format="int" delta={deltas.clicks} />
         <ScoreCard label="CTR" value={kpis.ctr} format="pct" delta={deltas.ctr} />
         <ScoreCard label="CPC" value={kpis.cpc} format="pln2" delta={deltas.cpc} deltaInverted />
-        <ScoreCard label="Konwersje" value={kpis.conversions} format="int" delta={deltas.conversions} />
+        <ScoreCard label="CPM" value={kpis.cpm} format="pln2" delta={deltas.cpm} deltaInverted />
       </div>
 
       {/* Time series */}

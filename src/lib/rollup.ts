@@ -45,6 +45,10 @@ export type KPIs = {
   cos: number | null;
   roas: number | null;
   aov: number | null;
+  /** Platform-attributed ROAS = conversionValue / spend. Meta/Google's own numbers. */
+  platformRoas: number | null;
+  /** Platform-attributed COS = spend / conversionValue. */
+  platformCos: number | null;
 };
 
 export type SalesBySource = {
@@ -119,6 +123,7 @@ const EMPTY_KPIS: KPIs = {
   revenue: 0, sessions: 0, transactions: 0, users: 0, newUsers: 0,
   engagedSessions: 0, bounceRate: null, itemsViewed: 0, addToCart: 0, beginCheckout: 0,
   ctr: null, cpc: null, cpm: null, cos: null, roas: null, aov: null,
+  platformRoas: null, platformCos: null,
 };
 
 function safeDiv(a: number, b: number): number | null {
@@ -132,9 +137,13 @@ function deriveDerived(k: KPIs): KPIs {
     ctr: safeDiv(k.clicks, k.impressions),
     cpc: safeDiv(k.spend, k.clicks),
     cpm: safeDiv(k.spend * 1000, k.impressions),
+    // Agency-scope: spend / Shoper revenue → "ile budżet vs całkowity przychód"
     cos: safeDiv(k.spend, k.revenue),
     roas: safeDiv(k.revenue, k.spend),
     aov: safeDiv(k.revenue, k.transactions),
+    // Platform-attributed (Meta/Google own attribution): conversionValue / spend
+    platformRoas: safeDiv(k.conversionValue, k.spend),
+    platformCos: safeDiv(k.spend, k.conversionValue),
   };
 }
 
