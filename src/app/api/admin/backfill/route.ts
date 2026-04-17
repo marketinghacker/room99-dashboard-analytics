@@ -13,6 +13,7 @@ import { syncCriteo } from '@/lib/sync/criteo';
 import { syncGA4 } from '@/lib/sync/ga4';
 import { syncPinterest } from '@/lib/sync/pinterest';
 import { syncSellRocket } from '@/lib/sync/sellrocket';
+import { syncSellRocketDirect } from '@/lib/sync/sellrocket-direct';
 import { startRun, finishRun } from '@/lib/sync/run-tracker';
 import { buildRollups } from '@/lib/rollup';
 import { type DateRange } from '@/lib/periods';
@@ -66,7 +67,15 @@ export async function GET(req: Request) {
         jobs.push({ source, fn: () => syncMeta({ preset: 'last_30d' }) });
         break;
       case 'sellrocket':
-        jobs.push({ source, fn: () => syncSellRocket(range) });
+        // Prefer direct BaseLinker API when token is set — accurate Allegro.
+        // Falls back to MCP otherwise.
+        jobs.push({
+          source,
+          fn: () =>
+            process.env.BASELINKER_API_TOKEN
+              ? syncSellRocketDirect(range)
+              : syncSellRocket(range),
+        });
         break;
       case 'google_ads':
         jobs.push({ source, fn: () => syncGoogleAds(range) });

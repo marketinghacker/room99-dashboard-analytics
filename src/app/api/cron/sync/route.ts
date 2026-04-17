@@ -14,6 +14,7 @@ import { syncCriteo } from '@/lib/sync/criteo';
 import { syncGA4 } from '@/lib/sync/ga4';
 import { syncPinterest } from '@/lib/sync/pinterest';
 import { syncSellRocket } from '@/lib/sync/sellrocket';
+import { syncSellRocketDirect } from '@/lib/sync/sellrocket-direct';
 import { startRun, finishRun } from '@/lib/sync/run-tracker';
 import { resolvePeriod } from '@/lib/periods';
 import { buildRollups } from '@/lib/rollup';
@@ -70,7 +71,12 @@ export async function GET(req: Request) {
     runWithTracking('criteo', () => syncCriteo(last7)),
     runWithTracking('ga4', () => syncGA4(last7)),
     runWithTracking('pinterest', () => syncPinterest(last7)),
-    runWithTracking('sellrocket', () => syncSellRocket(sellRocketRange)),
+    runWithTracking(
+      'sellrocket',
+      process.env.BASELINKER_API_TOKEN
+        ? () => syncSellRocketDirect(sellRocketRange)
+        : () => syncSellRocket(sellRocketRange),
+    ),
   ]);
 
   // Rollup is CPU/DB-bound (~8 min for 234 cache rows). Run in background so
