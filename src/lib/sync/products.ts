@@ -10,7 +10,7 @@ import { db as defaultDb, type DB } from '@/lib/db';
 import { productsDaily, orderStatusConfig } from '@/lib/schema';
 import { BaseLinkerAPI } from './baselinker-api';
 import { parseSkuToCategoryCollection } from './sku-parser';
-import { SOURCE_BUCKETS, type Bucket } from './sellrocket-direct';
+import { SOURCE_BUCKETS, BUCKET_STATUS_EXCLUDES, type Bucket } from './sellrocket-direct';
 import { type DateRange } from '@/lib/periods';
 
 type Agg = {
@@ -55,12 +55,16 @@ export async function syncProducts(
 
   for (const bucket of buckets) {
     const sources = SOURCE_BUCKETS[bucket];
+    const bucketExcludes = BUCKET_STATUS_EXCLUDES[bucket];
     const agg = new Map<string, Agg>();
 
     for (const src of sources) {
       const all = await api.getOrdersRange({ fromTs, toTs, sourceType: src.sourceType, sourceId: src.sourceId });
-      const filtered = validSet.size > 0 ? all.filter((o) => validSet.has(o.order_status_id)) : all;
-      console.log(`[products] ${bucket} ${src.sourceType}/${src.sourceId}: ${filtered.length}/${all.length} orders kept`);
+      const allowed = validSet.size > 0 ? all.filter((o) => validSet.has(o.order_status_id)) : all;
+      const filtered = bucketExcludes.size > 0
+        ? allowed.filter((o) => !bucketExcludes.has(o.order_status_id))
+        : allowed;
+      console.log(`[products] ${bucket} ${src.sourceType}/${src.sourceId}: ${filtered.length}/${all.length} orders kept (bucketExcludes=${bucketExcludes.size})`);
 
       for (const o of filtered) {
         const date = new Date(o.date_confirmed * 1000).toISOString().slice(0, 10);

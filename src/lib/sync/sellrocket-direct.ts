@@ -31,6 +31,38 @@ export const SOURCE_BUCKETS: Record<'shr' | 'allegro', Array<{ sourceType: strin
 export type Bucket = keyof typeof SOURCE_BUCKETS;
 
 /**
+ * Bucket-specific order status excludes — applied IN ADDITION to the global
+ * order_status_config allow-list. Empirically derived from matching the
+ * SellRocket UI convention:
+ *
+ *   - Allegro: exclude in-transit / awaiting / cancelled / intermediate WMS
+ *     statuses. Matching Apr 2026 ref number (916,031 zł) required dropping
+ *     these 11 statuses; keeping them pushed us 7% over.
+ *   - SHR: no bucket-specific excludes (Shoper flow reports all paid orders
+ *     regardless of delivery state).
+ *
+ * If a status belongs on the global invalid list (returns, refunds), configure
+ * it via /admin/statuses — this set is for source-specific workflow status
+ * quirks that Shoper and Allegro don't share.
+ */
+export const BUCKET_STATUS_EXCLUDES: Record<Bucket, ReadonlySet<number>> = {
+  shr: new Set<number>(),
+  allegro: new Set<number>([
+    2223,   // W drodze (in transit — not yet counted as sale by SellRocket UI)
+    2224,   // Oczekuje w punkcie (awaiting pickup)
+    2226,   // Niedoręczone (not delivered)
+    2229,   // Anulowane (cancelled)
+    137523, // Aktualizuj ZK (triggers; observed data anomaly)
+    147785, // WERYFIKACJA SMS (pending verification)
+    1666,   // Oczekuje Allegro (awaiting Allegro)
+    30035,  // Błąd Wysyłka (shipping error)
+    144920, // WMS Skompletowane (intermediate warehouse step)
+    144918, // WMS Zaalokowane (intermediate warehouse step)
+    111527, // BRAKI (shortage)
+  ]),
+};
+
+/**
  * Sync Shoper + Allegro revenue for a date range using the direct BaseLinker API.
  * Writes per-bucket-per-day rows into sellrocket_daily + a derived 'all' row
  * that sums across buckets.
@@ -55,7 +87,8 @@ export async function syncSellRocketDirect(
 
   for (const bucket of buckets) {
     const sources = SOURCE_BUCKETS[bucket];
-    console.log(`[baselinker] bucket=${bucket} sources=${JSON.stringify(sources)} range=${range.start}..${range.end}`);
+    const bucketExcludes = BUCKET_STATUS_EXCLUDES[bucket];
+    console.log(`[baselinker] bucket=${bucket} sources=${JSON.stringify(sources)} range=${range.start}..${range.end} bucketExcludes=${bucketExcludes.size}`);
 
     // Sum across source ids within the bucket.
     const byDate = new Map<string, { orders: number; revenue: number }>();
@@ -65,9 +98,12 @@ export async function syncSellRocketDirect(
       const allOrders = await api.getOrdersRange({
         fromTs, toTs, sourceType: src.sourceType, sourceId: src.sourceId,
       });
-      const filtered = validSet.size > 0
+      const statusAllowed = validSet.size > 0
         ? allOrders.filter((o) => validSet.has(o.order_status_id))
         : allOrders;
+      const filtered = bucketExcludes.size > 0
+        ? statusAllowed.filter((o) => !bucketExcludes.has(o.order_status_id))
+        : statusAllowed;
 
       for (const o of filtered) {
         const d = new Date(o.date_confirmed * 1000).toISOString().slice(0, 10);
