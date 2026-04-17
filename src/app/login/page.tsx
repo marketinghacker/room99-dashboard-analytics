@@ -111,8 +111,8 @@ function LoginForm() {
         }}
       >
         Hasło otrzymujesz od agencji. Kontakt:{' '}
-        <a href="mailto:marcin@marketinghackers.pl" style={{ color: 'var(--color-accent)' }}>
-          marcin@marketinghackers.pl
+        <a href="mailto:marcin@marketing-hackers.com" style={{ color: 'var(--color-accent)' }}>
+          marcin@marketing-hackers.com
         </a>
       </div>
     </div>

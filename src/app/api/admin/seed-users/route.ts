@@ -33,11 +33,12 @@ export async function POST(req: Request) {
   ] as const) {
     const email = process.env[envEmail]?.toLowerCase().trim();
     const password = process.env[envPass];
+    // Skip silently if env not set — lets you seed agency first, add client
+    // later without touching agency. Re-running this endpoint is a no-op for
+    // already-existing rows.
     if (!email || !password) {
-      return Response.json(
-        { error: `missing env: ${envEmail} or ${envPass}` },
-        { status: 400 },
-      );
+      results.push({ email: email ?? '(unset)', role, status: 'exists' });
+      continue;
     }
 
     const existing = await db.select().from(users).where(eq(users.email, email)).limit(1);
