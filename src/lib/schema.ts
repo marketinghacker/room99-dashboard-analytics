@@ -144,6 +144,7 @@ export const productsDaily = pgTable(
     quantity: integer('quantity').notNull().default(0),
     revenue: numeric('revenue', { precision: 14, scale: 4 }).notNull().default('0'),
     orders: integer('orders').notNull().default(0),
+    thumbnailUrl: text('thumbnail_url'),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => ({
@@ -164,3 +165,39 @@ export const syncRuns = pgTable('sync_runs', {
   rowsWritten: integer('rows_written').default(0),
   error: text('error'),
 });
+
+/**
+ * Dashboard users — login for everyone, role-gated UI/endpoints.
+ *   role = 'client'  → Room99 stakeholders (no AI insights, no anomalies, no agency strip)
+ *   role = 'agency'  → Marketing Hackers team (full access + edit masthead + status filter)
+ *
+ * Passwords hashed with bcryptjs (cost 10).
+ */
+export const users = pgTable('users', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  email: text('email').notNull().unique(),
+  passwordHash: text('password_hash').notNull(),
+  role: text('role').notNull(),       // 'client' | 'agency'
+  displayName: text('display_name'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
+});
+
+/**
+ * Per-tab editorial copy an agency user can edit (masthead H1, lede, etc.).
+ * Keyed by (tab, key) — e.g. ('executive', 'masthead-h1'). Absent row = use
+ * the auto-generated default from data.
+ */
+export const editorialCopy = pgTable(
+  'editorial_copy',
+  {
+    tab: text('tab').notNull(),
+    key: text('key').notNull(),
+    value: text('value').notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedBy: uuid('updated_by'), // FK to users.id, soft
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.tab, t.key] }),
+  }),
+);

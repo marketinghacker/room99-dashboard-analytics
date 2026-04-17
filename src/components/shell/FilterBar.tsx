@@ -6,8 +6,7 @@ import { DateRangePicker, periodKeyToRange } from '@/components/ui/DateRangePick
 import { useFilters } from '@/stores/filters';
 import { resolvePeriod, resolveCompare, type PeriodKey, type CompareKey } from '@/lib/periods';
 import { formatDateRangePL } from '@/lib/format';
-import { RefreshCw, Calendar } from 'lucide-react';
-import { mutate } from 'swr';
+import { Calendar } from 'lucide-react';
 
 const PERIODS: Array<{ value: string; label: string }> = [
   { value: 'today', label: 'Dzisiaj' },
@@ -34,7 +33,6 @@ const COMPARES: Array<{ value: CompareKey; label: string }> = [
 
 export function FilterBar() {
   const { period, compare, setPeriod, setCompare } = useFilters();
-  const [refreshing, setRefreshing] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
 
   const isCustom = typeof period === 'string' && period.startsWith('custom_');
@@ -80,76 +78,71 @@ export function FilterBar() {
     }
   };
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await mutate(() => true, undefined, { revalidate: true });
-    setTimeout(() => setRefreshing(false), 600);
-  };
-
   return (
-    <div className="flex flex-wrap items-end gap-3 relative">
-      <div className="min-w-[200px] relative">
-        <Select
-          label="Okres"
-          value={selectValue}
-          options={periodOptions}
-          onChange={onPeriodChange}
-        />
+    <div className="flex items-center gap-2 relative">
+      {/* Period pill */}
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setShowPicker((v) => !v)}
+          className="h-8 px-3 flex items-center gap-2 rounded-[6px] text-[12px] border transition-colors"
+          style={{
+            background: 'var(--color-bg-card)',
+            borderColor: 'var(--color-line-soft)',
+            color: 'var(--color-ink-primary)',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--color-line-hard)')}
+          onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--color-line-soft)')}
+        >
+          <Calendar className="w-3.5 h-3.5" strokeWidth={1.4} />
+          <span className="numeric font-medium">
+            {formatDateRangePL(periodRange.start, periodRange.end)}
+          </span>
+          <span
+            className="font-mono text-[10px] tracking-[0.06em] uppercase"
+            style={{ color: 'var(--color-ink-tertiary)' }}
+          >
+            {PERIODS.find((p) => p.value === selectValue)?.label.slice(0, 8) ?? ''}
+          </span>
+        </button>
         {showPicker && (
-          <div className="absolute left-0 top-full mt-2 z-50">
-            <DateRangePicker
-              initial={isCustom ? periodKeyToRange(period) : undefined}
-              onSelect={(key) => {
-                setPeriod(key as PeriodKey);
-                setShowPicker(false);
-              }}
-              onClose={() => setShowPicker(false)}
-            />
+          <div className="absolute right-0 top-full mt-2 z-50 flex gap-2" onClick={(e) => e.stopPropagation()}>
+            <div className="w-[220px]">
+              <Select label="Okres" value={selectValue} options={periodOptions} onChange={onPeriodChange} />
+            </div>
+            {selectValue === '__custom__' && (
+              <div className="z-50">
+                <DateRangePicker
+                  initial={isCustom ? periodKeyToRange(period) : undefined}
+                  onSelect={(key) => {
+                    setPeriod(key as PeriodKey);
+                    setShowPicker(false);
+                  }}
+                  onClose={() => setShowPicker(false)}
+                />
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      <Select
-        label="Porównanie"
-        value={compare}
-        options={compareOptions}
-        onChange={(v) => setCompare(v as CompareKey)}
-        className="min-w-[220px]"
-      />
-
-      <div className="flex flex-col gap-1 ml-1">
-        <span className="overline">Wybrany zakres</span>
-        <div className="flex items-center gap-2 h-9 px-3 rounded-[10px] bg-[var(--color-bg-elevated)] border border-[var(--color-border-subtle)]">
-          <span className="text-[13px] font-medium text-[var(--color-ink-primary)] numeric">
-            {formatDateRangePL(periodRange.start, periodRange.end)}
-          </span>
-          {isCustom && (
-            <button
-              type="button"
-              onClick={() => setShowPicker(true)}
-              className="ml-1 p-1 rounded hover:bg-[var(--color-bg-card)]"
-              title="Edytuj zakres"
-            >
-              <Calendar className="w-3 h-3 text-[var(--color-ink-tertiary)]" />
-            </button>
-          )}
-          {compareRange && (
-            <span className="text-[11px] text-[var(--color-ink-tertiary)] numeric">
-              vs {formatDateRangePL(compareRange.start, compareRange.end)}
-            </span>
-          )}
-        </div>
+      {/* Compare pill */}
+      <div className="relative min-w-[200px]">
+        <Select
+          value={compare}
+          options={compareOptions}
+          onChange={(v) => setCompare(v as CompareKey)}
+        />
       </div>
 
-      <button
-        type="button"
-        onClick={handleRefresh}
-        className="ml-auto h-9 px-3 flex items-center gap-1.5 rounded-[10px] text-[13px] font-medium text-[var(--color-ink-secondary)] hover:text-[var(--color-ink-primary)] hover:bg-[var(--color-bg-elevated)] transition-colors"
-        title="Odśwież dane"
-      >
-        <RefreshCw className={refreshing ? 'w-3.5 h-3.5 animate-spin' : 'w-3.5 h-3.5'} />
-        <span>Odśwież</span>
-      </button>
+      {compareRange && (
+        <span
+          className="font-mono text-[10px] tracking-[0.06em] uppercase"
+          style={{ color: 'var(--color-ink-tertiary)' }}
+        >
+          vs {formatDateRangePL(compareRange.start, compareRange.end)}
+        </span>
+      )}
     </div>
   );
 }
