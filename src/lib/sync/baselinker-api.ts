@@ -22,6 +22,8 @@ export type BaseLinkerOrder = {
   order_status_id: number;
   currency: string;
   delivery_price: number;
+  payment_done: number;      // amount actually paid (post-discount); preferred over MSRP
+  payment_method?: string;
   email?: string;
   products: Array<{
     product_id?: string;
@@ -33,6 +35,19 @@ export type BaseLinkerOrder = {
     quantity: number;
   }>;
 };
+
+/**
+ * Best-available revenue figure for an order.
+ * Prefers `payment_done` (matches SellRocket UI's "Łączna wartość").
+ * Falls back to summed products + delivery if payment_done is 0/missing
+ * (some channels don't report it).
+ */
+export function orderRevenue(o: BaseLinkerOrder): number {
+  const paid = Number(o.payment_done ?? 0);
+  if (paid > 0) return paid;
+  const products = o.products.reduce((s, p) => s + p.price_brutto * p.quantity, 0);
+  return products + Number(o.delivery_price ?? 0);
+}
 
 type GetOrdersResponse = {
   status: 'SUCCESS' | 'ERROR';
@@ -96,8 +111,9 @@ export class BaseLinkerAPI {
     let idFrom = 0;
     const dateConfirmedFrom = opts.fromTs;
     let iterations = 0;
+    let batchesWithNoMatchInRange = 0;
 
-    while (iterations++ < 500) {
+    while (iterations++ < 5000) {
       const params: Record<string, unknown> = {
         date_confirmed_from: dateConfirmedFrom,
         get_unconfirmed_orders: opts.getUnconfirmed ? true : false,
@@ -112,17 +128,33 @@ export class BaseLinkerAPI {
       const batch = res.orders ?? [];
       if (batch.length === 0) break;
 
+      // BaseLinker returns batches sorted by order_id ASC, but `date_confirmed`
+      // can be in any order within the batch (orders confirmed retroactively).
+      // We must NOT early-return on a single out-of-range row — keep collecting.
+      let matchedThisBatch = 0;
+      let allBeforeRange = true;
+      let allAfterRange = true;
       for (const o of batch) {
-        if (o.date_confirmed > opts.toTs) {
-          return orders; // crossed upper bound
+        if (o.date_confirmed >= opts.fromTs && o.date_confirmed <= opts.toTs) {
+          orders.push(o);
+          matchedThisBatch++;
         }
-        if (o.date_confirmed >= opts.fromTs) orders.push(o);
+        if (o.date_confirmed >= opts.fromTs) allBeforeRange = false;
+        if (o.date_confirmed <= opts.toTs) allAfterRange = false;
       }
 
-      // If fewer than 100 orders, we've reached the end.
-      if (batch.length < 100) break;
+      // Stopping heuristic: if 5 consecutive batches all > toTs and we have
+      // some matches already, we've gone past the range.
+      if (allAfterRange) {
+        batchesWithNoMatchInRange++;
+        if (batchesWithNoMatchInRange >= 5 && orders.length > 0) break;
+      } else {
+        batchesWithNoMatchInRange = 0;
+      }
+      void matchedThisBatch;
+      void allBeforeRange;
 
-      // Next page: advance id_from to last order's id + 1.
+      if (batch.length < 100) break;
       const lastOrder = batch[batch.length - 1];
       idFrom = lastOrder.order_id + 1;
     }
@@ -147,7 +179,7 @@ export class BaseLinkerAPI {
       const byDate = new Map<string, { orders: number; revenue: number }>();
       for (const o of all) {
         const d = new Date(o.date_confirmed * 1000).toISOString().slice(0, 10);
-        const revenue = o.products.reduce((s, p) => s + p.price_brutto * p.quantity, 0) + Number(o.delivery_price ?? 0);
+        const revenue = orderRevenue(o);
         let e = byDate.get(d);
         if (!e) { e = { orders: 0, revenue: 0 }; byDate.set(d, e); }
         e.orders++;

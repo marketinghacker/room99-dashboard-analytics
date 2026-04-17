@@ -2,7 +2,7 @@
  * Verify direct BaseLinker API works for Room99 + computes April 1-16 totals
  * per source_id. Expected: Room99_Official (id=8) ≈ 916 030,73 zł.
  */
-import { BaseLinkerAPI } from '../src/lib/sync/baselinker-api.ts';
+import { BaseLinkerAPI, orderRevenue } from '../src/lib/sync/baselinker-api.ts';
 
 const token = process.env.BASELINKER_API_TOKEN;
 const url = process.env.BASELINKER_API_URL;
@@ -33,9 +33,10 @@ const targets = [
 
 for (const t of targets) {
   const orders = await api.getOrdersRange({ fromTs, toTs, sourceType: t.sourceType, sourceId: t.sourceId });
-  const revenue = orders.reduce(
+  const msrp = orders.reduce(
     (s, o) => s + o.products.reduce((a, p) => a + p.price_brutto * p.quantity, 0) + Number(o.delivery_price ?? 0),
     0,
   );
-  console.log(`  ${t.sourceType}/${t.sourceId}  ${t.name.padEnd(22)} → ${orders.length} orders  ${revenue.toFixed(2)} zł`);
+  const paid = orders.reduce((s, o) => s + orderRevenue(o), 0);
+  console.log(`  ${t.sourceType}/${t.sourceId}  ${t.name.padEnd(22)} → ${orders.length} orders  MSRP=${msrp.toFixed(2)}  paid=${paid.toFixed(2)} zł`);
 }
