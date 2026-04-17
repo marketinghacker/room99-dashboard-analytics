@@ -103,37 +103,77 @@ function rowsToAdsDaily(rows: MetaInsightRow[]): AdsDailyRow[] {
   return out;
 }
 
+type MetaPreset = 'today' | 'yesterday' | 'this_month' | 'last_month' | 'last_7d' | 'last_30d';
+
 /**
- * Fetch `last_N` aggregate and distribute spend/impressions/clicks/conversions
- * evenly across N dates. Because Meta MCP exposes only aggregate presets
- * (never true daily), we spread the aggregate so that dashboard date-range
- * queries (which SUM over dates) still yield the correct 7-day / 30-day total.
- *
- * This is a deliberate trade-off: daily lines for Meta look flat, but totals
- * are accurate. GA4 / SellRocket provide the real daily granularity.
+ * Compute the (start, end, days) window a preset covers, using `now` as reference.
+ * Meta MCP returns aggregates; we spread them back across their range so SUM
+ * over any sub-range returns accurate totals.
  */
-async function fetchAndSpread(
-  client: Awaited<ReturnType<typeof connectMCP>>,
-  preset: 'last_7d' | 'last_30d',
-): Promise<AdsDailyRow[]> {
-  const rows = await fetchPreset(client, preset);
+function resolveMetaPresetRange(preset: MetaPreset, now = new Date()): { start: string; end: string; days: number } {
+  const iso = (d: Date) => d.toISOString().slice(0, 10);
+  const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const yesterday = new Date(today);
+  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+
+  switch (preset) {
+    case 'today':
+      return { start: iso(today), end: iso(today), days: 1 };
+    case 'yesterday':
+      return { start: iso(yesterday), end: iso(yesterday), days: 1 };
+    case 'this_month': {
+      const start = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
+      const days = Math.round((today.getTime() - start.getTime()) / 86_400_000) + 1;
+      return { start: iso(start), end: iso(today), days };
+    }
+    case 'last_month': {
+      const firstOfThis = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
+      const lastPrev = new Date(firstOfThis);
+      lastPrev.setUTCDate(lastPrev.getUTCDate() - 1);
+      const firstPrev = new Date(Date.UTC(lastPrev.getUTCFullYear(), lastPrev.getUTCMonth(), 1));
+      const days = Math.round((lastPrev.getTime() - firstPrev.getTime()) / 86_400_000) + 1;
+      return { start: iso(firstPrev), end: iso(lastPrev), days };
+    }
+    case 'last_7d': {
+      const end = yesterday;
+      const start = new Date(end);
+      start.setUTCDate(start.getUTCDate() - 6);
+      return { start: iso(start), end: iso(end), days: 7 };
+    }
+    case 'last_30d': {
+      const end = yesterday;
+      const start = new Date(end);
+      start.setUTCDate(start.getUTCDate() - 29);
+      return { start: iso(start), end: iso(end), days: 30 };
+    }
+  }
+}
+
+function spreadAcrossRange(
+  rows: MetaInsightRow[],
+  range: { start: string; end: string; days: number },
+): AdsDailyRow[] {
   if (rows.length === 0) return [];
-  const days = preset === 'last_7d' ? 7 : 30;
+
+  // Generate the list of ISO dates in the range.
+  const dates: string[] = [];
+  const cursor = new Date(range.start + 'T00:00:00Z');
+  const end = new Date(range.end + 'T00:00:00Z');
+  while (cursor <= end) {
+    dates.push(cursor.toISOString().slice(0, 10));
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  const n = dates.length;
 
   const out: AdsDailyRow[] = [];
   for (const r of rows) {
-    const dateStop = r.date_stop ?? r.date_start;
-    if (!dateStop || !r.campaign_id) continue;
+    if (!r.campaign_id) continue;
     const spend = toNum(r.spend);
     const impressions = toNum(r.impressions);
     const clicks = toNum(r.clicks);
     const purchase = extractPurchase(r);
 
-    // Generate N dates ending at date_stop, each with 1/N of the aggregate.
-    for (let i = 0; i < days; i++) {
-      const d = new Date(dateStop + 'T00:00:00Z');
-      d.setUTCDate(d.getUTCDate() - i);
-      const iso = d.toISOString().slice(0, 10);
+    for (const iso of dates) {
       out.push({
         date: iso,
         platform: 'meta',
@@ -144,42 +184,57 @@ async function fetchAndSpread(
         campaignObjective: null,
         adGroupId: null,
         adGroupName: null,
-        spend: (spend / days).toFixed(4),
-        impressions: Math.round(impressions / days),
-        clicks: Math.round(clicks / days),
+        spend: (spend / n).toFixed(4),
+        impressions: Math.round(impressions / n),
+        clicks: Math.round(clicks / n),
         ctr: impressions > 0 ? (clicks / impressions).toString() : null,
         cpc: clicks > 0 ? (spend / clicks).toString() : null,
         cpm: impressions > 0 ? ((spend / impressions) * 1000).toString() : null,
-        conversions: (purchase.conversions / days).toFixed(4),
-        conversionValue: (purchase.conversionValue / days).toFixed(4),
+        conversions: (purchase.conversions / n).toFixed(4),
+        conversionValue: (purchase.conversionValue / n).toFixed(4),
       });
     }
   }
   return out;
 }
 
+/**
+ * Default Meta sync fetches TWO presets: `this_month` + `last_month`.
+ * Each spreads aggregate evenly across that month's days, so any range query
+ * within those two months returns accurate totals.
+ *
+ * Trade-off: the daily chart for Meta is "stair-flat" — same value each day
+ * within a preset bucket. True daily would need direct Facebook Graph API access.
+ * GA4 + SellRocket provide real daily granularity.
+ */
 export async function syncMeta(
-  opts: { preset?: 'last_7d' | 'last_30d'; db?: DB } = {}
+  opts: { preset?: MetaPreset; presets?: MetaPreset[]; db?: DB } = {}
 ): Promise<{ rowsWritten: number }> {
   const database = opts.db ?? defaultDb;
-  const preset = opts.preset ?? 'last_30d';
+  const presets: MetaPreset[] = opts.presets ?? (opts.preset ? [opts.preset] : ['this_month', 'last_month']);
 
   const client = await connectMCP(MCP_URL, 'sse');
   try {
-    const rows = await fetchAndSpread(client, preset);
-    if (rows.length === 0) return { rowsWritten: 0 };
+    let totalRows = 0;
+    let deletedFor: Array<{ start: string; end: string }> = [];
+    for (const preset of presets) {
+      const range = resolveMetaPresetRange(preset);
+      const insights = await fetchPreset(client, preset);
+      const rows = spreadAcrossRange(insights, range);
+      if (rows.length === 0) continue;
 
-    // Replace ALL Meta rows for the preset window — don't mix with stale ones.
-    // Derive the date range from the spread itself.
-    const dates = rows.map((r) => r.date).sort();
-    const firstDate = dates[0];
-    const lastDate = dates[dates.length - 1];
-
-    await database.execute(
-      sql`DELETE FROM ads_daily WHERE platform='meta' AND date BETWEEN ${firstDate} AND ${lastDate}`
-    );
-    const rowsWritten = await upsertAdsDaily(database, rows);
-    return { rowsWritten };
+      // Replace this preset's window fully. Avoid double-counting overlapping
+      // presets by tracking which windows we've already cleared.
+      const overlap = deletedFor.some((d) => d.start === range.start && d.end === range.end);
+      if (!overlap) {
+        await database.execute(
+          sql`DELETE FROM ads_daily WHERE platform='meta' AND date BETWEEN ${range.start} AND ${range.end}`
+        );
+        deletedFor.push({ start: range.start, end: range.end });
+      }
+      totalRows += await upsertAdsDaily(database, rows);
+    }
+    return { rowsWritten: totalRows };
   } finally {
     await client.close();
   }
