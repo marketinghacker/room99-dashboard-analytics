@@ -66,7 +66,16 @@ export async function getCached(
       ),
     )
     .limit(1);
-  return (rows[0]?.payload as RollupPayload | undefined) ?? null;
+  const cached = rows[0]?.payload as RollupPayload | undefined;
+  if (cached) return cached;
+
+  // Cache miss for a preset combo — build live so UI never 503s. The cron
+  // rebuilds the common combos hourly; this path covers newly-selected
+  // (period, compare) pairs the user picks from the UI before cron catches up.
+  const { buildOneLive } = await import('@/lib/rollup');
+  const range = resolvePeriod(period);
+  const compareRange = resolveCompare(range, compare);
+  return buildOneLive(db, platform, range, compareRange);
 }
 
 export function jsonResponse(data: unknown, init?: ResponseInit): Response {

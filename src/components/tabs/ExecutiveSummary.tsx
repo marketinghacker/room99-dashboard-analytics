@@ -76,7 +76,12 @@ export function ExecutiveSummaryTab() {
   const { kicker: defaultKicker, headline: defaultHeadline } = buildMastheadDefault(all.range, d.revenue ?? null);
   const kicker   = copy?.kicker   ?? defaultKicker;
   const headline = copy?.headline ?? defaultHeadline;
-  const lede     = copy?.lede     ?? buildDefaultLede(k, d);
+  const compareLabel =
+    data.compare === 'same_period_last_year' ? 'rok temu' :
+    data.compare === 'same_period_last_quarter' ? 'poprzedni kwartał' :
+    data.compare === 'none' ? '' :
+    'poprzedni okres';
+  const lede     = copy?.lede     ?? buildDefaultLede(k, d, compareLabel);
 
   const spendByPlatform = perPlatform.map((p: any) => ({
     platform: p.platform,
@@ -378,9 +383,10 @@ export function ExecutiveSummaryTab() {
   );
 }
 
-function buildDefaultLede(k: any, d: any): string {
+function buildDefaultLede(k: any, d: any, compareLabel: string): string {
   const revenueDeltaTxt = d.revenue != null ? `${d.revenue > 0 ? '+' : ''}${d.revenue.toFixed(1).replace('.', ',')}%` : '—';
   const cosTxt = k.cos != null ? `${(k.cos * 100).toFixed(2).replace('.', ',')}%` : '—';
   const roasTxt = k.roas != null ? `${k.roas.toFixed(2).replace('.', ',')}×` : '—';
-  return `Przychód Shoper ${revenueDeltaTxt} vs poprzedni okres. COS agency ${cosTxt}, ROAS ${roasTxt}. Pełne zestawienie kanałów i lejka poniżej.`;
+  const vs = compareLabel ? ` vs ${compareLabel}` : '';
+  return `Przychód Shoper ${revenueDeltaTxt}${vs}. COS agency ${cosTxt}, ROAS ${roasTxt}. Pełne zestawienie kanałów i lejka poniżej.`;
 }
