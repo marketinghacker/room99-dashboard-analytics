@@ -311,11 +311,13 @@ export function HeroKpi({
         {change != null && <Delta value={change / 100} />}
       </div>
       <div
-        className="hero-numeral"
+        className="hero-numeral whitespace-nowrap"
         style={{
-          fontSize: primary ? 52 : 36,
+          // Use fluid sizing so million-złoty values with 2 decimals fit.
+          fontSize: primary ? 'clamp(28px, 3.4vw, 46px)' : 'clamp(22px, 2.4vw, 34px)',
           lineHeight: 1.0,
           color: 'var(--color-ink-primary)',
+          letterSpacing: '-0.035em',
         }}
       >
         {display}
@@ -361,15 +363,16 @@ export function StatCard({
     >
       <Overline>{label}</Overline>
       <div
-        className="numeric"
+        className="numeric whitespace-nowrap overflow-hidden text-ellipsis"
         style={{
           fontFamily: 'var(--font-display)',
           fontWeight: 500,
-          fontSize: 24,
+          fontSize: 22,
           letterSpacing: '-0.02em',
           lineHeight: 1.1,
           color: 'var(--color-ink-primary)',
         }}
+        title={display}
       >
         {display}
       </div>
