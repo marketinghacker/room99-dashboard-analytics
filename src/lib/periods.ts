@@ -104,8 +104,23 @@ export function resolveCompare(period: DateRange, compare: CompareKey): DateRang
   const lengthDays = Math.round((end.getTime() - start.getTime()) / DAY_MS) + 1;
 
   if (compare === 'previous_period') {
-    const newEnd = addDays(start, -1);
-    const newStart = addDays(newEnd, -(lengthDays - 1));
+    // "Poprzedni okres" means: same day-numbers in the previous calendar
+    // month. E.g. 1–20 April → 1–20 March (not "last 20 days" = 12–31 March).
+    // If the new month has fewer days, clamp to the last valid day.
+    const shiftMonth = (d: Date): Date => {
+      const y = d.getUTCFullYear();
+      const m = d.getUTCMonth();
+      const day = d.getUTCDate();
+      const targetMonth = m - 1;
+      const targetYear = targetMonth < 0 ? y - 1 : y;
+      const normMonth = (targetMonth + 12) % 12;
+      const lastDayOfTargetMonth = new Date(Date.UTC(targetYear, normMonth + 1, 0)).getUTCDate();
+      const clampedDay = Math.min(day, lastDayOfTargetMonth);
+      return utcDate(targetYear, normMonth, clampedDay);
+    };
+    const newStart = shiftMonth(start);
+    const newEnd = shiftMonth(end);
+    void lengthDays;
     return { start: fmt(newStart), end: fmt(newEnd) };
   }
   if (compare === 'same_period_last_year') {

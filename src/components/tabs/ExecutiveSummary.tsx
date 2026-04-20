@@ -7,7 +7,7 @@ import {
   Masthead, HeroKpi, StatCard, SectionHead, Sparkline,
   Delta, Dot, Bar, PLATFORM_DOT, fmtX, fmtPLNCompact,
 } from '@/components/primitives/editorial';
-import { ChartArea, ChartDonut } from '@/components/primitives/charts';
+import { ChartArea, ChartDonut, ChartLine } from '@/components/primitives/charts';
 import { LoadingCard, ErrorCard } from '@/components/primitives/StateCard';
 import { formatPLN, formatInt, formatPct } from '@/lib/format';
 import { EditableMasthead } from '@/components/shell/EditableMasthead';
@@ -22,23 +22,13 @@ const PLATFORM_NAMES: Record<string, string> = {
 /** Polish month name for masthead kicker. */
 const MONTHS_PL = ['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'];
 
-function buildMastheadDefault(range: { start: string; end: string }, revenueDelta: number | null) {
+function buildMastheadDefault(range: { start: string; end: string }) {
   const start = new Date(range.start);
   const monthName = MONTHS_PL[start.getMonth()];
   const year = start.getFullYear();
   const kicker = `№ 03 · ${monthName} ${year} · Monthly Review`;
-
-  let headline: string;
-  if (revenueDelta != null && revenueDelta > 15) {
-    headline = `Wiosna wraca do Room99. *Przychód +${revenueDelta.toFixed(1).replace('.', ',')}%* rok do roku.`;
-  } else if (revenueDelta != null && revenueDelta > 0) {
-    headline = `Stabilny wzrost. *Przychód +${revenueDelta.toFixed(1).replace('.', ',')}%* rok do roku.`;
-  } else if (revenueDelta != null && revenueDelta < -5) {
-    headline = `Korekta miesiąca. *Przychód ${revenueDelta.toFixed(1).replace('.', ',')}%* rok do roku.`;
-  } else {
-    headline = `Room99, ${monthName.toLowerCase()} ${year}. *Przegląd miesiąca.*`;
-  }
-
+  // No auto-generated headline — agency can set one via EditableMasthead.
+  const headline = '';
   return { kicker, headline };
 }
 
@@ -73,7 +63,7 @@ export function ExecutiveSummaryTab() {
   const perPlatform = (data.perPlatform ?? []).filter((p: any) => p.platform !== 'ga4' && p.payload);
 
   // Masthead defaults (dynamic) — agency can override via DB
-  const { kicker: defaultKicker, headline: defaultHeadline } = buildMastheadDefault(all.range, d.revenue ?? null);
+  const { kicker: defaultKicker, headline: defaultHeadline } = buildMastheadDefault(all.range);
   const kicker   = copy?.kicker   ?? defaultKicker;
   const headline = copy?.headline ?? defaultHeadline;
   const compareLabel =
@@ -227,10 +217,46 @@ export function ExecutiveSummaryTab() {
         </div>
       </section>
 
-      {/* §02 Platformy — zestawienie */}
+      {/* §02 COS day-by-day — widać na żywo jak rośnie/spada obciążenie reklamą */}
       <section>
         <SectionHead
           number="§02"
+          title="COS dzień po dniu"
+          sub="Koszt reklam / Przychód Shoper. Niżej = lepiej."
+          right={
+            <div className="flex items-center gap-4 text-[12px]">
+              <span style={{ color: 'var(--color-ink-tertiary)' }}>
+                Średni COS w okresie:
+              </span>
+              <span
+                className="numeric"
+                style={{
+                  fontFamily: 'var(--font-display)',
+                  fontWeight: 500,
+                  fontSize: 18,
+                }}
+              >
+                {formatPct(k.cos ?? 0)}
+              </span>
+            </div>
+          }
+        />
+        <div className="card p-5">
+          <ChartLine
+            data={(timeSeries as Array<{ date: string; cos?: number }>).map((r) => ({
+              date: r.date,
+              cos: r.cos != null ? r.cos * 100 : null,
+            }))}
+            series={[{ key: 'cos', label: 'COS %', color: 'var(--color-accent)' }]}
+            height={240}
+          />
+        </div>
+      </section>
+
+      {/* §03 Platformy — zestawienie */}
+      <section>
+        <SectionHead
+          number="§03"
           title="Platformy — zestawienie"
           sub="Wydatki, ROAS, CR, CPA i % budżetu"
         />
@@ -300,7 +326,7 @@ export function ExecutiveSummaryTab() {
       {/* §03 Pipeline konwersji */}
       <section>
         <SectionHead
-          number="§03"
+          number="§04"
           title="Pipeline konwersji"
           sub="Impressions → Sesje → Dodanie do koszyka → Zakup"
         />
@@ -311,35 +337,64 @@ export function ExecutiveSummaryTab() {
             const retention = prev > 0 ? step.value / prev : null;
             const dropoff = i > 0 && retention != null ? 1 - retention : null;
             return (
-              <div key={step.label} className="flex items-center gap-4">
-                <div className="w-[180px] shrink-0 flex items-baseline gap-2">
-                  <span className="font-mono text-[10px]" style={{ color: 'var(--color-ink-tertiary)', letterSpacing: '0.1em' }}>
+              <div key={step.label} className="flex items-center gap-3 min-w-0">
+                {/* Label */}
+                <div className="w-[170px] shrink-0 flex items-baseline gap-2">
+                  <span
+                    className="font-mono text-[10px] shrink-0"
+                    style={{ color: 'var(--color-ink-tertiary)', letterSpacing: '0.1em' }}
+                  >
                     {String(i + 1).padStart(2, '0')}
                   </span>
-                  <span className="text-[13px]">{step.label}</span>
+                  <span className="text-[13px] truncate">{step.label}</span>
                 </div>
-                <div className="flex-1 flex items-center gap-3">
+                {/* Visual-only bar (no number inside to avoid overflow on narrow steps) */}
+                <div
+                  className="flex-1 h-7 rounded-[4px] min-w-0"
+                  style={{
+                    background: 'var(--color-bg-elevated)',
+                    overflow: 'hidden',
+                  }}
+                >
                   <div
-                    className="h-8 rounded-[4px] flex items-center justify-end pr-3"
                     style={{
-                      width: `${Math.max(4, pct * 100)}%`,
-                      background: `color-mix(in oklch, var(--color-accent) ${Math.round(80 - i * 10)}%, var(--color-bg-elevated))`,
-                      color: 'white',
-                      fontFamily: 'var(--font-display)',
-                      fontWeight: 500,
-                      fontSize: 14,
+                      height: '100%',
+                      width: `${Math.max(2, pct * 100)}%`,
+                      background: `color-mix(in oklch, var(--color-accent) ${Math.round(85 - i * 10)}%, var(--color-bg-elevated))`,
                       transition: 'width 700ms cubic-bezier(0.32, 0.72, 0, 1)',
                     }}
-                  >
-                    {formatInt(step.value)}
-                  </div>
+                  />
                 </div>
-                <div className="w-[140px] shrink-0 text-right text-[11px]" style={{ color: 'var(--color-ink-tertiary)' }}>
-                  {retention != null && <span>{(retention * 100).toFixed(1).replace('.', ',')}% z poprzedniego</span>}
+                {/* Absolute number, tabular, right-aligned */}
+                <div
+                  className="shrink-0 text-right numeric"
+                  style={{
+                    width: 100,
+                    fontFamily: 'var(--font-display)',
+                    fontWeight: 500,
+                    fontSize: 14,
+                    color: 'var(--color-ink-primary)',
+                  }}
+                >
+                  {formatInt(step.value)}
                 </div>
-                <div className="w-[80px] shrink-0 text-right">
+                {/* Retention % of previous step */}
+                <div
+                  className="shrink-0 text-right text-[11px]"
+                  style={{ width: 110, color: 'var(--color-ink-tertiary)' }}
+                >
+                  {retention != null ? `${(retention * 100).toFixed(1).replace('.', ',')}% prev.` : ''}
+                </div>
+                {/* Dropoff chip */}
+                <div className="shrink-0 text-right" style={{ width: 60 }}>
                   {dropoff != null && (
-                    <span style={{ color: 'var(--color-accent-negative)', fontSize: 11 }}>
+                    <span
+                      style={{
+                        color: 'var(--color-accent-negative)',
+                        fontSize: 11,
+                        fontFamily: 'var(--font-mono)',
+                      }}
+                    >
                       −{(dropoff * 100).toFixed(0)}%
                     </span>
                   )}

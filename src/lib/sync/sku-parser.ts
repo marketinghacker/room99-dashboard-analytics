@@ -12,8 +12,7 @@ const CANONICAL_CATEGORIES = new Set<string>([
   'OBRUS',
   'KOC',
   'PLED',
-  'ZAPACH',    // Zapachy do domu
-  'PERFUM',    // Perfumy damskie (aliased from "Woda perfumowana")
+  'ZAPACH',    // Zapachy do domu + perfumy (user said: same category)
   'BIEŻNIK',
   'DYWAN',
   'RĘCZNIK',
@@ -48,7 +47,9 @@ const CATEGORY_LEMMA: Record<string, string> = {
   ZAPACHY: 'ZAPACH',
   SZARFY: 'SZARFA',
   ZAWIESZKI: 'ZAWIESZKA',
-  PERFUMY: 'PERFUM',
+  // User request: Perfumy damskie and Zapachy do domu share the same bucket.
+  PERFUM: 'ZAPACH',
+  PERFUMY: 'ZAPACH',
 };
 
 /**
@@ -100,10 +101,10 @@ export function parseSkuToCategoryCollection(name: string): {
   const rawCategory = firstAlpha.toUpperCase();
   const lemma = CATEGORY_LEMMA[rawCategory] ?? rawCategory;
 
-  // Override: perfume names are classified regardless of the first-word raw.
+  // Override: perfume names (Woda perfumowana ...) merge into ZAPACH bucket.
   let category: string | null;
   if (isPerfume) {
-    category = 'PERFUM';
+    category = 'ZAPACH';
   } else if (CANONICAL_CATEGORIES.has(lemma)) {
     category = lemma;
   } else {

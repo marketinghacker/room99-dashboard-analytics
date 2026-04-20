@@ -264,15 +264,18 @@ export function Masthead({
   className = '',
 }: {
   kicker: string;           // "№ 03 · Marzec 2026 · Monthly Review"
-  title: ReactNode;          // serif H1 — may contain <em>
+  title?: ReactNode;         // serif H1 — may contain <em>; optional
   lede?: ReactNode;          // optional subhead paragraph
   className?: string;
 }) {
+  // Render H1 only when a non-empty title is provided. Empty string is a
+  // common default ("no headline by default, agency can add one").
+  const hasTitle = !!title && (typeof title !== 'string' || title.trim().length > 0);
   return (
     <header className={`mb-8 ${className}`}>
       <div className="overline mb-4">{kicker}</div>
-      <h1 className="masthead-h1">{title}</h1>
-      {lede && <p className="lede mt-5">{lede}</p>}
+      {hasTitle && <h1 className="masthead-h1">{title}</h1>}
+      {lede && <p className={`lede ${hasTitle ? 'mt-5' : 'mt-2'}`}>{lede}</p>}
     </header>
   );
 }

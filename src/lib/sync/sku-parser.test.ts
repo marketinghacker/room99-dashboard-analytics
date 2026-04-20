@@ -49,9 +49,9 @@ describe('parseSkuToCategoryCollection', () => {
     ).toEqual({ category: 'ZAPACH', collection: 'MON AME' });
   });
 
-  it('maps "Woda perfumowana" to PERFUM (not WODA)', () => {
+  it('maps "Woda perfumowana" to ZAPACH (perfume merged into zapach bucket)', () => {
     expect(parseSkuToCategoryCollection('Woda perfumowana - Mon Ame 100 ml')).toEqual({
-      category: 'PERFUM',
+      category: 'ZAPACH',
       collection: 'MON AME',
     });
   });
