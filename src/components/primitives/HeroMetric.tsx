@@ -86,7 +86,11 @@ export function HeroMetric({
         {delta != null && <DeltaBadge pct={delta} invert={deltaInverted} />}
       </div>
 
-      <div className="mt-3 hero-numeral text-[44px] leading-[1.05] text-[var(--color-ink-primary)] tabular">
+      <div
+        className="mt-3 hero-numeral leading-[1.05] text-[var(--color-ink-primary)] tabular whitespace-nowrap overflow-hidden text-ellipsis"
+        style={{ fontSize: 'clamp(22px, 2.6vw, 40px)' }}
+        title={display}
+      >
         {display}
       </div>
 
