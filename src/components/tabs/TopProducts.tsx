@@ -142,7 +142,10 @@ export function TopProductsTab() {
       <div>
         <h2 className="text-[24px] font-semibold tracking-[-0.02em]">Produkty & kategorie</h2>
         <p className="text-[13px] text-[var(--color-ink-tertiary)] mt-0.5">
-          Źródło: BaseLinker products · porównanie YoY: {data.yoyRange.start} → {data.yoyRange.end}
+          Źródło: BaseLinker · wartość towarów (bez dostawy) · porównanie YoY: {data.yoyRange.start} → {data.yoyRange.end}
+        </p>
+        <p className="text-[11px] text-[var(--color-ink-tertiary)] mt-1 italic">
+          Różnica ~2–3% vs Podsumowanie = koszty dostawy wliczone w wartość zamówienia w SellRocket.
         </p>
         <div className="mt-2">{breadcrumbs}</div>
       </div>
