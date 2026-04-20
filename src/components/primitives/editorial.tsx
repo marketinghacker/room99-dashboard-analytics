@@ -311,11 +311,12 @@ export function HeroKpi({
         {change != null && <Delta value={change / 100} />}
       </div>
       <div
-        className="hero-numeral whitespace-nowrap"
+        className="hero-numeral break-words"
         style={{
-          // Use fluid sizing so million-złoty values with 2 decimals fit.
-          fontSize: primary ? 'clamp(28px, 3.4vw, 46px)' : 'clamp(22px, 2.4vw, 34px)',
-          lineHeight: 1.0,
+          // Fluid sizing so million-złoty values with 2 decimals fit without
+          // clipping. Allow wrap on very narrow widths rather than truncate.
+          fontSize: primary ? 'clamp(24px, 3vw, 42px)' : 'clamp(20px, 2.2vw, 32px)',
+          lineHeight: 1.1,
           color: 'var(--color-ink-primary)',
           letterSpacing: '-0.035em',
         }}
@@ -363,13 +364,13 @@ export function StatCard({
     >
       <Overline>{label}</Overline>
       <div
-        className="numeric whitespace-nowrap overflow-hidden text-ellipsis"
+        className="numeric break-words"
         style={{
           fontFamily: 'var(--font-display)',
           fontWeight: 500,
-          fontSize: 22,
+          fontSize: 'clamp(16px, 1.6vw, 22px)',
           letterSpacing: '-0.02em',
-          lineHeight: 1.1,
+          lineHeight: 1.15,
           color: 'var(--color-ink-primary)',
         }}
         title={display}

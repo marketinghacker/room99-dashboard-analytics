@@ -87,8 +87,8 @@ export function HeroMetric({
       </div>
 
       <div
-        className="mt-3 hero-numeral leading-[1.05] text-[var(--color-ink-primary)] tabular whitespace-nowrap overflow-hidden text-ellipsis"
-        style={{ fontSize: 'clamp(22px, 2.6vw, 40px)' }}
+        className="mt-3 hero-numeral leading-[1.1] text-[var(--color-ink-primary)] tabular break-words"
+        style={{ fontSize: 'clamp(20px, 2.2vw, 34px)' }}
         title={display}
       >
         {display}
