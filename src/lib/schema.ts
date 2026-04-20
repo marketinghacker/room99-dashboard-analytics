@@ -195,7 +195,8 @@ export const editorialCopy = pgTable(
     key: text('key').notNull(),
     value: text('value').notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-    updatedBy: uuid('updated_by'), // FK to users.id, soft
+    /** Opaque role token (agency|client) under the two-password auth model. */
+    updatedBy: text('updated_by'),
   },
   (t) => ({
     pk: primaryKey({ columns: [t.tab, t.key] }),
