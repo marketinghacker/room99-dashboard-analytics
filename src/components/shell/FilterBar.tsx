@@ -8,54 +8,48 @@ import { resolvePeriod, resolveCompare, type PeriodKey, type CompareKey } from '
 import { formatDateRangePL } from '@/lib/format';
 import { Calendar } from 'lucide-react';
 
-const PERIODS: Array<{ value: string; label: string }> = [
-  { value: 'today', label: 'Dzisiaj' },
-  { value: 'yesterday', label: 'Wczoraj' },
-  { value: 'last_7d', label: 'Ostatnie 7 dni' },
-  { value: 'last_30d', label: 'Ostatnie 30 dni' },
-  { value: 'last_90d', label: 'Ostatnie 90 dni' },
-  { value: 'this_week', label: 'Ten tydzień' },
-  { value: 'last_week', label: 'Poprzedni tydzień' },
-  { value: 'this_month', label: 'Ten miesiąc' },
-  { value: 'last_month', label: 'Poprzedni miesiąc' },
-  { value: 'this_quarter', label: 'Ten kwartał' },
-  { value: 'last_quarter', label: 'Poprzedni kwartał' },
-  { value: 'ytd', label: 'Od początku roku' },
-  { value: '__custom__', label: 'Zakres niestandardowy…' },
+type PeriodGroup = 'days' | 'weeks' | 'months' | 'other';
+type Preset = { value: string; label: string; group: PeriodGroup };
+
+const PRESETS: Preset[] = [
+  // Dni
+  { value: 'today',         label: 'Dzisiaj',            group: 'days' },
+  { value: 'yesterday',     label: 'Wczoraj',            group: 'days' },
+  { value: 'last_7d',       label: 'Ostatnie 7 dni',     group: 'days' },
+  { value: 'last_30d',      label: 'Ostatnie 30 dni',    group: 'days' },
+  { value: 'last_90d',      label: 'Ostatnie 90 dni',    group: 'days' },
+  // Tygodnie i miesiące
+  { value: 'this_week',     label: 'Ten tydzień',        group: 'weeks' },
+  { value: 'last_week',     label: 'Poprzedni tydzień',  group: 'weeks' },
+  { value: 'this_month',    label: 'Ten miesiąc',        group: 'months' },
+  { value: 'last_month',    label: 'Poprzedni miesiąc',  group: 'months' },
+  // Kwartały / rok
+  { value: 'this_quarter',  label: 'Ten kwartał',        group: 'other' },
+  { value: 'last_quarter',  label: 'Poprzedni kwartał',  group: 'other' },
+  { value: 'ytd',           label: 'Od początku roku',   group: 'other' },
 ];
 
+const GROUP_LABEL: Record<PeriodGroup, string> = {
+  days:   'Dni',
+  weeks:  'Tygodnie',
+  months: 'Miesiące',
+  other:  'Kwartały / rok',
+};
+
 const COMPARES: Array<{ value: CompareKey; label: string }> = [
-  { value: 'previous_period', label: 'Poprzedni okres' },
-  { value: 'same_period_last_year', label: 'Ten sam okres rok temu' },
-  { value: 'same_period_last_quarter', label: 'Ten sam okres poprzedni kwartał' },
-  { value: 'none', label: 'Bez porównania' },
+  { value: 'previous_period',          label: 'Poprzedni okres' },
+  { value: 'same_period_last_year',    label: 'Rok temu' },
+  { value: 'same_period_last_quarter', label: 'Poprzedni kwartał' },
+  { value: 'none',                     label: 'Bez porównania' },
 ];
 
 export function FilterBar() {
   const { period, compare, setPeriod, setCompare } = useFilters();
   const [showPicker, setShowPicker] = useState(false);
+  const [showCustom, setShowCustom] = useState(false);
 
   const isCustom = typeof period === 'string' && period.startsWith('custom_');
   const periodRange = resolvePeriod(period);
-  const compareRange = resolveCompare(periodRange, compare);
-
-  const selectValue = isCustom ? '__custom__' : period;
-
-  const periodOptions: SelectOption[] = PERIODS.map((p) => {
-    if (p.value === '__custom__') {
-      return {
-        value: '__custom__',
-        label: p.label,
-        hint: isCustom ? formatDateRangePL(periodRange.start, periodRange.end) : undefined,
-      };
-    }
-    const r = resolvePeriod(p.value as PeriodKey);
-    return {
-      value: p.value,
-      label: p.label,
-      hint: formatDateRangePL(r.start, r.end),
-    };
-  });
 
   const compareOptions: SelectOption[] = COMPARES.map((c) => ({
     value: c.value,
@@ -69,18 +63,20 @@ export function FilterBar() {
           })(),
   }));
 
-  const onPeriodChange = (v: string) => {
-    if (v === '__custom__') {
-      setShowPicker(true);
-    } else {
-      setPeriod(v as PeriodKey);
-      setShowPicker(false);
-    }
-  };
+  function pick(v: string) {
+    setPeriod(v as PeriodKey);
+    setShowPicker(false);
+    setShowCustom(false);
+  }
+
+  const grouped = (['days', 'weeks', 'months', 'other'] as const).map((g) => ({
+    group: g,
+    items: PRESETS.filter((p) => p.group === g),
+  }));
 
   return (
     <div className="flex items-center gap-2 relative whitespace-nowrap">
-      {/* Period pill — clickable, opens a small preset popover */}
+      {/* Period pill */}
       <div className="relative">
         <button
           type="button"
@@ -101,67 +97,86 @@ export function FilterBar() {
         </button>
         {showPicker && (
           <>
-            {/* Backdrop to close on outside click */}
             <div
               className="fixed inset-0 z-40"
-              onClick={() => setShowPicker(false)}
+              onClick={() => { setShowPicker(false); setShowCustom(false); }}
             />
             <div
-              className="absolute right-0 top-full mt-2 z-50 flex gap-0"
+              className="absolute right-0 top-full mt-2 z-50 flex"
               onClick={(e) => e.stopPropagation()}
               style={{
                 background: 'var(--color-bg-card)',
                 border: '1px solid var(--color-line-soft)',
                 borderRadius: 10,
                 boxShadow: 'var(--shadow-popover)',
-                padding: 6,
+                padding: 8,
               }}
             >
-              {/* Preset list — always-open, no nested Select click */}
-              <div className="flex flex-col w-[220px]">
-                {PERIODS.map((p) => {
-                  const selected = p.value === selectValue;
-                  const range = p.value === '__custom__'
-                    ? (isCustom ? periodRange : null)
-                    : resolvePeriod(p.value as PeriodKey);
-                  return (
-                    <button
-                      key={p.value}
-                      type="button"
-                      onClick={() => onPeriodChange(p.value)}
-                      className="text-left px-2.5 py-1.5 rounded-[6px] flex items-center justify-between gap-3 transition-colors"
+              {/* Grouped preset column */}
+              <div className="flex flex-col w-[200px] gap-0.5">
+                {grouped.map(({ group, items }) => (
+                  <div key={group} className="mb-1">
+                    <div
+                      className="px-2 pt-1.5 pb-1 font-mono"
                       style={{
-                        background: selected ? 'var(--color-bg-elevated)' : 'transparent',
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!selected) e.currentTarget.style.background = 'var(--color-bg-hover)';
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!selected) e.currentTarget.style.background = 'transparent';
+                        fontSize: 9,
+                        letterSpacing: '0.14em',
+                        color: 'var(--color-ink-tertiary)',
+                        textTransform: 'uppercase',
                       }}
                     >
-                      <span className="text-[13px]">{p.label}</span>
-                      {range && (
-                        <span
-                          className="font-mono text-[10px] numeric"
-                          style={{ color: 'var(--color-ink-tertiary)' }}
+                      {GROUP_LABEL[group]}
+                    </div>
+                    {items.map((p) => {
+                      const selected = !isCustom && p.value === period;
+                      return (
+                        <button
+                          key={p.value}
+                          type="button"
+                          onClick={() => pick(p.value)}
+                          className="w-full text-left px-2 py-1 rounded-[5px] text-[12.5px] transition-colors"
+                          style={{
+                            background: selected ? 'var(--color-bg-elevated)' : 'transparent',
+                            color: selected ? 'var(--color-ink-primary)' : 'var(--color-ink-secondary)',
+                            fontWeight: selected ? 500 : 400,
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!selected) e.currentTarget.style.background = 'var(--color-bg-hover)';
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!selected) e.currentTarget.style.background = 'transparent';
+                          }}
                         >
-                          {formatDateRangePL(range.start, range.end)}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
+                          {p.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setShowCustom((v) => !v)}
+                  className="mt-2 pt-2 border-t px-2 py-1.5 rounded-[5px] text-[12.5px] text-left transition-colors"
+                  style={{
+                    borderColor: 'var(--color-line-soft)',
+                    color: isCustom || showCustom ? 'var(--color-accent)' : 'var(--color-ink-secondary)',
+                    fontWeight: isCustom || showCustom ? 500 : 400,
+                  }}
+                >
+                  Własny zakres…
+                </button>
               </div>
-              {selectValue === '__custom__' && (
-                <div className="pl-2 ml-2 border-l" style={{ borderColor: 'var(--color-line-soft)' }}>
+
+              {/* Calendar only when custom is explicitly opened */}
+              {(showCustom || isCustom) && (
+                <div
+                  className="pl-3 ml-3 border-l"
+                  style={{ borderColor: 'var(--color-line-soft)' }}
+                >
                   <DateRangePicker
                     initial={isCustom ? periodKeyToRange(period) : undefined}
-                    onSelect={(key) => {
-                      setPeriod(key as PeriodKey);
-                      setShowPicker(false);
-                    }}
-                    onClose={() => setShowPicker(false)}
+                    onSelect={(key) => pick(key)}
+                    onClose={() => { setShowPicker(false); setShowCustom(false); }}
                   />
                 </div>
               )}
@@ -170,8 +185,8 @@ export function FilterBar() {
         )}
       </div>
 
-      {/* Compare pill — inline select, no label */}
-      <div className="relative w-[180px] shrink-0">
+      {/* Compare pill */}
+      <div className="relative w-[160px] shrink-0">
         <Select
           value={compare}
           options={compareOptions}

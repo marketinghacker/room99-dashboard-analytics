@@ -1,6 +1,33 @@
 /**
- * Polish plural → singular consolidation for Room99 textile categories.
- * Without this, ZASŁONA and ZASŁONY show up as two separate categories.
+ * Canonical Room99 categories (verified against https://room99.pl navigation).
+ * Everything outside this set falls into "INNE" (Other) so we don't surface
+ * noise like WODA / GRUBY / MIĘKKI / DEKORACYJNA / GOTOWE on the dashboard.
+ */
+const CANONICAL_CATEGORIES = new Set<string>([
+  'ZASŁONA',
+  'FIRANA',
+  'NARZUTA',
+  'POSZEWKA',
+  'PODUSZKA',
+  'OBRUS',
+  'KOC',
+  'PLED',
+  'ZAPACH',    // Zapachy do domu
+  'PERFUM',    // Perfumy damskie (aliased from "Woda perfumowana")
+  'BIEŻNIK',
+  'DYWAN',
+  'RĘCZNIK',
+  'KOMPLET',
+  'KARNISZ',
+  'ROLETA',
+  'PANEL',
+  'SZARFA',    // Dekoracyjne szarfy do zasłon (curtain accessory)
+  'ZAWIESZKA', // Zawieszki do firan
+]);
+
+/**
+ * Polish plural → singular consolidation so ZASŁONY and ZASŁONA show up
+ * under one category bucket.
  */
 const CATEGORY_LEMMA: Record<string, string> = {
   ZASŁONY: 'ZASŁONA',
@@ -21,6 +48,7 @@ const CATEGORY_LEMMA: Record<string, string> = {
   ZAPACHY: 'ZAPACH',
   SZARFY: 'SZARFA',
   ZAWIESZKI: 'ZAWIESZKA',
+  PERFUMY: 'PERFUM',
 };
 
 /**
@@ -31,16 +59,16 @@ const CATEGORY_LEMMA: Record<string, string> = {
  *   2. "CATEGORY MODIFIER COLLECTION - rest"  → ZASŁONA ZACIEMNIAJĄCA LAUREL - BEŻOWA
  *   3. "CATEGORY MOD1 MOD2 COLLECTION - rest" → NARZUTA NA ŁÓŻKO MOLLY - BEŻOWA
  *   4. Title case: "Poduszka Eternity MedLine PLUS"
- *   5. Collection after dash: "Zapach do domu w sprayu - Mon Ame 200 ml"
+ *   5. After-dash collection: "Woda perfumowana - Mon Ame 200 ml" → PERFUM
  *
  * Rule:
- *   category   = first alphabetic token (3+ letters), uppercased
- *   collection = last proper-name token (all-caps ≥3 or Title-case ≥2) before " - "
- *                that isn't the category itself;
- *                fallback to multi-word capitalized group right after " - " (for #5).
+ *   category raw  = first alphabetic token (3+ letters), uppercased
+ *   category      = CANONICAL lookup or null
+ *   collection    = last proper-name token before " - " that isn't the
+ *                   category itself; fallback = multi-word capitalised group
+ *                   right after " - " (#5).
  *
- * Single-word names like "PRODUKT" yield category-only (collection null) — better
- * than dropping them entirely, so Shoper-only ungrouped lines still aggregate.
+ * Special case: "Woda perfumowana ..." → category = PERFUM (not WODA).
  */
 export function parseSkuToCategoryCollection(name: string): {
   category: string | null;
@@ -50,7 +78,10 @@ export function parseSkuToCategoryCollection(name: string): {
   const trimmed = name.trim();
   if (!trimmed) return { category: null, collection: null };
 
-  // Split on first " - " only (some names contain multiple dashes in size specs).
+  // Special-case perfume detection — name starting with "Woda" but containing
+  // "perfumowana" (eau de parfum) is the Perfumy damskie category.
+  const isPerfume = /\bwoda\s+perfumowana\b/i.test(trimmed);
+
   const dashIdx = trimmed.indexOf(' - ');
   const beforeDash = (dashIdx > 0 ? trimmed.slice(0, dashIdx) : trimmed).trim();
   const afterDash = dashIdx > 0 ? trimmed.slice(dashIdx + 3).trim() : '';
@@ -64,20 +95,29 @@ export function parseSkuToCategoryCollection(name: string): {
     /^[A-ZŁŚĆŻŹĄĘÓŃ][a-złśćżźąęóń]{1,}$/.test(t);
   const isProperName = (t: string) => isAllCaps(t) || isTitleCase(t);
 
-  // Category: first token that's a real alpha word with ≥3 letters.
   const firstAlpha = beforeTokens.find((t) => isAlpha(t) && t.length >= 3);
   if (!firstAlpha) return { category: null, collection: null };
   const rawCategory = firstAlpha.toUpperCase();
-  const category = CATEGORY_LEMMA[rawCategory] ?? rawCategory;
+  const lemma = CATEGORY_LEMMA[rawCategory] ?? rawCategory;
 
-  // Collection: walk backward from last before-dash token, pick first proper name
-  // that isn't the category itself.
+  // Override: perfume names are classified regardless of the first-word raw.
+  let category: string | null;
+  if (isPerfume) {
+    category = 'PERFUM';
+  } else if (CANONICAL_CATEGORIES.has(lemma)) {
+    category = lemma;
+  } else {
+    // Not a real Room99 category — drop so we don't pollute aggregates.
+    category = null;
+  }
+  if (category === null) return { category: null, collection: null };
+
+  // Collection discovery
   let collection: string | null = null;
   if (beforeTokens.length >= 2) {
     for (let i = beforeTokens.length - 1; i >= 1; i--) {
       const t = beforeTokens[i];
       const up = t.toUpperCase();
-      // Skip if it's the category or a plural form of it.
       if (isProperName(t) && up !== category && up !== rawCategory) {
         collection = up;
         break;
@@ -85,7 +125,6 @@ export function parseSkuToCategoryCollection(name: string): {
     }
   }
 
-  // Fallback: multi-word capitalized group right after dash ("Mon Ame" etc.).
   if (!collection && afterDash) {
     const afterTokens = afterDash.split(/\s+/).filter(Boolean);
     const caps: string[] = [];

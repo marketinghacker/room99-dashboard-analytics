@@ -124,20 +124,41 @@ export function Topbar() {
   const [exporting, setExporting] = useState(false);
   const [syncNotice, setSyncNotice] = useState<string | null>(null);
 
+  /**
+   * "Odśwież" = full refresh: trigger sync-now on the server, then revalidate
+   * SWR caches. Client users don't have sync-now access (agency-only), so for
+   * them this is just a SWR revalidate. Agency users get fresh Meta/Google/
+   * BaseLinker data pulled before the SWR invalidate.
+   */
   async function onRefresh() {
     setRefreshing(true);
-    await mutate(() => true, undefined, { revalidate: true });
-    setTimeout(() => setRefreshing(false), 600);
+    try {
+      // Agency users: trigger fresh backend sync. 403 for clients — that's fine.
+      const res = await fetch('/api/sync-now', { method: 'POST' });
+      if (res.ok) {
+        // Give the sync ~10s to write first rows, then revalidate.
+        await new Promise((r) => setTimeout(r, 10_000));
+      }
+    } catch {
+      /* fall through to SWR revalidate */
+    } finally {
+      await mutate(() => true, undefined, { revalidate: true });
+      setRefreshing(false);
+    }
   }
 
+  /**
+   * "Sync" = agency-only full backend pull with explicit notice. Longer wait
+   * and feedback than the background-ish Odśwież.
+   */
   async function onSync() {
     setSyncing(true);
     setSyncNotice(null);
     try {
       const res = await fetch('/api/sync-now', { method: 'POST' });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? 'sync failed');
-      setSyncNotice('Sync uruchomiony (2–3 min)');
-      setTimeout(() => setSyncNotice(null), 5000);
+      setSyncNotice('Sync uruchomiony — świeże dane za ~3 min');
+      setTimeout(() => setSyncNotice(null), 8000);
     } catch (e) {
       setSyncNotice((e as Error).message);
     } finally {

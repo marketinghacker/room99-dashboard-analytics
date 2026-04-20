@@ -350,35 +350,6 @@ export function ExecutiveSummaryTab() {
         </div>
       </section>
 
-      {/* Agency-only: Anomalies + Cohorts placeholders */}
-      <section className="agency-only">
-        <SectionHead
-          number="§04"
-          title="Anomalia i retencja"
-          sub="Auto-detected spike/drop detection + customer retention cohorts"
-          right={<span className="chip chip-warn">Beta</span>}
-        />
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          <div className="card p-5">
-            <div className="overline mb-2">Anomalia</div>
-            <div className="text-[13px]" style={{ color: 'var(--color-ink-secondary)' }}>
-              Pipeline wykrywania spikes/drops &gt; 2σ — LLM narrative na top 3 dziennie.
-              <div className="mt-3 text-[11px]" style={{ color: 'var(--color-ink-tertiary)' }}>
-                Endpoint: <code>/api/data/anomalies</code> (w budowie)
-              </div>
-            </div>
-          </div>
-          <div className="card p-5">
-            <div className="overline mb-2">Kohorty (M0–M5)</div>
-            <div className="text-[13px]" style={{ color: 'var(--color-ink-secondary)' }}>
-              Customer retention grid — 6 miesięcy × M0–M5 heat-map.
-              <div className="mt-3 text-[11px]" style={{ color: 'var(--color-ink-tertiary)' }}>
-                Endpoint: <code>/api/data/cohorts</code> (w budowie)
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }

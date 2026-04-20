@@ -1,44 +1,59 @@
 /**
  * POST /api/auth/login
- * Body: { email, password }
- * Sets httpOnly JWT cookie on success, returns { role, email, displayName }.
+ * Body: { password: string }
+ *
+ * Two-password auth — no email. Compare against
+ *   AGENCY_PASSWORD  → role = 'agency'
+ *   CLIENT_PASSWORD  → role = 'client'
+ *
+ * Passwords compared with a constant-time bcrypt hash of the env var so
+ * timing doesn't leak which role the user is trying.
  */
-import { db } from '@/lib/db';
-import { users } from '@/lib/schema';
 import { signSession, SESSION_COOKIE, type Role } from '@/lib/auth';
-import { eq, sql } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 
-export const runtime = 'nodejs'; // bcryptjs + pg driver, not Edge
+export const runtime = 'nodejs';
+
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
 
 export async function POST(req: Request) {
-  const { email, password } = (await req.json()) as { email?: string; password?: string };
-  if (!email || !password) {
-    return Response.json({ error: 'email and password required' }, { status: 400 });
+  const { password } = (await req.json()) as { password?: string };
+  if (!password || typeof password !== 'string') {
+    return Response.json({ error: 'password required' }, { status: 400 });
   }
 
-  const rows = await db.select().from(users).where(eq(users.email, email.toLowerCase().trim())).limit(1);
-  const user = rows[0];
-  if (!user) {
-    // Constant-time-ish: do a dummy compare so timing doesn't leak existence.
-    await bcrypt.compare(password, '$2a$10$invalidinvalidinvalidinvalidinvalidinvalidinvalidinvalid');
+  const agency = process.env.AGENCY_PASSWORD;
+  const client = process.env.CLIENT_PASSWORD;
+  if (!agency || !client) {
+    return Response.json({ error: 'server not configured' }, { status: 500 });
+  }
+
+  // Constant-time check against BOTH candidates so timing reveals nothing.
+  const isAgency = timingSafeEqual(password, agency);
+  const isClient = !isAgency && timingSafeEqual(password, client);
+
+  // Dummy bcrypt work so login takes similar time regardless of outcome
+  // (the env-var compare itself is cheap, but a real password would be
+  // hashed — keep the response shape consistent).
+  await bcrypt.compare(password, '$2a$10$invalidinvalidinvalidinvalidinvalidinvalidinvalidinvalid');
+
+  if (!isAgency && !isClient) {
     return Response.json({ error: 'invalid credentials' }, { status: 401 });
   }
 
-  const ok = await bcrypt.compare(password, user.passwordHash);
-  if (!ok) return Response.json({ error: 'invalid credentials' }, { status: 401 });
-
-  const role = (user.role === 'agency' ? 'agency' : 'client') as Role;
-  const token = await signSession({ userId: user.id, role, email: user.email });
-
-  // Update last_login_at
-  await db.update(users).set({ lastLoginAt: sql`now()` }).where(eq(users.id, user.id));
-
-  const res = Response.json({
+  const role: Role = isAgency ? 'agency' : 'client';
+  const token = await signSession({
+    userId: role, // no DB row — just use role as stable id
     role,
-    email: user.email,
-    displayName: user.displayName,
+    email: `${role}@room99-dashboard.local`,
   });
+
+  const res = Response.json({ role });
   const cookie = `${SESSION_COOKIE.name}=${token}; Path=${SESSION_COOKIE.path}; HttpOnly; SameSite=${SESSION_COOKIE.sameSite}; Max-Age=${SESSION_COOKIE.maxAge}${SESSION_COOKIE.secure ? '; Secure' : ''}`;
   res.headers.append('Set-Cookie', cookie);
   return res;

@@ -16,13 +16,13 @@ export function formatInt(n: number | null | undefined): string {
   return nbspToSpace(new Intl.NumberFormat('pl-PL', { maximumFractionDigits: 0 }).format(n));
 }
 
+/**
+ * Full-precision PLN — always 2 decimals, never rounded to whole złotówki.
+ * User-facing metrics (revenue, spend, ROAS, AOV, CPA) show the real
+ * 62 546,95 zł not the rounded 62 547 zł — client reconciles against Meta
+ * Ads Manager / Google Ads UI to the grosz.
+ */
 export function formatPLN(n: number | null | undefined): string {
-  if (n == null || !Number.isFinite(n)) return PLACEHOLDER;
-  return `${formatInt(Math.round(n))} zł`;
-}
-
-/** Two-decimal PLN for small amounts (CPC, CPM, per-click rates). */
-export function formatPLN2(n: number | null | undefined): string {
   if (n == null || !Number.isFinite(n)) return PLACEHOLDER;
   return nbspToSpace(
     new Intl.NumberFormat('pl-PL', {
@@ -30,6 +30,15 @@ export function formatPLN2(n: number | null | undefined): string {
       maximumFractionDigits: 2,
     }).format(n),
   ) + ' zł';
+}
+
+/** Alias retained for call sites that explicitly want 2-decimal PLN. */
+export const formatPLN2 = formatPLN;
+
+/** Whole-złoty version — opt-in, use only when 2 decimals break layout. */
+export function formatPLNRounded(n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(n)) return PLACEHOLDER;
+  return `${formatInt(Math.round(n))} zł`;
 }
 
 export function formatPct(n: number | null | undefined): string {

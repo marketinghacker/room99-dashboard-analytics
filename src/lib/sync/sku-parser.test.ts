@@ -49,16 +49,20 @@ describe('parseSkuToCategoryCollection', () => {
     ).toEqual({ category: 'ZAPACH', collection: 'MON AME' });
   });
 
-  it('parses collection after dash even when before-dash has no proper name', () => {
+  it('maps "Woda perfumowana" to PERFUM (not WODA)', () => {
     expect(parseSkuToCategoryCollection('Woda perfumowana - Mon Ame 100 ml')).toEqual({
-      category: 'WODA',
+      category: 'PERFUM',
       collection: 'MON AME',
     });
   });
 
-  it('single-word names yield category-only', () => {
+  it('drops non-canonical single-word names (was returning raw category)', () => {
     expect(parseSkuToCategoryCollection('PRODUKT')).toEqual({
-      category: 'PRODUKT',
+      category: null,
+      collection: null,
+    });
+    expect(parseSkuToCategoryCollection('GRUBY')).toEqual({
+      category: null,
       collection: null,
     });
   });
