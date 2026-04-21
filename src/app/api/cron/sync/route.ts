@@ -99,7 +99,7 @@ export async function GET(req: Request) {
     ok: results.every((r) => r.status === 'success'),
     last7Range: last7,
     last30Range: last30,
-    sellRocketRange,
+    tightRange,
     platforms: results,
     rollup: 'started in background',
   });
