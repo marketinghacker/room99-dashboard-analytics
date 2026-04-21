@@ -104,13 +104,25 @@ export function TopProductsTab() {
         cell: ({ row }) => (
           <div className="flex flex-col items-end gap-0.5">
             <span>{formatPLN(row.original.allegroRevenue)}</span>
-            {row.original.yoyAllegroRevenue > 0 && (
-              <span className="text-[10px] text-[var(--color-ink-tertiary)] numeric">
-                rok temu: {formatPLN(row.original.yoyAllegroRevenue)}
+            {row.original.yoyAllegroRevenue > 0 ? (
+              <>
+                <span className="text-[10px] text-[var(--color-ink-tertiary)] numeric">
+                  rok temu: {formatPLN(row.original.yoyAllegroRevenue)}
+                </span>
+                {row.original.yoyAllegroDelta != null && (
+                  <DeltaBadge pct={row.original.yoyAllegroDelta} size="xs" />
+                )}
+              </>
+            ) : (
+              // Allegro YoY unavailable: only source is SellRocket (BaseLinker),
+              // which purges orders after ~365 days. No separate Allegro API.
+              <span
+                className="text-[10px] numeric italic"
+                style={{ color: 'var(--color-ink-tertiary)' }}
+                title="Brak historii YoY — Allegro dostępne tylko przez SellRocket, który usuwa zamówienia po ~365 dniach"
+              >
+                rok temu: brak
               </span>
-            )}
-            {row.original.yoyAllegroDelta != null && (
-              <DeltaBadge pct={row.original.yoyAllegroDelta} size="xs" />
             )}
           </div>
         ),
@@ -124,10 +136,15 @@ export function TopProductsTab() {
           const share = row.original.shrShare;
           if (share == null) return <span className="text-[var(--color-ink-tertiary)]">—</span>;
           const pp = row.original.shrShareDelta;
+          // Only show Δpp vs rok when BOTH channels have YoY data. Otherwise
+          // the delta is driven by missing Allegro history (BaseLinker 365d
+          // purge) — it would show false -45pp "migracje" that are really
+          // just data gaps.
+          const bothHaveYoY = row.original.yoyShrRevenue > 0 && row.original.yoyAllegroRevenue > 0;
           return (
             <div className="flex flex-col items-end gap-0.5">
               <span className="numeric">{(share * 100).toFixed(1).replace('.', ',')}%</span>
-              {pp != null && (
+              {pp != null && bothHaveYoY && (
                 <span
                   className="numeric text-[10px]"
                   style={{
@@ -172,11 +189,18 @@ export function TopProductsTab() {
   const summary = data.summary;
   const alerts: Item[] = data.alerts ?? [];
   // Detect purged history: if every row has zero YoY on both channels,
-  // BaseLinker's 365-day retention has wiped the comparison window.
-  // Room99's retention is ~365 days so 2025-04 orders are gone.
+  // BaseLinker's 365-day retention has wiped the comparison window and
+  // Shoper hasn't been backfilled for this range.
   const yoyHasAnyData = items.some(
     (i) => (i.yoyShrRevenue ?? 0) > 0 || (i.yoyAllegroRevenue ?? 0) > 0,
   );
+  // Shoper (channel=shr) comes from direct Shoper API with full history.
+  // Allegro comes only from SellRocket/BaseLinker which purges at ~365 days
+  // and has no separate API. When Shoper YoY exists but Allegro YoY is
+  // empty across the board, it's the 365-day purge — permanent.
+  const hasShrYoY = items.some((i) => (i.yoyShrRevenue ?? 0) > 0);
+  const hasAllegroYoY = items.some((i) => (i.yoyAllegroRevenue ?? 0) > 0);
+  const allegroYoYMissing = hasShrYoY && !hasAllegroYoY;
 
   const breadcrumbs = (
     <div className="flex items-center gap-2 text-[12px] text-[var(--color-ink-tertiary)]">
@@ -229,13 +253,21 @@ export function TopProductsTab() {
         >
           <div className="w-1 min-h-[48px] rounded-full" style={{ background: 'var(--color-accent)' }} />
           <div className="flex-1">
-            <div className="text-[13px] font-semibold">Porównanie YoY niedostępne z BaseLinkera</div>
+            <div className="text-[13px] font-semibold">Brak danych YoY dla tego zakresu</div>
             <div className="text-[12px] mt-1" style={{ color: 'var(--color-ink-secondary)' }}>
-              BaseLinker/SellRocket przechowuje zamówienia przez ok. 365 dni — zamówienia z {data.yoyRange.start} → {data.yoyRange.end} zostały już zarchiwizowane.
-              Aby zobaczyć YoY kategorii, potrzebna jest bezpośrednia integracja z Shoperem (sklep własny) i Allegro API.
-              Dodaj poświadczenia w <span className="font-mono">Ustawienia → MCP / API</span>.
+              Uruchom <span className="font-mono">/api/admin/backfill?sources=shoper,shoper_daily&start={data.yoyRange.start}&end={data.yoyRange.end}</span> aby pociągnąć Shopera (~2–5 min).
+              Allegro YoY niedostępne — SellRocket/BaseLinker usuwa zamówienia po ~365 dniach i nie mamy osobnego Allegro API.
             </div>
           </div>
+        </div>
+      )}
+
+      {allegroYoYMissing && (
+        <div
+          className="text-[11px] italic px-1"
+          style={{ color: 'var(--color-ink-tertiary)' }}
+        >
+          ℹ Shoper rok temu: dane z Shoper API. Allegro rok temu: niedostępne (SellRocket/BaseLinker 365d retencji, brak osobnego Allegro API). Alerty „Migracja SHR → Allegro" i „Udział SHR vs rok" wyłączone dla tego zakresu.
         </div>
       )}
 
