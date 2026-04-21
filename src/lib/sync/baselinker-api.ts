@@ -121,6 +121,10 @@ export class BaseLinkerAPI {
     const dateConfirmedFrom = opts.fromTs;
     let iterations = 0;
     let batchesWithNoMatchInRange = 0;
+    // Hard cutoff: if we see a batch whose MINIMUM date_confirmed is already
+    // 30 days past our end, stop paginating. Prevents 20-minute walks through
+    // a year of order_ids when backfilling historical YoY ranges.
+    const HARD_CUTOFF_SECONDS = 30 * 24 * 60 * 60;
 
     while (iterations++ < 5000) {
       const params: Record<string, unknown> = {
@@ -143,6 +147,7 @@ export class BaseLinkerAPI {
       let matchedThisBatch = 0;
       let allBeforeRange = true;
       let allAfterRange = true;
+      let minDateInBatch = Number.POSITIVE_INFINITY;
       for (const o of batch) {
         if (o.date_confirmed >= opts.fromTs && o.date_confirmed <= opts.toTs) {
           orders.push(o);
@@ -150,7 +155,12 @@ export class BaseLinkerAPI {
         }
         if (o.date_confirmed >= opts.fromTs) allBeforeRange = false;
         if (o.date_confirmed <= opts.toTs) allAfterRange = false;
+        if (o.date_confirmed < minDateInBatch) minDateInBatch = o.date_confirmed;
       }
+
+      // Hard cutoff: every order in this batch is already well past our
+      // window. No point paginating further.
+      if (minDateInBatch > opts.toTs + HARD_CUTOFF_SECONDS) break;
 
       // Stopping heuristic: if 5 consecutive batches all > toTs and we have
       // some matches already, we've gone past the range.
