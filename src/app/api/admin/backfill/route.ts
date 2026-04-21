@@ -35,8 +35,11 @@ const BACKFILL_TIMEOUT_MS: Record<string, number> = {
   criteo: 5 * 60 * 1000,
   ga4: 3 * 60 * 1000,
   pinterest: 3 * 60 * 1000,
-  sellrocket: 25 * 60 * 1000,  // BaseLinker year-range: pagination heavy
-  products: 25 * 60 * 1000,
+  // BaseLinker historical ranges walk order-id ASC from the first matching
+  // timestamp. For YoY (e.g. 2025-04), that's hundreds of thousands of orders
+  // to stream even with the 30-day hard cutoff. Give it 60 min.
+  sellrocket: 60 * 60 * 1000,
+  products: 60 * 60 * 1000,
 };
 
 async function track(source: string, fn: () => Promise<{ rowsWritten: number }>) {
