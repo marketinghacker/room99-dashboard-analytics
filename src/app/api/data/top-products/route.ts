@@ -78,8 +78,17 @@ export async function GET(req: Request) {
   const enriched = current.map((r) => {
     const total = r.shr_revenue + r.allegro_revenue;
     const y = yoyByGroup.get(r.group);
-    const yoyTotal = y ? y.shr_revenue + y.allegro_revenue : null;
+    const yoyShr = y?.shr_revenue ?? 0;
+    const yoyAllegro = y?.allegro_revenue ?? 0;
+    const yoyTotal = y ? yoyShr + yoyAllegro : null;
     const yoyDelta = yoyTotal && yoyTotal > 0 ? (total - yoyTotal) / yoyTotal : null;
+    const yoyShrDelta = yoyShr > 0 ? (r.shr_revenue - yoyShr) / yoyShr : null;
+    const yoyAllegroDelta = yoyAllegro > 0 ? (r.allegro_revenue - yoyAllegro) / yoyAllegro : null;
+    // Channel share this period vs last period — tells the story "kategoria
+    // przesuwa się z Shopera na Allegro" even when total is flat.
+    const shrShare = total > 0 ? r.shr_revenue / total : null;
+    const yoyShrShare = yoyTotal && yoyTotal > 0 ? yoyShr / yoyTotal : null;
+    const shrShareDelta = shrShare != null && yoyShrShare != null ? shrShare - yoyShrShare : null;
 
     const alerts: string[] = [];
     if (yoyDelta != null && yoyDelta < -0.5) alerts.push('Spadek YoY > 50%');
@@ -89,6 +98,8 @@ export async function GET(req: Request) {
       alerts.push('Przeoptymalizowane (sprzedawano rok temu, teraz cisza)');
     }
     if (yoyDelta != null && yoyDelta > 3) alerts.push('Breakout +300% YoY');
+    if (shrShareDelta != null && shrShareDelta < -0.1) alerts.push('Migracja SHR → Allegro');
+    else if (shrShareDelta != null && shrShareDelta > 0.1) alerts.push('Powrót na Shoper');
 
     return {
       group: r.group,
@@ -97,8 +108,17 @@ export async function GET(req: Request) {
       shrQty: r.shr_qty,
       allegroQty: r.allegro_qty,
       total,
+      // YoY channel split
+      yoyShrRevenue: yoyShr,
+      yoyAllegroRevenue: yoyAllegro,
       yoyTotal,
       yoyDelta,
+      yoyShrDelta,
+      yoyAllegroDelta,
+      // Channel share evolution
+      shrShare,           // e.g. 0.52 = 52% z kategorii zrobił Shoper
+      yoyShrShare,
+      shrShareDelta,      // e.g. -0.08 = udział SHR spadł o 8pp
       alerts,
     };
   });

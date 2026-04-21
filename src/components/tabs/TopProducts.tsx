@@ -18,8 +18,15 @@ type Item = {
   shrQty: number;
   allegroQty: number;
   total: number;
+  yoyShrRevenue: number;
+  yoyAllegroRevenue: number;
   yoyTotal: number | null;
   yoyDelta: number | null;
+  yoyShrDelta: number | null;
+  yoyAllegroDelta: number | null;
+  shrShare: number | null;
+  yoyShrShare: number | null;
+  shrShareDelta: number | null;
   alerts: string[];
 };
 
@@ -72,20 +79,76 @@ export function TopProductsTab() {
           );
         },
       },
-      { accessorKey: 'shrRevenue', header: 'Shoper', meta: { numeric: true }, cell: (i) => formatPLN(i.getValue() as number) },
-      { accessorKey: 'allegroRevenue', header: 'Allegro', meta: { numeric: true }, cell: (i) => formatPLN(i.getValue() as number) },
+      {
+        accessorKey: 'shrRevenue',
+        header: 'Shoper',
+        meta: { numeric: true },
+        cell: ({ row }) => (
+          <div className="flex flex-col items-end gap-0.5">
+            <span>{formatPLN(row.original.shrRevenue)}</span>
+            {row.original.yoyShrRevenue > 0 && (
+              <span className="text-[10px] text-[var(--color-ink-tertiary)] numeric">
+                rok temu: {formatPLN(row.original.yoyShrRevenue)}
+              </span>
+            )}
+            {row.original.yoyShrDelta != null && (
+              <DeltaBadge pct={row.original.yoyShrDelta} size="xs" />
+            )}
+          </div>
+        ),
+      },
+      {
+        accessorKey: 'allegroRevenue',
+        header: 'Allegro',
+        meta: { numeric: true },
+        cell: ({ row }) => (
+          <div className="flex flex-col items-end gap-0.5">
+            <span>{formatPLN(row.original.allegroRevenue)}</span>
+            {row.original.yoyAllegroRevenue > 0 && (
+              <span className="text-[10px] text-[var(--color-ink-tertiary)] numeric">
+                rok temu: {formatPLN(row.original.yoyAllegroRevenue)}
+              </span>
+            )}
+            {row.original.yoyAllegroDelta != null && (
+              <DeltaBadge pct={row.original.yoyAllegroDelta} size="xs" />
+            )}
+          </div>
+        ),
+      },
       { accessorKey: 'total', header: 'Razem', meta: { numeric: true }, cell: (i) => formatPLN(i.getValue() as number) },
+      {
+        accessorKey: 'shrShare',
+        header: 'Udział SHR',
+        meta: { numeric: true },
+        cell: ({ row }) => {
+          const share = row.original.shrShare;
+          if (share == null) return <span className="text-[var(--color-ink-tertiary)]">—</span>;
+          const pp = row.original.shrShareDelta;
+          return (
+            <div className="flex flex-col items-end gap-0.5">
+              <span className="numeric">{(share * 100).toFixed(1).replace('.', ',')}%</span>
+              {pp != null && (
+                <span
+                  className="numeric text-[10px]"
+                  style={{
+                    color:
+                      pp > 0.02 ? 'var(--color-accent-positive)' :
+                      pp < -0.02 ? 'var(--color-accent-negative)' :
+                      'var(--color-ink-tertiary)',
+                  }}
+                >
+                  {pp > 0 ? '+' : ''}{(pp * 100).toFixed(1).replace('.', ',')}pp vs rok
+                </span>
+              )}
+            </div>
+          );
+        },
+      },
       { accessorKey: 'shrQty', header: 'Sztuk Shoper', meta: { numeric: true }, cell: (i) => formatInt(i.getValue() as number) },
       { accessorKey: 'allegroQty', header: 'Sztuk Allegro', meta: { numeric: true }, cell: (i) => formatInt(i.getValue() as number) },
       {
-        accessorKey: 'yoyTotal',
-        header: 'Rok temu',
-        meta: { numeric: true },
-        cell: (i) => formatPLN(i.getValue() as number | null),
-      },
-      {
         accessorKey: 'yoyDelta',
-        header: 'YoY',
+        header: 'YoY (razem)',
         meta: { numeric: true },
         cell: ({ row }) =>
           row.original.yoyDelta == null
