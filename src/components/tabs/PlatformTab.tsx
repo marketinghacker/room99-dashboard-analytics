@@ -134,6 +134,9 @@ export function PlatformTab({ endpoint, platformLabel, accountHint, accentColor,
             {platformLabel}
           </h2>
           {accountHint && <p className="text-[13px] text-[var(--color-ink-tertiary)] numeric mt-0.5">{accountHint}</p>}
+          <p className="text-[11px] text-[var(--color-ink-tertiary)] mt-1 italic">
+            Źródło: API platformy · konwersje i wartość raportowane przez platformę (ich własne atrybucja), nie Shoper.
+          </p>
         </div>
       </div>
 
@@ -146,7 +149,7 @@ export function PlatformTab({ endpoint, platformLabel, accountHint, accentColor,
           format="pln"
           delta={deltas.conversionValue}
           tone="primary"
-          sublabel="Atrybucja platformy"
+          sublabel="Sprzedaż raportowana przez platformę (własna atrybucja)"
         />
         <HeroMetric
           label="ROAS platformy"

@@ -14,7 +14,6 @@ import { MetaAdsTab } from '@/components/tabs/MetaAds';
 import { PinterestTab } from '@/components/tabs/Pinterest';
 import { CriteoTab } from '@/components/tabs/Criteo';
 import { ProductCatalogsTab } from '@/components/tabs/ProductCatalogs';
-import { FunnelTab } from '@/components/tabs/Funnel';
 import { TrafficSourcesTab } from '@/components/tabs/TrafficSources';
 import { TopProductsTab } from '@/components/tabs/TopProducts';
 
@@ -78,7 +77,6 @@ export function DashboardShell() {
             {tab === 'pinterest' && <PinterestTab />}
             {tab === 'criteo' && <CriteoTab />}
             {tab === 'product-catalogs' && <ProductCatalogsTab />}
-            {tab === 'funnel' && <FunnelTab />}
             {tab === 'traffic-sources' && <TrafficSourcesTab />}
             {tab === 'top-products' && <TopProductsTab />}
           </div>

@@ -18,7 +18,6 @@ import Papa from 'papaparse';
 
 const TAB_ENDPOINT: Record<TabId, string> = {
   'executive-summary':     '/api/data/executive-summary',
-  funnel:                  '/api/data/funnel',
   'top-products':          '/api/data/top-products',
   'performance-marketing': '/api/data/performance-marketing',
   'traffic-sources':       '/api/data/traffic-sources',
@@ -64,16 +63,15 @@ function downloadCsv(filename: string, rows: Array<Record<string, unknown>>) {
 
 const TAB_LABELS: Record<string, string> = {
   'executive-summary':     '§01 · Podsumowanie',
-  funnel:                  '§02 · Lejek',
-  'top-products':          '§03 · Produkty',
-  'performance-marketing': '§04 · Performance',
-  'traffic-sources':       '§05 · Ruch',
-  'sales-channels':        '§06 · Sprzedaż',
-  'product-catalogs':      '§07 · Katalogi',
-  'meta-ads':              '§08 · Meta Ads',
-  'google-ads':            '§09 · Google Ads',
-  pinterest:               '§10 · Pinterest',
-  criteo:                  '§11 · Criteo',
+  'top-products':          '§02 · Produkty',
+  'performance-marketing': '§03 · Performance',
+  'traffic-sources':       '§04 · Ruch',
+  'sales-channels':        '§05 · Sprzedaż',
+  'product-catalogs':      '§06 · Katalogi',
+  'meta-ads':              '§07 · Meta Ads',
+  'google-ads':            '§08 · Google Ads',
+  pinterest:               '§09 · Pinterest',
+  criteo:                  '§10 · Criteo',
 };
 
 function RoleSegmented() {

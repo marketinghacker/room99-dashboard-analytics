@@ -15,7 +15,6 @@ import {
   Store,
   Sparkles,
   ShoppingBag,
-  Filter,
   LineChart,
   Package,
   PieChart,
@@ -34,16 +33,15 @@ type NavItem = {
 
 const NAV: NavItem[] = [
   { id: 'executive-summary',     label: 'Podsumowanie', number: '§01', icon: LayoutDashboard, group: 'overview' },
-  { id: 'funnel',                label: 'Lejek',        number: '§02', icon: Filter,          group: 'overview' },
-  { id: 'top-products',          label: 'Produkty',     number: '§03', icon: Package,         group: 'overview' },
-  { id: 'performance-marketing', label: 'Performance',  number: '§04', icon: Activity,        group: 'marketing' },
-  { id: 'traffic-sources',       label: 'Ruch',         number: '§05', icon: LineChart,       group: 'marketing' },
-  { id: 'sales-channels',        label: 'Sprzedaż',     number: '§06', icon: Store,           group: 'channels' },
-  { id: 'product-catalogs',      label: 'Katalogi',     number: '§07', icon: ShoppingBag,     group: 'channels' },
-  { id: 'meta-ads',              label: 'Meta Ads',     number: '§08', icon: Circle,          group: 'platforms' },
-  { id: 'google-ads',            label: 'Google Ads',   number: '§09', icon: Circle,          group: 'platforms' },
-  { id: 'pinterest',             label: 'Pinterest',    number: '§10', icon: Circle,          group: 'platforms' },
-  { id: 'criteo',                label: 'Criteo',       number: '§11', icon: Circle,          group: 'platforms' },
+  { id: 'top-products',          label: 'Produkty',     number: '§02', icon: Package,         group: 'overview' },
+  { id: 'performance-marketing', label: 'Performance',  number: '§03', icon: Activity,        group: 'marketing' },
+  { id: 'traffic-sources',       label: 'Ruch',         number: '§04', icon: LineChart,       group: 'marketing' },
+  { id: 'sales-channels',        label: 'Sprzedaż',     number: '§05', icon: Store,           group: 'channels' },
+  { id: 'product-catalogs',      label: 'Katalogi',     number: '§06', icon: ShoppingBag,     group: 'channels' },
+  { id: 'meta-ads',              label: 'Meta Ads',     number: '§07', icon: Circle,          group: 'platforms' },
+  { id: 'google-ads',            label: 'Google Ads',   number: '§08', icon: Circle,          group: 'platforms' },
+  { id: 'pinterest',             label: 'Pinterest',    number: '§09', icon: Circle,          group: 'platforms' },
+  { id: 'criteo',                label: 'Criteo',       number: '§10', icon: Circle,          group: 'platforms' },
 ];
 
 const GROUP_LABELS: Record<NavItem['group'], string> = {

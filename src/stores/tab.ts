@@ -9,7 +9,6 @@ export type TabId =
   | 'pinterest'
   | 'criteo'
   | 'product-catalogs'
-  | 'funnel'
   | 'traffic-sources'
   | 'top-products';
 
