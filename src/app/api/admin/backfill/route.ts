@@ -15,6 +15,7 @@ import { syncPinterest } from '@/lib/sync/pinterest';
 import { syncSellRocket } from '@/lib/sync/sellrocket';
 import { syncSellRocketDirect } from '@/lib/sync/sellrocket-direct';
 import { syncProducts } from '@/lib/sync/products';
+import { syncShoperHistorical, syncShoperDailyRevenue } from '@/lib/sync/shoper';
 import { startRun, finishRun, withTimeout } from '@/lib/sync/run-tracker';
 import { buildRollups } from '@/lib/rollup';
 import { type DateRange } from '@/lib/periods';
@@ -40,6 +41,10 @@ const BACKFILL_TIMEOUT_MS: Record<string, number> = {
   // to stream even with the 30-day hard cutoff. Give it 60 min.
   sellrocket: 60 * 60 * 1000,
   products: 60 * 60 * 1000,
+  // Shoper direct: two paginations (orders + order-products) at 50/page.
+  // A month of Room99 orders (~9k) needs ~500 API calls → ~3-5 min.
+  shoper: 30 * 60 * 1000,
+  shoper_daily: 15 * 60 * 1000,
 };
 
 async function track(source: string, fn: () => Promise<{ rowsWritten: number }>) {
@@ -76,7 +81,7 @@ export async function GET(req: Request) {
   }
   const range: DateRange = { start, end };
 
-  const sourcesRaw = (url.searchParams.get('sources') ?? 'meta,sellrocket,products,google_ads,criteo,ga4,pinterest')
+  const sourcesRaw = (url.searchParams.get('sources') ?? 'meta,sellrocket,products,google_ads,criteo,ga4,pinterest,shoper,shoper_daily')
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean);
@@ -113,6 +118,17 @@ export async function GET(req: Request) {
         break;
       case 'pinterest':
         jobs.push({ source, fn: () => syncPinterest(range) });
+        break;
+      case 'shoper':
+        // Shoper direct: writes per-SKU rows into products_daily with
+        // source='shr'. Use for YoY ranges where BaseLinker has purged
+        // its order cache (>365 days).
+        jobs.push({ source, fn: () => syncShoperHistorical(range) });
+        break;
+      case 'shoper_daily':
+        // Shoper daily revenue aggregate for the Shoper vs Allegro chart
+        // (sellrocket_daily source='shr'). Pair with 'shoper' for full YoY.
+        jobs.push({ source, fn: () => syncShoperDailyRevenue(range) });
         break;
       default:
         // ignore unknown
