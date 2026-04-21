@@ -98,8 +98,18 @@ export async function GET(req: Request) {
       alerts.push('Przeoptymalizowane (sprzedawano rok temu, teraz cisza)');
     }
     if (yoyDelta != null && yoyDelta > 3) alerts.push('Breakout +300% YoY');
-    if (shrShareDelta != null && shrShareDelta < -0.1) alerts.push('Migracja SHR → Allegro');
-    else if (shrShareDelta != null && shrShareDelta > 0.1) alerts.push('Powrót na Shoper');
+    // Migration alerts require BOTH channels to have YoY data — otherwise
+    // the share delta is driven by missing historical coverage, not real
+    // channel migration. Shoper API gives us SHR history via syncShoper;
+    // Allegro history needs a separate Allegro API integration and until
+    // then `yoyAllegro` is zero, which would fire false 'Migracja' alerts
+    // on every category. Suppress them when Allegro YoY is empty.
+    const hasBothChannelsYoY = yoyShr > 0 && yoyAllegro > 0;
+    if (hasBothChannelsYoY && shrShareDelta != null && shrShareDelta < -0.1) {
+      alerts.push('Migracja SHR → Allegro');
+    } else if (hasBothChannelsYoY && shrShareDelta != null && shrShareDelta > 0.1) {
+      alerts.push('Powrót na Shoper');
+    }
 
     return {
       group: r.group,
