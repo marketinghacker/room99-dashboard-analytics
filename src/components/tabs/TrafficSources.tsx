@@ -1,9 +1,7 @@
 'use client';
 
 import { useFilteredSWR } from '@/components/primitives/useFilteredSWR';
-import { HeroMetric } from '@/components/primitives/HeroMetric';
-import { ScoreCard } from '@/components/primitives/ScoreCard';
-import { ChartCard } from '@/components/primitives/ChartCard';
+import { HeroKpi, StatCard, SectionHead, Overline } from '@/components/primitives/editorial';
 import { ChartBar, ChartDonut } from '@/components/primitives/charts';
 import { LoadingCard, ErrorCard } from '@/components/primitives/StateCard';
 import { formatPLN, formatInt, formatPct } from '@/lib/format';
@@ -20,76 +18,122 @@ export function TrafficSourcesTab() {
   const totalRevenue = channels.reduce((s: number, c: any) => s + c.revenue, 0);
 
   return (
-    <div className="flex flex-col gap-5 animate-fade-up">
-      <div>
-        <h2 className="text-[24px] font-semibold tracking-[-0.02em]">Źródła ruchu</h2>
-        <p className="text-[13px] text-[var(--color-ink-tertiary)] mt-0.5">
-          GA4 kanały — sesje, użytkownicy, konwersje
+    <div className="flex flex-col gap-10">
+      <header>
+        <div className="overline mb-2">Ruch · GA4 acquisition</div>
+        <h1 className="section-title" style={{ fontSize: 32, letterSpacing: '-0.02em', fontWeight: 500 }}>
+          Źródła ruchu
+        </h1>
+        <p className="lede mt-2" style={{ fontSize: 14 }}>
+          Źródło: Google Analytics 4 · kanały pozyskiwania, sesje, przychód transakcyjny.
+          Przychód GA4 może różnić się od Shoper (attribution window, refunds).
         </p>
+      </header>
+
+      <div className="grid gap-5" style={{ gridTemplateColumns: '1.25fr 1fr 1fr' }}>
+        <HeroKpi
+          label="Sesje"
+          value={k.sessions ?? 0}
+          format="int"
+          primary
+          hint="Źródło: GA4"
+        />
+        <HeroKpi
+          label="Użytkownicy"
+          value={k.users ?? 0}
+          format="int"
+          hint={k.newUsers && k.users ? `${formatPct(k.newUsers / k.users)} nowi` : 'Źródło: GA4'}
+        />
+        <HeroKpi
+          label="Przychód (GA4)"
+          value={totalRevenue}
+          format="pln"
+          hint="Suma po wszystkich channel groups"
+        />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 stagger">
-        <HeroMetric label="Sesje" value={k.sessions} format="int" />
-        <HeroMetric label="Użytkownicy" value={k.users} format="int" />
-        <HeroMetric label="Przychód" value={totalRevenue} format="pln" tone="primary" />
+      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+        <StatCard label="Nowi użytkownicy" value={k.newUsers ?? 0} format="int" />
+        <StatCard label="Engaged sessions" value={k.engagedSessions ?? 0} format="int" />
+        <StatCard label="Transakcje" value={k.transactions ?? 0} format="int" />
+        <StatCard label="Bounce rate" value={(k.bounceRate ?? 0) * 100} format="pct" />
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <ScoreCard label="Nowi użytkownicy" value={k.newUsers} format="int" hint={k.users ? `${formatPct(k.newUsers / k.users)} udział` : undefined} />
-        <ScoreCard label="Engaged sessions" value={k.engagedSessions} format="int" hint={k.sessions ? formatPct(k.engagedSessions / k.sessions) : undefined} />
-        <ScoreCard label="Transakcje" value={k.transactions} format="int" />
-        <ScoreCard label="Bounce rate" value={k.bounceRate} format="pct" deltaInverted />
-      </div>
+      <section>
+        <SectionHead
+          number="§01"
+          title="Sesje vs przychód wg kanału"
+          sub="Źródło: GA4 · default channel grouping"
+        />
+        <div className="grid gap-5" style={{ gridTemplateColumns: '1.5fr 1fr' }}>
+          <div className="card p-5">
+            <Overline>Sesje wg kanału</Overline>
+            <div className="mt-3">
+              <ChartBar
+                data={channels.map((c: any) => ({ name: c.channelGroup, sessions: c.sessions }))}
+                xKey="name"
+                yKey="sessions"
+                label="Sesje"
+                horizontal
+                height={Math.max(240, channels.length * 32 + 40)}
+              />
+            </div>
+          </div>
+          <div className="card p-5">
+            <Overline>Przychód wg kanału</Overline>
+            <div className="mt-3">
+              <ChartDonut
+                data={channels.filter((c: any) => c.revenue > 0).map((c: any) => ({ name: c.channelGroup, value: c.revenue }))}
+                nameKey="name"
+                valueKey="value"
+                height={280}
+              />
+            </div>
+          </div>
+        </div>
+      </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-5">
-        <ChartCard title="Sesje wg kanału" subtitle="Porównanie wolumenu ruchu">
-          <ChartBar
-            data={channels.map((c: any) => ({ name: c.channelGroup, sessions: c.sessions }))}
-            xKey="name"
-            yKey="sessions"
-            label="Sesje"
-            horizontal
-            height={Math.max(240, channels.length * 32 + 40)}
-          />
-        </ChartCard>
-        <ChartCard title="Przychód wg kanału" subtitle="Udział w sprzedaży">
-          <ChartDonut
-            data={channels.filter((c: any) => c.revenue > 0).map((c: any) => ({ name: c.channelGroup, value: c.revenue }))}
-            nameKey="name"
-            valueKey="value"
-            height={280}
-          />
-        </ChartCard>
-      </div>
-
-      <div className="card overflow-hidden">
-        <table className="w-full text-[13px]">
-          <thead className="bg-[var(--color-bg-elevated)] border-b border-[var(--color-border-subtle)]">
-            <tr>
-              <th className="px-5 py-3 overline text-left">Kanał</th>
-              <th className="px-5 py-3 overline text-right">Sesje</th>
-              <th className="px-5 py-3 overline text-right">Użytkownicy</th>
-              <th className="px-5 py-3 overline text-right">Transakcje</th>
-              <th className="px-5 py-3 overline text-right">Przychód</th>
-              <th className="px-5 py-3 overline text-right">Konwersja</th>
-            </tr>
-          </thead>
-          <tbody>
-            {channels.map((c: any) => (
-              <tr key={c.channelGroup} className="border-b border-[var(--color-border-subtle)] last:border-b-0 hover:bg-[var(--color-bg-elevated)]/60 transition-colors">
-                <td className="px-5 py-3 font-medium">{c.channelGroup}</td>
-                <td className="px-5 py-3 text-right numeric">{formatInt(c.sessions)}</td>
-                <td className="px-5 py-3 text-right numeric">{formatInt(c.users)}</td>
-                <td className="px-5 py-3 text-right numeric">{formatInt(c.transactions)}</td>
-                <td className="px-5 py-3 text-right numeric font-medium">{formatPLN(c.revenue)}</td>
-                <td className="px-5 py-3 text-right numeric text-[var(--color-ink-secondary)]">
-                  {c.sessions > 0 ? formatPct(c.transactions / c.sessions) : '—'}
-                </td>
+      <section>
+        <SectionHead
+          number="§02"
+          title="Kanały — pełne zestawienie"
+          sub="Źródło: GA4 · sessions / users / transactions / revenue / CR"
+        />
+        <div className="card overflow-hidden">
+          <table className="w-full">
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--color-line-soft)' }}>
+                <th className="table-header text-left px-4 py-3">Kanał</th>
+                <th className="table-header text-right px-4 py-3">Sesje</th>
+                <th className="table-header text-right px-4 py-3">Użytkownicy</th>
+                <th className="table-header text-right px-4 py-3">Transakcje</th>
+                <th className="table-header text-right px-4 py-3">Przychód (GA4)</th>
+                <th className="table-header text-right px-4 py-3">CR</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {channels.map((c: any) => (
+                <tr
+                  key={c.channelGroup}
+                  style={{ borderBottom: '1px solid var(--color-line-soft)' }}
+                  className="transition-colors"
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <td className="px-4 py-3 table-cell font-medium">{c.channelGroup}</td>
+                  <td className="px-4 py-3 text-right numeric table-cell">{formatInt(c.sessions)}</td>
+                  <td className="px-4 py-3 text-right numeric table-cell">{formatInt(c.users)}</td>
+                  <td className="px-4 py-3 text-right numeric table-cell">{formatInt(c.transactions)}</td>
+                  <td className="px-4 py-3 text-right numeric table-cell">{formatPLN(c.revenue)}</td>
+                  <td className="px-4 py-3 text-right numeric table-cell">
+                    {c.sessions > 0 ? formatPct(c.transactions / c.sessions) : '—'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
   );
 }

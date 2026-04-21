@@ -1,13 +1,12 @@
 'use client';
 
 import { useFilteredSWR } from '@/components/primitives/useFilteredSWR';
-import { HeroMetric } from '@/components/primitives/HeroMetric';
-import { ScoreCard } from '@/components/primitives/ScoreCard';
-import { ChartCard } from '@/components/primitives/ChartCard';
+import {
+  HeroKpi, StatCard, SectionHead, CompareBar, Overline,
+} from '@/components/primitives/editorial';
 import { ChartLine } from '@/components/primitives/charts';
 import { LoadingCard, ErrorCard } from '@/components/primitives/StateCard';
 import { formatPLN, formatInt, formatPct } from '@/lib/format';
-import { cn } from '@/components/ui/cn';
 
 export function SalesChannelsTab() {
   const { data, error, isLoading } = useFilteredSWR<any>('/api/data/sales-channels');
@@ -26,210 +25,178 @@ export function SalesChannelsTab() {
     date: string; revenueShr: number; revenueAllegro: number; revenueOther: number;
   }>;
 
-  // Ignore other marketplaces — per Marcin's spec the dashboard only
-  // contrasts Shoper (agency scope) vs Allegro (benchmark).
   const totalTracked = sbs.shr.revenue + sbs.allegro.revenue;
   const shrShare = totalTracked > 0 ? sbs.shr.revenue / totalTracked : 0;
   const allegroShare = totalTracked > 0 ? sbs.allegro.revenue / totalTracked : 0;
 
-  const channelRows = [
-    { key: 'shr', label: 'Shoper (Room99.pl)', ...sbs.shr, share: shrShare, color: 'var(--color-chart-3)', agency: true },
-    { key: 'allegro', label: 'Allegro', ...sbs.allegro, share: allegroShare, color: 'var(--color-chart-4)', agency: false },
-  ];
+  const daysAllegroWins = timeSeries.filter((t) => t.revenueAllegro > t.revenueShr).length;
+  const totalDays = timeSeries.filter((t) => t.revenueShr > 0 || t.revenueAllegro > 0).length;
+  const alertDays = timeSeries.filter((t) => t.revenueAllegro > t.revenueShr);
 
   return (
-    <div className="flex flex-col gap-5 animate-fade-up">
-      <div>
-        <h2 className="text-[24px] font-semibold tracking-[-0.02em]">Kanały sprzedaży</h2>
-        <p className="text-[13px] text-[var(--color-ink-tertiary)] mt-0.5">
-          Podział sprzedaży między Shoper (sklep własny — zakres agencji), Allegro i pozostałe kanały.
-          Źródło: SellRocket / BaseLinker.
+    <div className="flex flex-col gap-10">
+      <header>
+        <div className="overline mb-2">Sprzedaż · kanały</div>
+        <h1 className="section-title" style={{ fontSize: 32, letterSpacing: '-0.02em', fontWeight: 500 }}>
+          Shoper vs Allegro
+        </h1>
+        <p className="lede mt-2" style={{ fontSize: 14 }}>
+          Źródło: SellRocket (BaseLinker direct) · Shoper = sklep własny Room99.pl (zakres agencji) ·
+          Allegro = marketplace. Klient powinien mieć przewagę Shoper &gt; Allegro każdego dnia.
         </p>
+      </header>
+
+      {/* Hero: Compare bar */}
+      <CompareBar
+        leftLabel="Shoper (Room99.pl)"
+        leftValue={sbs.shr.revenue}
+        rightLabel="Allegro"
+        rightValue={sbs.allegro.revenue}
+        format="pln"
+      />
+
+      {/* Context KPIs */}
+      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+        <StatCard label="Zamówienia — Shoper" value={sbs.shr.orders ?? 0} format="int" />
+        <StatCard label="AOV — Shoper" value={sbs.shr.aov ?? 0} format="pln" />
+        <StatCard label="Zamówienia — Allegro" value={sbs.allegro.orders ?? 0} format="int" />
+        <StatCard label="AOV — Allegro" value={sbs.allegro.aov ?? 0} format="pln" />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 stagger">
-        <HeroMetric
-          label="Shoper (Room99.pl)"
-          value={sbs.shr.revenue}
-          format="pln"
-          tone="primary"
-          sublabel={`${formatPct(shrShare)} całej sprzedaży · ${formatInt(sbs.shr.orders)} zamówień`}
-        />
-        <HeroMetric
-          label="Allegro"
-          value={sbs.allegro.revenue}
-          format="pln"
-          sublabel={`${formatPct(allegroShare)} sprzedaży · ${formatInt(sbs.allegro.orders)} zamówień`}
-        />
-        <HeroMetric
-          label="Stosunek Shoper vs Allegro"
-          value={sbs.allegro.revenue > 0 ? sbs.shr.revenue / sbs.allegro.revenue : null}
-          format="decimal"
-          sublabel="Ile razy Shoper > Allegro"
-        />
-      </div>
-
-      {/* Share bar — proportions visually */}
-      <div className="card p-5">
-        <div className="flex items-baseline justify-between mb-3">
-          <h3 className="text-[15px] font-semibold">Proporcja przychodu wg kanału</h3>
-          <span className="text-[12px] text-[var(--color-ink-tertiary)] numeric">
-            Razem: {formatPLN(sbs.all.revenue)}
-          </span>
-        </div>
-        <div className="flex h-10 w-full rounded-[10px] overflow-hidden border border-[var(--color-border-subtle)]">
-          {channelRows.map((c) => (
-            <div
-              key={c.key}
-              style={{
-                width: `${Math.max(0.5, c.share * 100)}%`,
-                background: c.color,
-              }}
-              className="relative flex items-center justify-center text-[11px] font-semibold text-white transition-all duration-500"
-              title={`${c.label}: ${formatPLN(c.revenue)} (${formatPct(c.share)})`}
-            >
-              {c.share > 0.05 && formatPct(c.share)}
-            </div>
-          ))}
-        </div>
-        <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-2">
-          {channelRows.map((c) => (
-            <div key={c.key} className="flex items-center gap-2 text-[12px]">
-              <span className="w-2.5 h-2.5 rounded-sm" style={{ background: c.color }} />
-              <span className="text-[var(--color-ink-secondary)]">{c.label}</span>
-              {c.agency && (
-                <span className="chip text-[10px] py-0 px-1.5 bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] border-[var(--color-accent-primary)]/20">
-                  zakres agencji
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Day-by-day lead monitor — Shoper MUST lead Allegro. Alert if not. */}
-      {(() => {
-        const daysAllegroWins = timeSeries.filter((t) => t.revenueAllegro > t.revenueShr).length;
-        const totalDays = timeSeries.filter((t) => t.revenueShr > 0 || t.revenueAllegro > 0).length;
-        const alertDays = timeSeries.filter((t) => t.revenueAllegro > t.revenueShr);
-        return (
-          <>
-            <ChartCard
-              title="Shoper vs Allegro — dzień po dniu"
-              subtitle="Sklep własny (Shoper) powinien prowadzić nad Allegro każdego dnia"
-              right={
-                daysAllegroWins === 0 ? (
-                  <span className="chip bg-[var(--color-accent-positive-bg)] text-[var(--color-accent-positive)] border-[var(--color-accent-positive)]/30">
-                    ✓ Shoper prowadzi przez wszystkie {totalDays} dni
-                  </span>
-                ) : (
-                  <span className="chip bg-[var(--color-accent-negative-bg)] text-[var(--color-accent-negative)] border-[var(--color-accent-negative)]/30">
-                    ⚠ Allegro przewyższa Shoper w {daysAllegroWins} / {totalDays} dni
-                  </span>
-                )
-              }
-            >
-              <ChartLine
-                data={timeSeries}
-                series={[
-                  { key: 'revenueShr', label: 'Shoper', color: 'var(--color-chart-3)' },
-                  { key: 'revenueAllegro', label: 'Allegro', color: 'var(--color-chart-4)' },
-                ]}
-                height={300}
-              />
-            </ChartCard>
-
-            {alertDays.length > 0 && (
-              <div className="card p-4 border-[var(--color-accent-negative)]/40 bg-[var(--color-accent-negative-bg)]">
-                <div className="flex items-start gap-3">
-                  <div className="w-1 h-full min-h-[48px] rounded-full bg-[var(--color-accent-negative)]" />
-                  <div className="flex-1">
-                    <div className="text-[13px] font-semibold text-[var(--color-ink-primary)]">
-                      ⚠ Alert: {alertDays.length} {alertDays.length === 1 ? 'dzień' : 'dni'} gdy Allegro &gt; Shoper
-                    </div>
-                    <div className="text-[12px] text-[var(--color-ink-secondary)] mt-1 grid grid-cols-2 md:grid-cols-4 gap-2">
-                      {alertDays.map((d) => (
-                        <div key={d.date} className="numeric">
-                          <span className="font-mono text-[11px]">{d.date}</span>
-                          <span className="ml-1 text-[var(--color-accent-negative)] font-semibold">
-                            +{formatPLN(d.revenueAllegro - d.revenueShr)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="text-[11px] text-[var(--color-ink-tertiary)] mt-2">
-                      Sklep Room99.pl powinien mieć przewagę — sprawdź co napędzało sprzedaż Allegro w tych dniach
-                      i czy to da się przenieść do kampanii Shopera (SEM, Meta retargeting).
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </>
-        );
-      })()}
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <ScoreCard label="AOV — Shoper" value={sbs.shr.aov} format="pln" hint="Średnie zamówienie — sklep" />
-        <ScoreCard label="AOV — Allegro" value={sbs.allegro.aov} format="pln" hint="Średnie zamówienie — Allegro" />
-        <ScoreCard
-          label="Przewaga Shopera"
-          value={sbs.allegro.revenue > 0 ? (sbs.shr.revenue - sbs.allegro.revenue) / sbs.allegro.revenue : null}
+      <div className="grid gap-5" style={{ gridTemplateColumns: '1fr 1fr' }}>
+        <HeroKpi
+          label="Udział Shoper (Room99.pl)"
+          value={shrShare * 100}
           format="pct"
-          hint="(Shoper − Allegro) / Allegro"
+          primary
+          hint={`${formatPLN(sbs.shr.revenue)} / ${formatPLN(totalTracked)} razem`}
+        />
+        <HeroKpi
+          label="Udział Allegro"
+          value={allegroShare * 100}
+          format="pct"
+          hint={`${formatPLN(sbs.allegro.revenue)} / ${formatPLN(totalTracked)} razem`}
         />
       </div>
 
-      <div className="card overflow-hidden">
-        <table className="w-full text-[13px]">
-          <thead className="bg-[var(--color-bg-elevated)] border-b border-[var(--color-border-subtle)]">
-            <tr>
-              <th className="px-5 py-3 overline text-left">Kanał</th>
-              <th className="px-5 py-3 overline text-right">Przychód</th>
-              <th className="px-5 py-3 overline text-right">Zamówienia</th>
-              <th className="px-5 py-3 overline text-right">AOV</th>
-              <th className="px-5 py-3 overline text-right">Udział</th>
-            </tr>
-          </thead>
-          <tbody>
-            {channelRows.map((c) => (
-              <tr key={c.key} className={cn(
-                'border-b border-[var(--color-border-subtle)] last:border-b-0 hover:bg-[var(--color-bg-elevated)]/60 transition-colors',
-                c.agency && 'bg-[var(--color-accent-primary)]/5'
-              )}>
-                <td className="px-5 py-3">
+      {/* §01 daily */}
+      <section>
+        <SectionHead
+          number="§01"
+          title="Shoper vs Allegro — dzień po dniu"
+          sub="Źródło: SellRocket · klient-facing: sklep własny powinien prowadzić każdego dnia"
+          right={
+            daysAllegroWins === 0 ? (
+              <span className="chip chip-pos">✓ Shoper prowadzi przez wszystkie {totalDays} dni</span>
+            ) : (
+              <span className="chip chip-neg">⚠ Allegro przewyższa Shoper w {daysAllegroWins}/{totalDays} dni</span>
+            )
+          }
+        />
+        <div className="card p-5">
+          <ChartLine
+            data={timeSeries}
+            series={[
+              { key: 'revenueShr', label: 'Shoper', color: 'var(--color-accent)' },
+              { key: 'revenueAllegro', label: 'Allegro', color: 'var(--color-accent-2)' },
+            ]}
+            height={300}
+          />
+        </div>
+      </section>
+
+      {/* Alert days */}
+      {alertDays.length > 0 && (
+        <section className="card p-5" style={{
+          background: 'var(--color-accent-negative-bg)',
+          border: '1px solid color-mix(in oklch, var(--color-accent-negative) 30%, transparent)',
+        }}>
+          <div className="flex items-start gap-3">
+            <div className="w-1 min-h-[48px] rounded-full" style={{ background: 'var(--color-accent-negative)' }} />
+            <div className="flex-1">
+              <Overline>⚠ Alert</Overline>
+              <div className="text-[14px] mt-1" style={{ color: 'var(--color-ink-primary)', fontWeight: 500 }}>
+                {alertDays.length} {alertDays.length === 1 ? 'dzień' : 'dni'} gdy Allegro &gt; Shoper
+              </div>
+              <div className="mt-3 grid gap-1.5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}>
+                {alertDays.map((d) => (
+                  <div key={d.date} className="text-[12px] numeric flex items-baseline gap-2">
+                    <span className="font-mono text-[11px]" style={{ color: 'var(--color-ink-tertiary)' }}>{d.date}</span>
+                    <span style={{ color: 'var(--color-accent-negative)', fontWeight: 600 }}>
+                      +{formatPLN(d.revenueAllegro - d.revenueShr)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-3 text-[11px]" style={{ color: 'var(--color-ink-tertiary)' }}>
+                Sprawdź co napędzało sprzedaż Allegro — rozważ retargeting Meta/SEM dla Shopera.
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* §02 full table */}
+      <section>
+        <SectionHead
+          number="§02"
+          title="Kanały — pełne zestawienie"
+          sub="Źródło: SellRocket (BaseLinker direct). Ignorujemy pozostałe marketplaces."
+        />
+        <div className="card overflow-hidden">
+          <table className="w-full">
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--color-line-soft)' }}>
+                <th className="table-header text-left px-4 py-3">Kanał</th>
+                <th className="table-header text-right px-4 py-3">Przychód</th>
+                <th className="table-header text-right px-4 py-3">Zamówienia</th>
+                <th className="table-header text-right px-4 py-3">AOV</th>
+                <th className="table-header text-right px-4 py-3">Udział</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style={{ borderBottom: '1px solid var(--color-line-soft)' }}>
+                <td className="px-4 py-3 table-cell">
                   <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full" style={{ background: c.color }} />
-                    <span className="font-medium">{c.label}</span>
-                    {c.agency && (
-                      <span className="chip text-[10px] py-0 px-1.5 bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] border-[var(--color-accent-primary)]/20">
-                        agencja
-                      </span>
-                    )}
+                    <span className="w-2 h-2 rounded-full" style={{ background: 'var(--color-accent)' }} />
+                    <span className="font-medium">Shoper (Room99.pl)</span>
+                    <span className="chip chip-pos text-[10px] py-0 px-1.5">zakres agencji</span>
                   </div>
                 </td>
-                <td className="px-5 py-3 text-right numeric font-medium">{formatPLN(c.revenue)}</td>
-                <td className="px-5 py-3 text-right numeric">{formatInt(c.orders)}</td>
-                <td className="px-5 py-3 text-right numeric text-[var(--color-ink-secondary)]">{formatPLN(c.aov)}</td>
-                <td className="px-5 py-3 text-right numeric">{formatPct(c.share)}</td>
+                <td className="px-4 py-3 text-right numeric font-medium table-cell">{formatPLN(sbs.shr.revenue)}</td>
+                <td className="px-4 py-3 text-right numeric table-cell">{formatInt(sbs.shr.orders)}</td>
+                <td className="px-4 py-3 text-right numeric table-cell">{formatPLN(sbs.shr.aov)}</td>
+                <td className="px-4 py-3 text-right numeric table-cell">{formatPct(shrShare)}</td>
               </tr>
-            ))}
-            <tr className="bg-[var(--color-bg-elevated)] font-semibold">
-              <td className="px-5 py-3 overline text-[12px]">Razem (Shoper + Allegro)</td>
-              <td className="px-5 py-3 text-right numeric">{formatPLN(sbs.shr.revenue + sbs.allegro.revenue)}</td>
-              <td className="px-5 py-3 text-right numeric">{formatInt(sbs.shr.orders + sbs.allegro.orders)}</td>
-              <td className="px-5 py-3 text-right numeric">
-                {formatPLN(
-                  sbs.shr.orders + sbs.allegro.orders > 0
-                    ? (sbs.shr.revenue + sbs.allegro.revenue) / (sbs.shr.orders + sbs.allegro.orders)
-                    : null
-                )}
-              </td>
-              <td className="px-5 py-3 text-right numeric">100%</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+              <tr style={{ borderBottom: '1px solid var(--color-line-soft)' }}>
+                <td className="px-4 py-3 table-cell">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full" style={{ background: 'var(--color-accent-2)' }} />
+                    <span className="font-medium">Allegro</span>
+                  </div>
+                </td>
+                <td className="px-4 py-3 text-right numeric font-medium table-cell">{formatPLN(sbs.allegro.revenue)}</td>
+                <td className="px-4 py-3 text-right numeric table-cell">{formatInt(sbs.allegro.orders)}</td>
+                <td className="px-4 py-3 text-right numeric table-cell">{formatPLN(sbs.allegro.aov)}</td>
+                <td className="px-4 py-3 text-right numeric table-cell">{formatPct(allegroShare)}</td>
+              </tr>
+              <tr style={{ background: 'var(--color-bg-elevated)' }}>
+                <td className="px-4 py-3 overline">Razem (Shoper + Allegro)</td>
+                <td className="px-4 py-3 text-right numeric font-medium">{formatPLN(totalTracked)}</td>
+                <td className="px-4 py-3 text-right numeric font-medium">{formatInt(sbs.shr.orders + sbs.allegro.orders)}</td>
+                <td className="px-4 py-3 text-right numeric font-medium">
+                  {formatPLN(
+                    sbs.shr.orders + sbs.allegro.orders > 0
+                      ? totalTracked / (sbs.shr.orders + sbs.allegro.orders)
+                      : null
+                  )}
+                </td>
+                <td className="px-4 py-3 text-right numeric font-medium">100%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
   );
 }

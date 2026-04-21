@@ -3,12 +3,9 @@
 import { useMemo } from 'react';
 import { type ColumnDef } from '@tanstack/react-table';
 import { useFilteredSWR } from '@/components/primitives/useFilteredSWR';
-import { HeroMetric } from '@/components/primitives/HeroMetric';
-import { ScoreCard } from '@/components/primitives/ScoreCard';
-import { ChartCard } from '@/components/primitives/ChartCard';
+import { HeroKpi, StatCard, SectionHead, Overline, Dot, PLATFORM_DOT } from '@/components/primitives/editorial';
 import { ChartArea, ChartBar } from '@/components/primitives/charts';
 import { DataTable } from '@/components/primitives/DataTable';
-import { PlatformBadge } from '@/components/primitives/PlatformBadge';
 import { LoadingCard, ErrorCard } from '@/components/primitives/StateCard';
 import { formatPLN, formatInt, formatPct } from '@/lib/format';
 
@@ -29,8 +26,13 @@ export function PerformanceMarketingTab() {
         header: 'Kampania',
         cell: ({ row }) => (
           <div className="flex items-center gap-2">
-            <PlatformBadge platform={row.original.platform} />
-            <span className="font-medium truncate max-w-[280px]" title={row.original.name}>{row.original.name}</span>
+            <Dot color={PLATFORM_DOT[row.original.platform] ?? 'var(--color-accent-2)'} size={8} />
+            <span className="text-[11px] font-mono uppercase tracking-[0.08em]" style={{ color: 'var(--color-ink-tertiary)' }}>
+              {PLATFORM_LABEL[row.original.platform] ?? row.original.platform}
+            </span>
+            <span className="font-medium truncate max-w-[280px]" title={row.original.name}>
+              {row.original.name}
+            </span>
           </div>
         ),
       },
@@ -38,7 +40,7 @@ export function PerformanceMarketingTab() {
       { accessorKey: 'impressions', header: 'Wyświetlenia', meta: { numeric: true }, cell: (i) => formatInt(i.getValue() as number) },
       { accessorKey: 'clicks', header: 'Kliki', meta: { numeric: true }, cell: (i) => formatInt(i.getValue() as number) },
       { accessorKey: 'ctr', header: 'CTR', meta: { numeric: true }, cell: (i) => formatPct(i.getValue() as number) },
-      { accessorKey: 'conversionValue', header: 'Wartość konw.', meta: { numeric: true }, cell: (i) => formatPLN(i.getValue() as number) },
+      { accessorKey: 'conversionValue', header: 'Wartość konw. (platform)', meta: { numeric: true }, cell: (i) => formatPLN(i.getValue() as number) },
       {
         accessorKey: 'roas',
         header: 'ROAS',
@@ -61,6 +63,7 @@ export function PerformanceMarketingTab() {
   const deltas = all.deltas ?? {};
   const perPlatform = (data.perPlatform ?? []).filter((p: any) => p.payload);
   const campaigns = all.campaigns ?? [];
+  const timeSeries = all.timeSeries ?? [];
 
   const platformComparison = perPlatform.map((p: any) => ({
     name: PLATFORM_LABEL[p.platform] ?? p.platform,
@@ -70,48 +73,113 @@ export function PerformanceMarketingTab() {
   }));
 
   return (
-    <div className="flex flex-col gap-5 animate-fade-up">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 stagger">
-        <HeroMetric label="Wydatki (wszystkie kanały)" value={kpis.spend} format="pln" delta={deltas.spend} deltaInverted />
-        <HeroMetric label="Wartość konwersji" value={kpis.conversionValue} format="pln" delta={deltas.conversionValue} tone="primary" />
-        <HeroMetric label="ROAS" value={kpis.roas} format="decimal" delta={deltas.roas} />
-        <HeroMetric label="CPC" value={kpis.cpc} format="pln2" delta={deltas.cpc} deltaInverted />
+    <div className="flex flex-col gap-10">
+      <header className="mb-0">
+        <div className="overline mb-2">Performance Marketing · paid ads combined</div>
+        <h1 className="section-title" style={{ fontSize: 32, letterSpacing: '-0.02em', fontWeight: 500 }}>
+          Wszystkie kanały płatne
+        </h1>
+        <p className="lede mt-2" style={{ fontSize: 14 }}>
+          Źródło: API platform ads (Meta Graph, Google Ads, Pinterest, Criteo). Wydatki 1:1 z panelami,
+          przychód i ROAS to własna atrybucja platform — nie Shoper.
+        </p>
+      </header>
+
+      {/* Hero KPI */}
+      <div className="grid gap-5" style={{ gridTemplateColumns: '1.25fr 1fr 1fr 1fr' }}>
+        <HeroKpi
+          label="Wydatki — wszystkie kanały"
+          value={kpis.spend ?? 0}
+          change={deltas.spend != null ? -deltas.spend : null}
+          format="pln"
+          primary
+          hint="Źródło: Meta + Google + Pinterest + Criteo"
+        />
+        <HeroKpi
+          label="Wartość konwersji (platform attr.)"
+          value={kpis.conversionValue ?? 0}
+          change={deltas.conversionValue}
+          format="pln"
+          hint="Suma własnej atrybucji platform"
+        />
+        <HeroKpi
+          label="ROAS (platform)"
+          value={kpis.roas ?? 0}
+          change={deltas.roas}
+          format="x"
+          hint="ConversionValue ÷ Spend"
+        />
+        <HeroKpi
+          label="CPC (średni)"
+          value={kpis.cpc ?? 0}
+          change={deltas.cpc != null ? -deltas.cpc : null}
+          format="pln"
+          hint="Koszt za klik"
+        />
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <ScoreCard label="Wyświetlenia" value={kpis.impressions} format="int" delta={deltas.impressions} />
-        <ScoreCard label="Kliki" value={kpis.clicks} format="int" delta={deltas.clicks} />
-        <ScoreCard label="CTR" value={kpis.ctr} format="pct" delta={deltas.ctr} />
-        <ScoreCard label="CPM" value={kpis.cpm} format="pln2" delta={deltas.cpm} deltaInverted />
+      {/* StatCards strip */}
+      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+        <StatCard
+          label="Wyświetlenia"
+          value={kpis.impressions ?? 0}
+          change={deltas.impressions}
+          format="int"
+          trend={timeSeries.map((r: any) => r.impressions ?? 0)}
+        />
+        <StatCard
+          label="Kliki"
+          value={kpis.clicks ?? 0}
+          change={deltas.clicks}
+          format="int"
+          trend={timeSeries.map((r: any) => r.clicks ?? 0)}
+        />
+        <StatCard label="CTR" value={(kpis.ctr ?? 0) * 100} change={deltas.ctr} format="pct" />
+        <StatCard label="CPM" value={kpis.cpm ?? 0} change={deltas.cpm != null ? -deltas.cpm : null} format="pln" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <ChartCard title="Wydatki dzień po dniu" subtitle="Widok łączny wszystkich platform">
-          <ChartArea
-            data={all.timeSeries ?? []}
-            series={[{ key: 'spend', label: 'Wydatki', color: 'var(--color-chart-2)' }]}
-            height={260}
-          />
-        </ChartCard>
-        <ChartCard title="Wydatki vs zwrot" subtitle="Po platformie dla wybranego okresu">
-          <ChartBar
-            data={platformComparison}
-            xKey="name"
-            yKey="spend"
-            label="Wydatki"
-            money
-            height={260}
-          />
-        </ChartCard>
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <div className="flex items-baseline justify-between">
-          <h3 className="text-[15px] font-semibold">Top kampanie ({campaigns.length})</h3>
-          <p className="text-[12px] text-[var(--color-ink-tertiary)]">Sortuj klikając nagłówek</p>
+      {/* §01 charts */}
+      <section>
+        <SectionHead
+          number="§01"
+          title="Wydatki dzień po dniu"
+          sub="Źródło: platformy reklamowe · widok łączny wszystkich kanałów"
+        />
+        <div className="grid gap-5" style={{ gridTemplateColumns: '1.6fr 1fr' }}>
+          <div className="card p-5">
+            <ChartArea
+              data={timeSeries}
+              series={[{ key: 'spend', label: 'Wydatki łączne', color: 'var(--color-accent)' }]}
+              height={260}
+            />
+          </div>
+          <div className="card p-5">
+            <Overline>Wydatki vs platforma</Overline>
+            <div className="mt-3">
+              <ChartBar
+                data={platformComparison}
+                xKey="name"
+                yKey="spend"
+                label="Wydatki"
+                money
+                height={220}
+              />
+            </div>
+          </div>
         </div>
-        <DataTable data={campaigns} columns={columns} pageSize={20} />
-      </div>
+      </section>
+
+      {/* §02 campaigns */}
+      <section>
+        <SectionHead
+          number="§02"
+          title={`Top kampanie (${campaigns.length})`}
+          sub="Źródło: platformy reklamowe · atrybucja własna platform. Sortuj klikając nagłówek."
+        />
+        <div className="card overflow-hidden">
+          <DataTable data={campaigns} columns={columns} pageSize={20} />
+        </div>
+      </section>
     </div>
   );
 }
