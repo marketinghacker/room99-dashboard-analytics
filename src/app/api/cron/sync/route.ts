@@ -16,7 +16,7 @@ import { syncPinterest } from '@/lib/sync/pinterest';
 import { syncSellRocket } from '@/lib/sync/sellrocket';
 import { syncSellRocketDirect } from '@/lib/sync/sellrocket-direct';
 import { syncProducts } from '@/lib/sync/products';
-import { startRun, finishRun } from '@/lib/sync/run-tracker';
+import { startRun, finishRun, reapOrphanedRuns, withTimeout } from '@/lib/sync/run-tracker';
 import { resolvePeriod } from '@/lib/periods';
 import { buildRollups } from '@/lib/rollup';
 
@@ -27,6 +27,19 @@ export const maxDuration = 300;
 
 type Source = 'meta' | 'google_ads' | 'criteo' | 'ga4' | 'pinterest' | 'sellrocket' | 'products';
 
+// Per-source hard timeout. The cron container's maxDuration is 300s total,
+// so each source gets a slice well inside that. Generous for Meta Graph
+// (pulls 30d), tighter for GA4 (SSE transport occasionally hangs).
+const SOURCE_TIMEOUT_MS: Record<Source, number> = {
+  meta: 150_000,
+  google_ads: 60_000,
+  criteo: 60_000,
+  ga4: 60_000,
+  pinterest: 30_000,
+  sellrocket: 120_000,
+  products: 60_000,
+};
+
 async function runWithTracking(
   source: Source,
   fn: () => Promise<{ rowsWritten: number }>
@@ -34,7 +47,7 @@ async function runWithTracking(
   const id = await startRun(source);
   const t0 = Date.now();
   try {
-    const out = await fn();
+    const out = await withTimeout(fn(), SOURCE_TIMEOUT_MS[source], `sync ${source}`);
     await finishRun(id, { status: 'success', rowsWritten: out.rowsWritten });
     return { source, status: 'success', rows: out.rowsWritten, ms: Date.now() - t0 };
   } catch (err) {
@@ -56,6 +69,12 @@ export async function GET(req: Request) {
   const secret = process.env.CRON_SECRET;
   if (!secret) return Response.json({ error: 'CRON_SECRET not configured' }, { status: 500 });
   if (key !== secret) return new Response('Unauthorized', { status: 401 });
+
+  // Reap orphaned runs from previous invocations before we start new ones.
+  // A Railway function kill (maxDuration=300) leaves sync_runs rows stuck on
+  // status='running' — this marks anything >10 min old as 'failed' so the
+  // dashboard doesn't mislead on sync health.
+  const reaped = await reapOrphanedRuns(10 * 60 * 1000);
 
   // Ad platforms: last 7 days by default. Meta gets last 30d because Facebook's
   // attribution window keeps updating historical conversion data for ~28 days,
@@ -102,6 +121,7 @@ export async function GET(req: Request) {
     tightRange,
     platforms: results,
     rollup: 'started in background',
+    reapedOrphanedRuns: reaped,
   });
 }
 

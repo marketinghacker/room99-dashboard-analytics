@@ -59,6 +59,10 @@ export async function syncGA4(
 
   const client = await connectMCP(MCP_URL, 'sse');
   try {
+    // Tight per-call timeout — the GA4 MCP server occasionally sends a
+    // malformed chunked response ("Invalid character in chunk size") that
+    // hangs the SSE transport for ~15 min until Railway kills the function.
+    // We'd rather fail fast and try again next cron.
     const resp = await callMCPTool<RunReportResponse>(
       client,
       'run_report',
@@ -70,7 +74,7 @@ export async function syncGA4(
         metrics,
         limit: 100_000,
       },
-      { retries: 3, initialBackoffMs: 1000 }
+      { retries: 2, initialBackoffMs: 1000, timeoutMs: 45_000 }
     );
 
     const raw: GA4ReportRow[] = Array.isArray(resp)
@@ -115,6 +119,9 @@ export async function syncGA4(
     const rowsWritten = await upsertGA4Daily(database, rows);
     return { rowsWritten };
   } finally {
-    await client.close();
+    // Best-effort close — if the underlying SSE transport is already dead
+    // (chunk-encoding error), .close() can throw or hang. Swallow to stop
+    // the error masking the real tool error.
+    await client.close().catch(() => {});
   }
 }

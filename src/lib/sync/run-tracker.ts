@@ -1,6 +1,6 @@
 import { db as defaultDb, type DB } from '@/lib/db';
 import { syncRuns } from '@/lib/schema';
-import { eq } from 'drizzle-orm';
+import { and, eq, lt, sql } from 'drizzle-orm';
 
 export async function startRun(source: string, db: DB = defaultDb): Promise<string> {
   const [row] = await db
@@ -24,4 +24,51 @@ export async function finishRun(
       finishedAt: new Date(),
     })
     .where(eq(syncRuns.id, id));
+}
+
+/**
+ * Reap orphaned `running` runs older than `maxAgeMs`. Happens when Railway
+ * kills a function mid-execution (e.g. GA4 SSE hang at 300s maxDuration) —
+ * the row never gets `finishedAt` set, so status stays `running` forever.
+ *
+ * Called at the start of every cron sync to keep the dashboard honest.
+ * Returns the number of rows reaped.
+ */
+export async function reapOrphanedRuns(
+  maxAgeMs: number = 10 * 60 * 1000,
+  db: DB = defaultDb,
+): Promise<number> {
+  const cutoff = new Date(Date.now() - maxAgeMs);
+  const res = await db
+    .update(syncRuns)
+    .set({
+      status: 'failed',
+      error: sql`'orphaned: still running after ' || ${Math.floor(maxAgeMs / 1000)} || 's (reaper)'`,
+      finishedAt: new Date(),
+    })
+    .where(and(eq(syncRuns.status, 'running'), lt(syncRuns.startedAt, cutoff)))
+    .returning({ id: syncRuns.id });
+  return res.length;
+}
+
+/**
+ * Race a promise against a hard timeout. When the timeout fires, rejects
+ * with a descriptive error — the caller decides how to clean up (close
+ * MCP client, mark run failed, etc). Prevents the "running forever" state
+ * when an underlying transport (MCP SSE) hangs past sensible bounds.
+ */
+export async function withTimeout<T>(
+  promise: Promise<T>,
+  ms: number,
+  label: string,
+): Promise<T> {
+  let timer: NodeJS.Timeout | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label}: timed out after ${ms}ms`)), ms);
+  });
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
 }

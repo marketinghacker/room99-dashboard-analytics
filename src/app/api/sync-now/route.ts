@@ -11,7 +11,7 @@ import { syncPinterest } from '@/lib/sync/pinterest';
 import { syncSellRocket } from '@/lib/sync/sellrocket';
 import { syncSellRocketDirect } from '@/lib/sync/sellrocket-direct';
 import { syncProducts } from '@/lib/sync/products';
-import { startRun, finishRun } from '@/lib/sync/run-tracker';
+import { startRun, finishRun, reapOrphanedRuns, withTimeout } from '@/lib/sync/run-tracker';
 import { resolvePeriod } from '@/lib/periods';
 import { buildRollups } from '@/lib/rollup';
 
@@ -24,10 +24,22 @@ function toIsoDate(offsetDays: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+// Same hard timeouts as the cron — prevents a wedged SSE transport from
+// holding a `running` row open for 15+ min until Railway kills the worker.
+const SOURCE_TIMEOUT_MS: Record<string, number> = {
+  meta: 150_000,
+  google_ads: 60_000,
+  criteo: 60_000,
+  ga4: 60_000,
+  pinterest: 30_000,
+  sellrocket: 120_000,
+  products: 60_000,
+};
+
 async function track(source: string, fn: () => Promise<{ rowsWritten: number }>) {
   const id = await startRun(source);
   try {
-    const out = await fn();
+    const out = await withTimeout(fn(), SOURCE_TIMEOUT_MS[source] ?? 90_000, `sync ${source}`);
     await finishRun(id, { status: 'success', rowsWritten: out.rowsWritten });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -43,6 +55,9 @@ export async function POST() {
 
   // Fire-and-forget — caller gets an immediate OK.
   void (async () => {
+    // Reap before starting so this sync shows up cleanly even if a previous
+    // run got killed mid-flight by the 10s function timeout.
+    await reapOrphanedRuns(10 * 60 * 1000).catch(() => {});
     await Promise.all([
       track('meta',       () => syncMetaGraph(last30)),
       track('google_ads', () => syncGoogleAds(last7)),
