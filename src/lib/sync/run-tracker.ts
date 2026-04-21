@@ -31,8 +31,14 @@ export async function finishRun(
  * kills a function mid-execution (e.g. GA4 SSE hang at 300s maxDuration) —
  * the row never gets `finishedAt` set, so status stays `running` forever.
  *
- * Called at the start of every cron sync to keep the dashboard honest.
- * Returns the number of rows reaped.
+ * IMPORTANT: only reaps regular `source` rows, not `backfill:*` ones.
+ * Backfills can legitimately run 30-60 min (BaseLinker paginates through
+ * order_id history for old date ranges), and they enforce their own
+ * per-source timeout via withTimeout inside /api/admin/backfill. Reaping
+ * them here would fail rows that are still making progress.
+ *
+ * Called at the start of every cron sync / sync-now to keep the dashboard
+ * honest. Returns the number of rows reaped.
  */
 export async function reapOrphanedRuns(
   maxAgeMs: number = 10 * 60 * 1000,
@@ -46,7 +52,14 @@ export async function reapOrphanedRuns(
       error: sql`'orphaned: still running after ' || ${Math.floor(maxAgeMs / 1000)} || 's (reaper)'`,
       finishedAt: new Date(),
     })
-    .where(and(eq(syncRuns.status, 'running'), lt(syncRuns.startedAt, cutoff)))
+    .where(
+      and(
+        eq(syncRuns.status, 'running'),
+        lt(syncRuns.startedAt, cutoff),
+        // Skip long-running backfills — they manage their own lifecycle.
+        sql`${syncRuns.source} NOT LIKE 'backfill:%'`,
+      ),
+    )
     .returning({ id: syncRuns.id });
   return res.length;
 }
