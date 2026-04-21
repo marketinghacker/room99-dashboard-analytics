@@ -85,8 +85,9 @@ export function PerformanceMarketingTab() {
         </p>
       </header>
 
-      {/* Hero KPI */}
-      <div className="grid gap-5" style={{ gridTemplateColumns: '1.25fr 1fr 1fr 1fr' }}>
+      {/* Hero KPI — 4 slots is tight at 1280px; bump primary slot so the PLN
+          value fits on one line. */}
+      <div className="grid gap-5" style={{ gridTemplateColumns: '1.5fr 1.25fr 1fr 1fr' }}>
         <HeroKpi
           label="Wydatki — wszystkie kanały"
           value={kpis.spend ?? 0}
