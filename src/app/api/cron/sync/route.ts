@@ -15,6 +15,7 @@ import { syncGA4 } from '@/lib/sync/ga4';
 import { syncPinterest } from '@/lib/sync/pinterest';
 import { syncSellRocket } from '@/lib/sync/sellrocket';
 import { syncSellRocketDirect } from '@/lib/sync/sellrocket-direct';
+import { syncProducts } from '@/lib/sync/products';
 import { startRun, finishRun } from '@/lib/sync/run-tracker';
 import { resolvePeriod } from '@/lib/periods';
 import { buildRollups } from '@/lib/rollup';
@@ -24,7 +25,7 @@ export const runtime = 'nodejs';
 // to stay well inside Railway's default 5-min ingress limit.
 export const maxDuration = 300;
 
-type Source = 'meta' | 'google_ads' | 'criteo' | 'ga4' | 'pinterest' | 'sellrocket';
+type Source = 'meta' | 'google_ads' | 'criteo' | 'ga4' | 'pinterest' | 'sellrocket' | 'products';
 
 async function runWithTracking(
   source: Source,
@@ -65,9 +66,9 @@ export async function GET(req: Request) {
   const last7 = resolvePeriod('last_7d');
   const last30 = resolvePeriod('last_30d');
 
-  // SellRocket is the bottleneck — only sync the tightest window needed
-  // (today + yesterday). Historical repair goes through /api/admin/backfill.
-  const sellRocketRange = { start: toIsoDate(-1), end: toIsoDate(0) };
+  // SellRocket + products are the BaseLinker-heavy syncs — only pull the
+  // tightest window needed. Historical repair goes through /api/admin/backfill.
+  const tightRange = { start: toIsoDate(-2), end: toIsoDate(0) };
 
   const results = await Promise.all([
     runWithTracking('meta', () => syncMetaGraph(last30)),
@@ -78,9 +79,12 @@ export async function GET(req: Request) {
     runWithTracking(
       'sellrocket',
       process.env.BASELINKER_API_TOKEN
-        ? () => syncSellRocketDirect(sellRocketRange)
-        : () => syncSellRocket(sellRocketRange),
+        ? () => syncSellRocketDirect(tightRange)
+        : () => syncSellRocket(tightRange),
     ),
+    // Products + products_daily — today's categories/SKUs need to be fresh
+    // so the Produkty tab never shows empty-state mid-day.
+    runWithTracking('products', () => syncProducts(tightRange)),
   ]);
 
   // Rollup is CPU/DB-bound (~8 min for 234 cache rows). Run in background so

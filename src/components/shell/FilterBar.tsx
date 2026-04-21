@@ -37,8 +37,8 @@ const GROUP_LABEL: Record<PeriodGroup, string> = {
 };
 
 const COMPARES: Array<{ value: CompareKey; label: string }> = [
-  { value: 'previous_period',          label: 'Poprzedni miesiąc (te same daty)' },
-  { value: 'same_period_last_year',    label: 'Rok temu (te same daty)' },
+  { value: 'previous_period',          label: 'Poprzedni miesiąc' },
+  { value: 'same_period_last_year',    label: 'Rok temu' },
   { value: 'same_period_last_quarter', label: 'Poprzedni kwartał' },
   { value: 'none',                     label: 'Bez porównania' },
 ];
@@ -186,7 +186,7 @@ export function FilterBar() {
       </div>
 
       {/* Compare pill */}
-      <div className="relative w-[220px] shrink-0">
+      <div className="relative w-[180px] shrink-0">
         <Select
           value={compare}
           options={compareOptions}

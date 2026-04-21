@@ -10,6 +10,7 @@ import { syncGA4 } from '@/lib/sync/ga4';
 import { syncPinterest } from '@/lib/sync/pinterest';
 import { syncSellRocket } from '@/lib/sync/sellrocket';
 import { syncSellRocketDirect } from '@/lib/sync/sellrocket-direct';
+import { syncProducts } from '@/lib/sync/products';
 import { startRun, finishRun } from '@/lib/sync/run-tracker';
 import { resolvePeriod } from '@/lib/periods';
 import { buildRollups } from '@/lib/rollup';
@@ -37,7 +38,8 @@ async function track(source: string, fn: () => Promise<{ rowsWritten: number }>)
 export async function POST() {
   const last7 = resolvePeriod('last_7d');
   const last30 = resolvePeriod('last_30d');
-  const sellRocketRange = { start: toIsoDate(-1), end: toIsoDate(0) };
+  // Tight 3-day window for the BaseLinker-heavy syncs (sellrocket + products).
+  const tightRange = { start: toIsoDate(-2), end: toIsoDate(0) };
 
   // Fire-and-forget — caller gets an immediate OK.
   void (async () => {
@@ -49,9 +51,13 @@ export async function POST() {
       track('pinterest',  () => syncPinterest(last7)),
       track('sellrocket', () =>
         process.env.BASELINKER_API_TOKEN
-          ? syncSellRocketDirect(sellRocketRange)
-          : syncSellRocket(sellRocketRange),
+          ? syncSellRocketDirect(tightRange)
+          : syncSellRocket(tightRange),
       ),
+      // Products is the other expensive BaseLinker sync — keep it to the
+      // same 3-day window so today's products show up without nuking the
+      // API budget. Longer history is covered by /api/admin/backfill.
+      track('products',   () => syncProducts(tightRange)),
     ]);
     try { await buildRollups(); } catch (e) { console.error('[sync-now] rollup failed:', e); }
   })();
