@@ -15,7 +15,7 @@ import { syncPinterest } from '@/lib/sync/pinterest';
 import { syncSellRocket } from '@/lib/sync/sellrocket';
 import { syncSellRocketDirect } from '@/lib/sync/sellrocket-direct';
 import { syncProducts } from '@/lib/sync/products';
-import { startRun, finishRun } from '@/lib/sync/run-tracker';
+import { startRun, finishRun, withTimeout } from '@/lib/sync/run-tracker';
 import { buildRollups } from '@/lib/rollup';
 import { type DateRange } from '@/lib/periods';
 
@@ -24,10 +24,29 @@ export const maxDuration = 10; // respond quickly; work runs in background
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
+// Backfills can be wide (e.g. full year of BaseLinker orders), so the
+// per-source timeout is generous. GA4 is capped tighter — the SSE
+// transport hangs rather than fails gracefully when the MCP server has
+// issues, and the retry-on-next-backfill pattern is cheaper than
+// waiting 15 min for a dead socket.
+const BACKFILL_TIMEOUT_MS: Record<string, number> = {
+  meta: 15 * 60 * 1000,        // 15 min
+  google_ads: 5 * 60 * 1000,
+  criteo: 5 * 60 * 1000,
+  ga4: 3 * 60 * 1000,
+  pinterest: 3 * 60 * 1000,
+  sellrocket: 25 * 60 * 1000,  // BaseLinker year-range: pagination heavy
+  products: 25 * 60 * 1000,
+};
+
 async function track(source: string, fn: () => Promise<{ rowsWritten: number }>) {
   const id = await startRun(`backfill:${source}`);
   try {
-    const out = await fn();
+    const out = await withTimeout(
+      fn(),
+      BACKFILL_TIMEOUT_MS[source] ?? 10 * 60 * 1000,
+      `backfill:${source}`,
+    );
     await finishRun(id, { status: 'success', rowsWritten: out.rowsWritten });
     console.log(`[backfill] ${source}: ${out.rowsWritten} rows`);
   } catch (err) {
