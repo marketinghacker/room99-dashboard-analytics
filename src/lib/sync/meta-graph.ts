@@ -86,10 +86,30 @@ export async function syncMetaGraph(
   const rows: MetaInsight[] = [];
   let url: string | null = `${GRAPH_URL}/${accountId}/insights?${params}`;
   while (url) {
-    const res: Response = await fetch(url);
-    if (!res.ok) {
-      const body = await res.text();
-      throw new Error(`Meta Graph ${res.status}: ${body}`);
+    // Meta Graph flakes: ~5% of calls return a 500/400 with
+    //   {"error": {"code": 1 or 2, "message": "An unknown error occurred"
+    //              / "Service temporarily unavailable", "is_transient": false}}
+    // Despite is_transient=false in the body, the next call 2-3s later
+    // works fine. Retry up to 3 times with exponential backoff to stop
+    // polluting the cron health signal with transient Facebook API errors.
+    let res: Response | null = null;
+    let lastBody = '';
+    for (let attempt = 0; attempt < 3; attempt++) {
+      res = await fetch(url);
+      if (res.ok) break;
+      lastBody = await res.text();
+      // Don't retry 4xx that aren't rate-limited — those are usually
+      // bad token / permissions, won't resolve by waiting.
+      const retryable =
+        res.status >= 500 ||
+        res.status === 429 ||
+        /Service temporarily unavailable|unknown error occurred/i.test(lastBody);
+      if (!retryable || attempt === 2) break;
+      const waitMs = 2000 * Math.pow(2, attempt); // 2s, 4s, 8s
+      await new Promise((r) => setTimeout(r, waitMs));
+    }
+    if (!res || !res.ok) {
+      throw new Error(`Meta Graph ${res?.status ?? '?'}: ${lastBody}`);
     }
     const data = (await res.json()) as GraphResponse;
     rows.push(...(data.data ?? []));

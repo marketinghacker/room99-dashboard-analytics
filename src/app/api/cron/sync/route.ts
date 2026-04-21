@@ -17,6 +17,9 @@ import { syncSellRocket } from '@/lib/sync/sellrocket';
 import { syncSellRocketDirect } from '@/lib/sync/sellrocket-direct';
 import { syncProducts } from '@/lib/sync/products';
 import { startRun, finishRun, reapOrphanedRuns, withTimeout } from '@/lib/sync/run-tracker';
+import { db } from '@/lib/db';
+import { syncRuns } from '@/lib/schema';
+import { and, desc, eq } from 'drizzle-orm';
 import { resolvePeriod } from '@/lib/periods';
 import { buildRollups } from '@/lib/rollup';
 
@@ -70,6 +73,34 @@ export async function GET(req: Request) {
   if (!secret) return Response.json({ error: 'CRON_SECRET not configured' }, { status: 500 });
   if (key !== secret) return new Response('Unauthorized', { status: 401 });
 
+  // Throttle: skip when a sync finished successfully within the last 25 min.
+  // Ad-platform data doesn't move fast enough to warrant a 5-minute cadence,
+  // and every extra run burns one round of Meta Graph flake risk. The
+  // external Railway cron-sync container fires every 5 min; this guards the
+  // endpoint so actual work runs every ~25-30 min regardless of schedule.
+  // Pass ?force=1 to bypass (manual /api/sync-now already skips this).
+  const force = url.searchParams.get('force') === '1';
+  if (!force) {
+    const [recent] = await db
+      .select({ finishedAt: syncRuns.finishedAt })
+      .from(syncRuns)
+      .where(and(eq(syncRuns.source, 'meta'), eq(syncRuns.status, 'success')))
+      .orderBy(desc(syncRuns.finishedAt))
+      .limit(1);
+    if (recent?.finishedAt) {
+      const ageMs = Date.now() - new Date(recent.finishedAt).getTime();
+      const THROTTLE_MS = 25 * 60 * 1000;
+      if (ageMs < THROTTLE_MS) {
+        return Response.json({
+          ok: true,
+          throttled: true,
+          lastSuccessAgeMs: ageMs,
+          skippedBecause: `last successful meta sync ${Math.round(ageMs / 1000)}s ago (< ${THROTTLE_MS / 1000}s)`,
+        });
+      }
+    }
+  }
+
   // Reap orphaned runs from previous invocations before we start new ones.
   // A Railway function kill (maxDuration=300) leaves sync_runs rows stuck on
   // status='running' — this marks anything >10 min old as 'failed' so the
@@ -114,14 +145,32 @@ export async function GET(req: Request) {
     .catch((err) => console.error('[cron] rollup failed:', err));
   void rollupPromise;
 
+  // `ok` flag policy: the external cron-sync container treats ok=false as
+  // exit-code-1 which shows up as a "Deploy Crashed" email. Meta Graph API
+  // flakes out randomly (500/OAuth "Service temporarily unavailable") and
+  // recovers on the next run — that's NOT a crash. Mark the sync as OK as
+  // long as most platforms succeeded (≥50%, with Shoper-facing critical
+  // ones — sellrocket + products — required). Catastrophic failures (0%
+  // success, DB down, etc) still flag ok=false so real outages alert.
+  const successes = results.filter((r) => r.status === 'success').length;
+  const successRatio = successes / results.length;
+  const criticalFailed = results.some(
+    (r) => r.status === 'failed' && (r.source === 'sellrocket' || r.source === 'products'),
+  );
+  const ok = !criticalFailed && successRatio >= 0.5;
+
   return Response.json({
-    ok: results.every((r) => r.status === 'success'),
+    ok,
     last7Range: last7,
     last30Range: last30,
     tightRange,
     platforms: results,
     rollup: 'started in background',
     reapedOrphanedRuns: reaped,
+    // Diagnostic so the cron-sync log line is self-documenting when a
+    // platform blipped but the run is still considered healthy.
+    degraded: !results.every((r) => r.status === 'success'),
+    successRatio,
   });
 }
 
