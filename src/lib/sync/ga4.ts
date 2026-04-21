@@ -57,7 +57,10 @@ export async function syncGA4(
     'checkouts',
   ];
 
-  const client = await connectMCP(MCP_URL, 'sse');
+  // GA4 MCP migrated from legacy SSE to the official MCP streamable-HTTP
+  // transport (the same one claude.ai uses). The old SSE endpoint now
+  // returns malformed chunked responses — tools time out. Use 'http'.
+  const client = await connectMCP(MCP_URL, 'http');
   try {
     // Tight per-call timeout — the GA4 MCP server occasionally sends a
     // malformed chunked response ("Invalid character in chunk size") that
