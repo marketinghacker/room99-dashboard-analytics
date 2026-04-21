@@ -15,7 +15,6 @@ const TABS: TabDef[] = [
   { id: 'pinterest', label: 'Pinterest' },
   { id: 'criteo', label: 'Criteo' },
   { id: 'product-catalogs', label: 'Katalogi' },
-  { id: 'funnel', label: 'Lejek' },
   { id: 'traffic-sources', label: 'Ruch' },
   { id: 'top-products', label: 'Produkty' },
 ];
