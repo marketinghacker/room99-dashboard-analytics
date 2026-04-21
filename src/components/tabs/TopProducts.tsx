@@ -171,6 +171,12 @@ export function TopProductsTab() {
   const items: Item[] = data.items;
   const summary = data.summary;
   const alerts: Item[] = data.alerts ?? [];
+  // Detect purged history: if every row has zero YoY on both channels,
+  // BaseLinker's 365-day retention has wiped the comparison window.
+  // Room99's retention is ~365 days so 2025-04 orders are gone.
+  const yoyHasAnyData = items.some(
+    (i) => (i.yoyShrRevenue ?? 0) > 0 || (i.yoyAllegroRevenue ?? 0) > 0,
+  );
 
   const breadcrumbs = (
     <div className="flex items-center gap-2 text-[12px] text-[var(--color-ink-tertiary)]">
@@ -212,6 +218,26 @@ export function TopProductsTab() {
         </p>
         <div className="mt-2">{breadcrumbs}</div>
       </div>
+
+      {!yoyHasAnyData && (
+        <div
+          className="card p-4 flex items-start gap-3"
+          style={{
+            background: 'color-mix(in oklch, var(--color-accent) 6%, var(--color-bg-card))',
+            border: '1px solid color-mix(in oklch, var(--color-accent) 25%, transparent)',
+          }}
+        >
+          <div className="w-1 min-h-[48px] rounded-full" style={{ background: 'var(--color-accent)' }} />
+          <div className="flex-1">
+            <div className="text-[13px] font-semibold">Porównanie YoY niedostępne z BaseLinkera</div>
+            <div className="text-[12px] mt-1" style={{ color: 'var(--color-ink-secondary)' }}>
+              BaseLinker/SellRocket przechowuje zamówienia przez ok. 365 dni — zamówienia z {data.yoyRange.start} → {data.yoyRange.end} zostały już zarchiwizowane.
+              Aby zobaczyć YoY kategorii, potrzebna jest bezpośrednia integracja z Shoperem (sklep własny) i Allegro API.
+              Dodaj poświadczenia w <span className="font-mono">Ustawienia → MCP / API</span>.
+            </div>
+          </div>
+        </div>
+      )}
 
       {alerts.length > 0 && (
         <div className="card p-4 border-[var(--color-accent-negative)]/40 bg-[var(--color-accent-negative-bg)]">
