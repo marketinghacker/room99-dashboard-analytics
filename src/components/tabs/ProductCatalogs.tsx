@@ -67,7 +67,10 @@ export function ProductCatalogsTab() {
       ? withRoas.reduce((s: number, c: any) => s + c.roas, 0) / withRoas.length
       : 0;
   })();
-  const allSpend = data?.all?.kpis?.spend ?? 0;
+  // The endpoint returns `payload` = the full performance-marketing cache
+  // with campaigns filtered to catalog ones. `payload.kpis.spend` is the
+  // all-campaigns spend — correct denominator for the catalog share.
+  const allSpend = payload?.kpis?.spend ?? 0;
 
   if (campaigns.length === 0) {
     return <EmptyCard title="Brak kampanii katalogowych w tym okresie" subtitle="Szukamy: Advantage+, Shopping, Performance Max, Catalog" />;
