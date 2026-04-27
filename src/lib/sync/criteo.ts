@@ -36,7 +36,9 @@ export async function syncCriteo(
 ): Promise<{ rowsWritten: number }> {
   const database = opts.db ?? defaultDb;
 
-  const client = await connectMCP(MCP_URL, 'sse');
+  // Criteo MCP migrated to streamable-HTTP (same migration as GA4 — SSE
+  // transport now hangs and times out at 60s with no response body).
+  const client = await connectMCP(MCP_URL, 'http');
   try {
     const resp = await callMCPTool<
       CriteoRow[] | {
