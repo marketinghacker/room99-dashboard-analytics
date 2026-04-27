@@ -64,9 +64,15 @@ export function resolvePeriod(key: PeriodKey, now: Date = new Date()): DateRange
   switch (key) {
     case 'today': return { start: fmt(today), end: fmt(today) };
     case 'yesterday': return { start: fmt(yesterday), end: fmt(yesterday) };
-    case 'last_7d': return { start: fmt(addDays(yesterday, -6)), end: fmt(yesterday) };
-    case 'last_30d': return { start: fmt(addDays(yesterday, -29)), end: fmt(yesterday) };
-    case 'last_90d': return { start: fmt(addDays(yesterday, -89)), end: fmt(yesterday) };
+    // "Last N days" includes today. Yesterday-end was confusing for users
+    // checking dashboard early in their day — they'd see no spend for what
+    // was clearly their "yesterday" (e.g. Polish user at 02:00 CEST on Apr 28
+    // expected Apr 27 to be the latest day, but yesterday-UTC = Apr 26).
+    // Today-inclusive matches Looker / GA4 default behaviour and aligns with
+    // how the cron now pulls fresh data through today-UTC.
+    case 'last_7d': return { start: fmt(addDays(today, -6)), end: fmt(today) };
+    case 'last_30d': return { start: fmt(addDays(today, -29)), end: fmt(today) };
+    case 'last_90d': return { start: fmt(addDays(today, -89)), end: fmt(today) };
     case 'this_week': return { start: fmt(startOfISOWeek(today)), end: fmt(today) };
     case 'last_week': {
       const thisMonday = startOfISOWeek(today);
