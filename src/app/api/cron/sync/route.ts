@@ -20,7 +20,6 @@ import { startRun, finishRun, reapOrphanedRuns, withTimeout } from '@/lib/sync/r
 import { db } from '@/lib/db';
 import { syncRuns } from '@/lib/schema';
 import { and, desc, eq } from 'drizzle-orm';
-import { resolvePeriod } from '@/lib/periods';
 import { buildRollups } from '@/lib/rollup';
 
 export const runtime = 'nodejs';
@@ -107,14 +106,18 @@ export async function GET(req: Request) {
   // dashboard doesn't mislead on sync health.
   const reaped = await reapOrphanedRuns(10 * 60 * 1000);
 
-  // Ad platforms: last 7 days by default. Meta gets last 30d because Facebook's
-  // attribution window keeps updating historical conversion data for ~28 days,
-  // so we need to re-pull the full window on every cron to self-heal any
-  // earlier bad values (e.g. aggregate-spread fallback from a previous sync).
-  // Graph API with time_increment=1 returns clean per-day rows — 30 days is
-  // still one API call per campaign so it stays fast.
-  const last7 = resolvePeriod('last_7d');
-  const last30 = resolvePeriod('last_30d');
+  // Ad platforms: last 7 days INCLUDING today. The default `last_7d` preset
+  // ends at yesterday-UTC, which excludes 99% of the current Polish day
+  // (Apr 27 PL = Apr 26 22:00 UTC → Apr 27 22:00 UTC; yesterday-UTC ends at
+  // Apr 27 02:00 PL). For ad platforms that update intraday (Google Ads,
+  // Meta, Criteo, Pinterest) we want the partial today-data, so we extend
+  // end to today-UTC.
+  //
+  // Meta gets last 30d because Facebook's attribution window keeps updating
+  // historical conversion data for ~28 days, so we need to re-pull the full
+  // window on every cron to self-heal any earlier bad values.
+  const last7 = { start: toIsoDate(-7), end: toIsoDate(0) };   // 8 days incl. today
+  const last30 = { start: toIsoDate(-29), end: toIsoDate(0) }; // 30 days incl. today
 
   // SellRocket + products are the BaseLinker-heavy syncs — only pull the
   // tightest window needed. Historical repair goes through /api/admin/backfill.
