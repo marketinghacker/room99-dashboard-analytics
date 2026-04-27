@@ -35,7 +35,10 @@ type Source = 'meta' | 'google_ads' | 'criteo' | 'ga4' | 'pinterest' | 'sellrock
 const SOURCE_TIMEOUT_MS: Record<Source, number> = {
   meta: 150_000,
   google_ads: 60_000,
-  criteo: 60_000,
+  // Criteo MCP uses SSE + 15-min Criteo OAuth token TTL. If the token expires
+  // mid-request, the server refreshes it which adds ~3-5s to the call. 60s is
+  // too tight for an 8-day range with Day×Campaign breakdown — bumping to 120s.
+  criteo: 120_000,
   ga4: 60_000,
   pinterest: 30_000,
   sellrocket: 120_000,
