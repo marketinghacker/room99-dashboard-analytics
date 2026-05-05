@@ -34,6 +34,7 @@ const AGENCY_ONLY_PREFIXES = [
   '/api/data/insights',
   '/api/editorial',      // POST/DELETE to edit masthead copy
   '/api/sync-now',       // manual sync trigger (agency-only)
+  '/api/sync-yoy',       // YoY backfill trigger (agency-only)
 ];
 
 function isPublic(pathname: string): boolean {

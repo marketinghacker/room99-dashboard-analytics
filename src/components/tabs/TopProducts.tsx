@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import useSWR from 'swr';
+import useSWR, { mutate as globalMutate } from 'swr';
 import { type ColumnDef } from '@tanstack/react-table';
 import { useFilters } from '@/stores/filters';
 import { HeroMetric } from '@/components/primitives/HeroMetric';
@@ -244,22 +244,7 @@ export function TopProductsTab() {
       </div>
 
       {!yoyHasAnyData && (
-        <div
-          className="card p-4 flex items-start gap-3"
-          style={{
-            background: 'color-mix(in oklch, var(--color-accent) 6%, var(--color-bg-card))',
-            border: '1px solid color-mix(in oklch, var(--color-accent) 25%, transparent)',
-          }}
-        >
-          <div className="w-1 min-h-[48px] rounded-full" style={{ background: 'var(--color-accent)' }} />
-          <div className="flex-1">
-            <div className="text-[13px] font-semibold">Brak danych YoY dla tego zakresu</div>
-            <div className="text-[12px] mt-1" style={{ color: 'var(--color-ink-secondary)' }}>
-              Uruchom <span className="font-mono">/api/admin/backfill?sources=shoper,shoper_daily&start={data.yoyRange.start}&end={data.yoyRange.end}</span> aby pociągnąć Shopera (~2–5 min).
-              Allegro YoY niedostępne — SellRocket/BaseLinker usuwa zamówienia po ~365 dniach i nie mamy osobnego Allegro API.
-            </div>
-          </div>
-        </div>
+        <YoyBackfillCard yoyRange={data.yoyRange} />
       )}
 
       {allegroYoYMissing && (
@@ -306,6 +291,101 @@ export function TopProductsTab() {
       </div>
 
       <DataTable data={items} columns={columns} pageSize={25} />
+    </div>
+  );
+}
+
+// ─── YoY backfill card with one-click trigger ───
+//
+// Shown when products_daily has no rows for the YoY range. Clicks fire
+// /api/sync-yoy (agency-only, JWT-gated) which kicks off Shoper +
+// Shoper_daily syncs in the background. After ~3 min we revalidate the
+// products data — if rows are still missing, the user can keep waiting
+// or retry. We don't poll sync_runs directly because the endpoint is
+// fire-and-forget and the rollup at the end is what makes data visible.
+
+function YoyBackfillCard({ yoyRange }: { yoyRange: { start: string; end: string } }) {
+  type Status = 'idle' | 'starting' | 'running' | 'done' | 'error';
+  const [status, setStatus] = useState<Status>('idle');
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const triggerBackfill = async () => {
+    setStatus('starting');
+    setErrorMsg(null);
+    try {
+      const res = await fetch(
+        `/api/sync-yoy?start=${yoyRange.start}&end=${yoyRange.end}`,
+        { method: 'POST' },
+      );
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.error || `HTTP ${res.status}`);
+      }
+      setStatus('running');
+      // Wait ~3 min then revalidate products SWR cache. Backfill might
+      // take 2-5 min — if data still missing user just sees the alert
+      // again and can retry. We don't try to be cleverer than that.
+      setTimeout(() => {
+        globalMutate(
+          (key) => typeof key === 'string' && key.startsWith('/api/data/top-products'),
+        );
+        setStatus('done');
+      }, 3 * 60 * 1000);
+    } catch (err) {
+      setStatus('error');
+      setErrorMsg(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  return (
+    <div
+      className="card p-4 flex items-start gap-3"
+      style={{
+        background: 'color-mix(in oklch, var(--color-accent) 6%, var(--color-bg-card))',
+        border: '1px solid color-mix(in oklch, var(--color-accent) 25%, transparent)',
+      }}
+    >
+      <div className="w-1 min-h-[48px] rounded-full" style={{ background: 'var(--color-accent)' }} />
+      <div className="flex-1">
+        <div className="text-[13px] font-semibold">Brak danych YoY dla zakresu {yoyRange.start} → {yoyRange.end}</div>
+        <div className="text-[12px] mt-1" style={{ color: 'var(--color-ink-secondary)' }}>
+          Shoper (kanał własny) możemy pociągnąć z Shoper API w ~2–5 min.
+          {' '}Allegro YoY pozostanie niedostępne — SellRocket/BaseLinker usuwa zamówienia po ~365 dniach.
+        </div>
+        <div className="mt-3 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={triggerBackfill}
+            disabled={status === 'starting' || status === 'running'}
+            className="px-3 py-1.5 rounded-md text-[12px] font-semibold transition-colors disabled:opacity-50"
+            style={{
+              background: 'var(--color-accent)',
+              color: 'var(--color-bg-card)',
+            }}
+          >
+            {status === 'idle' && 'Pociągnij dane Shoper'}
+            {status === 'starting' && 'Uruchamiam…'}
+            {status === 'running' && 'Pobieranie w toku (~2–5 min)…'}
+            {status === 'done' && 'Odśwież'}
+            {status === 'error' && 'Spróbuj ponownie'}
+          </button>
+          {status === 'running' && (
+            <span className="text-[11px] italic" style={{ color: 'var(--color-ink-tertiary)' }}>
+              Backfill leci w tle. Strona odświeży się automatycznie po ~3 min.
+            </span>
+          )}
+          {status === 'done' && (
+            <span className="text-[11px] italic" style={{ color: 'var(--color-ink-tertiary)' }}>
+              Odświeżono cache. Jeśli dalej nie ma danych — backfill jeszcze trwa, kliknij ponownie za ~2 min.
+            </span>
+          )}
+          {status === 'error' && errorMsg && (
+            <span className="text-[11px]" style={{ color: 'var(--color-accent-negative)' }}>
+              Błąd: {errorMsg}
+            </span>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
