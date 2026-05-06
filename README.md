@@ -58,9 +58,9 @@ pnpm dev   # → http://localhost:3000
 │                                                                       │
 │  /api/cron/sync ────► fetchPlatform() ──► upsert ads_daily/ga4_daily │
 │        ▲                                            │                 │
-│        │  every 30 min                              ▼                 │
+│        │  every 5 min (throttled to ~25 min)        ▼                 │
 │        │                                   buildRollups() ──► dashboard_cache │
-│  External cron-sync container                                         │
+│  External cron-sync container (Railway)                               │
 │                                                                       │
 │  /api/data/*  ──► reads dashboard_cache  ──► UI (SWR)                │
 │  /api/auth/*  ──► JWT login + middleware                             │
