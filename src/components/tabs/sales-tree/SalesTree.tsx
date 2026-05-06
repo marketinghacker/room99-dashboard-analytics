@@ -6,16 +6,26 @@ import { flattenTree } from './flatten-tree';
 import { filterTree } from './filter-tree';
 import { SalesTreeRow } from './SalesTreeRow';
 
-type State = Set<string>;
-type Action = { type: 'toggle'; id: string } | { type: 'expandAll'; ids: string[] } | { type: 'collapseAll' };
+type State = { expanded: Set<string>; unbounded: Set<string> };
+type Action =
+  | { type: 'toggle'; id: string }
+  | { type: 'expandAll'; ids: string[] }
+  | { type: 'collapseAll' }
+  | { type: 'showMore'; collectionId: string };
 
 function reducer(state: State, a: Action): State {
-  if (a.type === 'collapseAll') return new Set();
-  if (a.type === 'expandAll') return new Set(a.ids);
-  const next = new Set(state);
+  if (a.type === 'collapseAll') return { expanded: new Set(), unbounded: new Set() };
+  if (a.type === 'expandAll') return { ...state, expanded: new Set(a.ids) };
+  if (a.type === 'showMore') {
+    const next = new Set(state.unbounded);
+    next.add(a.collectionId);
+    return { ...state, unbounded: next };
+  }
+  // toggle
+  const next = new Set(state.expanded);
   if (next.has(a.id)) next.delete(a.id);
   else next.add(a.id);
-  return next;
+  return { ...state, expanded: next };
 }
 
 function collectAllIds(channels: ChannelNode[]): string[] {
@@ -33,15 +43,15 @@ function collectAllIds(channels: ChannelNode[]): string[] {
 }
 
 export function SalesTree({ channels }: { channels: ChannelNode[] }) {
-  const [expanded, dispatch] = useReducer(reducer, new Set<string>());
+  const [state, dispatch] = useReducer(reducer, { expanded: new Set<string>(), unbounded: new Set<string>() });
   const [query, setQuery] = useState('');
   const parentRef = useRef<HTMLDivElement>(null);
 
   const filtered = useMemo(() => filterTree(channels, query), [channels, query]);
-  const effectiveExpanded = query.trim() ? filtered.autoExpanded : expanded;
+  const effectiveExpanded = query.trim() ? filtered.autoExpanded : state.expanded;
   const visible = useMemo(
-    () => flattenTree(filtered.tree, effectiveExpanded),
-    [filtered.tree, effectiveExpanded],
+    () => flattenTree(filtered.tree, effectiveExpanded, { unbounded: state.unbounded }),
+    [filtered.tree, effectiveExpanded, state.unbounded],
   );
 
   const virt = useVirtualizer({
@@ -99,7 +109,11 @@ export function SalesTree({ channels }: { channels: ChannelNode[] }) {
                   transform: `translateY(${vi.start}px)`, height: vi.size,
                 }}
               >
-                <SalesTreeRow {...row} onToggle={() => dispatch({ type: 'toggle', id: row.id })} />
+                <SalesTreeRow
+                  {...row}
+                  onToggle={() => dispatch({ type: 'toggle', id: row.id })}
+                  onShowMore={(collectionId) => dispatch({ type: 'showMore', collectionId })}
+                />
               </div>
             );
           })}

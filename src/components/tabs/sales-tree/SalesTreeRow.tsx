@@ -11,12 +11,45 @@ export type SalesTreeRowProps = {
   daily: number[];
   hasChildren: boolean;
   expanded: boolean;
+  kind?: 'product' | 'more';
+  collectionId?: string;
   onToggle: () => void;
+  onShowMore?: (collectionId: string) => void;
 };
 
 export function SalesTreeRow(p: SalesTreeRowProps) {
-  const { depth, metrics, hasChildren, expanded } = p;
+  const { depth, metrics, hasChildren, expanded, kind } = p;
   const indent = depth * 20;
+
+  if (kind === 'more') {
+    return (
+      <div
+        className="grid items-center px-3 border-b border-[var(--color-line-soft)] hover:bg-[var(--color-bg-elevated)]"
+        style={{
+          gridTemplateColumns: 'minmax(280px, 1fr) 56px 80px 80px 110px 80px',
+          paddingLeft: 12 + indent,
+          height: 32,
+        }}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="w-4" />
+          <button
+            type="button"
+            onClick={() => p.collectionId && p.onShowMore?.(p.collectionId)}
+            className="text-[12px] text-[var(--color-ink-secondary)] hover:text-[var(--color-ink-primary)] underline-offset-2 hover:underline"
+          >
+            {p.label}
+          </button>
+        </div>
+        <div />
+        <div />
+        <div />
+        <div />
+        <div />
+      </div>
+    );
+  }
+
   const changeSign = metrics.change > 0.5 ? 'positive' : metrics.change < -0.5 ? 'negative' : 'neutral';
   const isLeaf = !hasChildren;
   const changeColor = changeSign === 'positive'
