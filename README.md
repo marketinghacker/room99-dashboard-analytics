@@ -1,85 +1,133 @@
 # Room99 — Performance Dashboard
 
-Premium-quality performance-marketing dashboard dla **Room99.pl**. Agreguje dane z Meta Ads, Google Ads, Pinterest, Criteo oraz GA4 w jeden spójny widok z porównaniami okresów.
+> Premium-quality performance-marketing dashboard dla **Room99.pl** (Polski sklep z tekstyliami domowymi: zasłony, firany, narzuty, pościele).
+>
+> Agreguje dane z Meta Ads, Google Ads, Pinterest, Criteo, GA4 oraz BaseLinker SHR/Allegro w jeden spójny widok z porównaniami okresów (MoM, YoY).
 
-**Stack:** Next.js 16 (App Router) · TypeScript · Drizzle ORM · PostgreSQL (Railway) · Tailwind 4 · Zustand · SWR · Recharts · TanStack Table · Framer Motion · @modelcontextprotocol/sdk.
+**Live:** https://room99.marketing-hackers.com
+
+## Stack
+
+- **Frontend:** Next.js 16 (App Router) · React 19 · TypeScript · Tailwind v4 · Zustand · SWR · Recharts · TanStack Table · Framer Motion
+- **Backend:** Drizzle ORM · PostgreSQL (Railway) · Node.js 22
+- **Sync:** `@modelcontextprotocol/sdk` + remote MCP servers na Railway
+- **Auth:** JWT (jose) + bcrypt + httpOnly cookie + role-based middleware
+- **Test:** Vitest + React Testing Library + jsdom + Playwright
+- **Deploy:** Railway (Next.js + Postgres + cron-sync container)
+
+## 📚 Dokumentacja dla developera
+
+**Zaczynasz pracę z projektem? Czytaj w tej kolejności:**
+
+1. **[`docs/HANDOFF.md`](docs/HANDOFF.md)** — pełny handoff: jak została zbudowana aplikacja, gdzie szukać czego, lista wszystkich zewnętrznych usług
+2. **[`docs/CREDENTIALS.md`](docs/CREDENTIALS.md)** — gdzie znaleźć każdy klucz/token (panele Railway/GitHub/Anthropic)
+3. **[`docs/MCP-SERVERS.md`](docs/MCP-SERVERS.md)** — wszystkie MCP serwery, URL-e, narzędzia, OAuth status
+4. **[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)** — system design, przepływ danych, schemat bazy
+5. **[`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)** — workflow, konwencje, jak dodać nową funkcjonalność
+6. **[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)** — Railway, cron, monitoring, rollback
+7. **[`docs/CLAUDE-PROMPT.md`](docs/CLAUDE-PROMPT.md)** — gotowy prompt dla Claude Code, żeby kontynuować pracę
 
 ## Szybki start
 
 ```bash
+git clone https://github.com/marketinghacker/room99-dashboard-analytics
+cd room99-dashboard-analytics
 pnpm install
-cp .env.example .env.local   # uzupełnij DATABASE_URL + MCP URLs
-pnpm db:generate              # generuje migrację Drizzle
-node --env-file=.env.local --import=tsx scripts/db-migrate.ts   # apply (idempotent)
-pnpm dev                      # http://localhost:3000
+
+# Uzupełnij .env.local — patrz docs/CREDENTIALS.md
+cp .env.example .env.local
+
+# Uruchom migrację bazy (idempotentne — bezpieczne wielokrotnie)
+node --env-file=.env.local --import=tsx scripts/db-migrate.ts
+
+# Dev server
+pnpm dev   # → http://localhost:3000
 ```
 
-## Architektura
+## Architektura w 1 obrazku
 
 ```
-MCP servers (Meta/Google Ads/Criteo/GA4)  →  /api/cron/sync (every 30min)
-                                                    ↓
-                                            ads_daily + ga4_daily
-                                                    ↓
-                                          buildRollups()  →  dashboard_cache
-                                                                ↓
-                                                 /api/data/*  →  UI (SWR + Zustand)
+┌──────────────────────────────────────────────────────────────────────┐
+│                       MCP servers (Railway)                          │
+│  meta │ google-ads │ criteo │ ga4 │ sellrocket (BaseLinker proxy)    │
+└──────────────┬───────────────────────────────────────────────────────┘
+               │ MCP protocol (HTTP/SSE)
+               ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│  Next.js app (Railway) — service: nextjs-web                         │
+│                                                                       │
+│  /api/cron/sync ────► fetchPlatform() ──► upsert ads_daily/ga4_daily │
+│        ▲                                            │                 │
+│        │  every 30 min                              ▼                 │
+│        │                                   buildRollups() ──► dashboard_cache │
+│  External cron-sync container                                         │
+│                                                                       │
+│  /api/data/*  ──► reads dashboard_cache  ──► UI (SWR)                │
+│  /api/auth/*  ──► JWT login + middleware                             │
+└──────────────────────┬───────────────────────────────────────────────┘
+                       │
+                       ▼
+                 PostgreSQL (Railway)
+                 ads_daily · ga4_daily · sellrocket_daily ·
+                 products_daily · dashboard_cache · sync_runs · users
 ```
 
-Pinterest: dane trafiają bezpośrednio do `ad_performance_daily` przez Windsor.ai — nasz adapter (`src/lib/sync/pinterest.ts`) odczytuje je i normalizuje do wspólnej struktury.
+## Stan funkcjonalny (2026-05-06)
 
-## Skrypty
+✅ Live, 5 platform synchronizowanych:
+- Meta Ads (account `act_295812916`)
+- Google Ads (customer `1331139339`)
+- Criteo (advertiser `55483`)
+- GA4 (property `315856757`)
+- BaseLinker SHR + Allegro
 
-| Skrypt | Opis |
+✅ 11 zakładek dashboardu:
+1. Podsumowanie (Executive Summary)
+2. Performance Marketing
+3. Sales Channels (Shoper vs Allegro)
+4. **Sprzedaż produktowa** (4-poziomowe drzewo + eksport CSV/XLSX)
+5. Google Ads
+6. Meta Ads
+7. Pinterest Ads (manual CSV upload)
+8. Criteo
+9. Product Catalogs
+10. Traffic Sources (GA4)
+11. Top Products
+
+✅ Cron co 30 min, dane utrzymywane na bieżąco
+✅ Eksport CSV + XLSX dla drzewa sprzedaży
+✅ Search + top-N collapse + sparklines
+✅ JWT auth + role-based access (client/agency)
+
+## Status testów
+
+```
+Test Files  35+ passing
+Tests       180+ passing (sales-tree feature: 35/35)
+TypeScript  clean
+```
+
+## Podstawowe komendy
+
+| Komenda | Opis |
 |---|---|
-| `pnpm dev` | dev server (Turbopack) |
-| `pnpm build` | production build |
-| `pnpm test` | Vitest unit tests |
-| `pnpm test:e2e` | Playwright E2E |
-| `pnpm db:generate` | generuje migrację Drizzle z `src/lib/schema.ts` |
-| `scripts/db-migrate.ts` | uruchamia migrację na Railway Postgres |
-| `scripts/smoke-sync.ts <platform>` | testuje sync pojedynczej platformy |
-| `scripts/run-rollup.ts` | przebudowa `dashboard_cache` |
-| `scripts/probe-mcp.ts <url> [tool]` | inspekcja MCP serwera |
+| `pnpm dev` | Dev server (Turbopack) |
+| `pnpm build` | Production build |
+| `pnpm test` | Vitest tests |
+| `pnpm vitest run <path>` | Single file/folder |
+| `pnpm tsc --noEmit` | TypeScript check |
+| `pnpm db:generate` | Generate Drizzle migration |
+| `node --env-file=.env.local --import=tsx scripts/db-migrate.ts` | Run migration |
+| `node --env-file=.env.local --import=tsx scripts/smoke-sync.ts meta` | Test single platform sync |
+| `railway logs --service nextjs-web` | Production logs |
 
-## Struktura katalogów
+## Linki
 
-```
-src/
-  app/
-    page.tsx                  # DashboardShell
-    api/
-      cron/sync/              # orchestrator: syncMeta+syncGoogleAds+… → buildRollups
-      data/                   # 10 endpointów SWR zwracających cached rollups
-      health/                 # liveness + db ping
-  components/
-    shell/                    # Header, TabNav, FilterBar, DashboardShell
-    primitives/               # HeroMetric, ScoreCard, DeltaBadge, charts, DataTable
-    tabs/                     # 10 widoków (ExecutiveSummary, MetaAds, Funnel, …)
-    ui/Select.tsx             # custom dropdown (Keynote-styled)
-  lib/
-    schema.ts                 # Drizzle
-    db.ts                     # pg pool + drizzle client
-    periods.ts                # 13 presetów + compare logic (TDD)
-    format.ts                 # pl-PL formatters (TDD)
-    rollup.ts                 # cache builder
-    api.ts                    # route helpers (parseFilters, getCached)
-    sync/
-      mcp-client.ts           # SDK wrapper + retry + JSON extractor (TDD)
-      meta.ts | google-ads.ts | criteo.ts | ga4.ts | pinterest.ts
-  stores/                     # zustand (filters, active tab)
-drizzle/                      # generated migrations
-docs/plans/                   # design doc, implementation plan, deploy runbook
-scripts/                      # local tooling
-```
+- **Live:** https://room99.marketing-hackers.com
+- **GitHub:** https://github.com/marketinghacker/room99-dashboard-analytics
+- **Railway:** https://railway.com/project/defafc8d-d33f-4bde-93b9-3f9dc8eafa81
+- **Reference HTML (źródło designu):** `/Users/marcinmichalski/Downloads/room99-dashboard-korekta 19.02.html` (Looker Studio mockup)
 
-## Deploy
+## Licencja
 
-Zobacz [`docs/plans/2026-04-16-dashboard-v3-deploy-runbook.md`](docs/plans/2026-04-16-dashboard-v3-deploy-runbook.md).
-
-## Aktualny stan danych (2026-04-16)
-
-- **2 416 741 zł** przychodu GA4 w ostatnich 30 dniach
-- **296 362 zł** wydatków marketingowych → **8.15× ROAS**, **12.26% COS**
-- **330 162** sesji, **11 581** transakcji, **AOV 209 zł**
-- 5 platform aktywnie synchronizowanych, 234 wpisy w `dashboard_cache`
+Prywatny projekt agencji Marketing Hackers. Wszelkie prawa zastrzeżone.
