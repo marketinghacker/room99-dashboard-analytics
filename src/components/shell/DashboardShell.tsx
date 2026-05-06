@@ -16,6 +16,7 @@ import { CriteoTab } from '@/components/tabs/Criteo';
 import { ProductCatalogsTab } from '@/components/tabs/ProductCatalogs';
 import { TrafficSourcesTab } from '@/components/tabs/TrafficSources';
 import { TopProductsTab } from '@/components/tabs/TopProducts';
+import { SalesTreeTab } from '@/components/tabs/SalesTreeTab';
 
 /**
  * Skip the first render entirely, so client content never has to match
@@ -79,6 +80,7 @@ export function DashboardShell() {
             {tab === 'product-catalogs' && <ProductCatalogsTab />}
             {tab === 'traffic-sources' && <TrafficSourcesTab />}
             {tab === 'top-products' && <TopProductsTab />}
+            {tab === 'sales-tree' && <SalesTreeTab />}
           </div>
         </main>
       </div>

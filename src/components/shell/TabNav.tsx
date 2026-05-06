@@ -17,6 +17,7 @@ const TABS: TabDef[] = [
   { id: 'product-catalogs', label: 'Katalogi' },
   { id: 'traffic-sources', label: 'Ruch' },
   { id: 'top-products', label: 'Produkty' },
+  { id: 'sales-tree', label: 'Sprzedaż produktowa' },
 ];
 
 export function TabNav() {

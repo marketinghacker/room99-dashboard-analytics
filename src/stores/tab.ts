@@ -4,6 +4,7 @@ export type TabId =
   | 'executive-summary'
   | 'performance-marketing'
   | 'sales-channels'
+  | 'sales-tree'
   | 'google-ads'
   | 'meta-ads'
   | 'pinterest'
