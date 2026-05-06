@@ -24,7 +24,7 @@ function shiftPrev(start: string, end: string) {
   };
 }
 
-function buildCsv(rows: FlatRow[]): Uint8Array {
+function buildCsv(rows: FlatRow[]): ArrayBuffer {
   const lines = [HEADER];
   for (const r of rows) {
     const change = r.revenue_prev > 0 ? ((r.revenue - r.revenue_prev) / r.revenue_prev) * 100 : 0;
@@ -39,10 +39,10 @@ function buildCsv(rows: FlatRow[]): Uint8Array {
   // BOM as raw UTF-8 bytes (EF BB BF) so it isn't stripped by fetch's decoder.
   const body = new TextEncoder().encode(lines.join('\n'));
   const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
-  const out = new Uint8Array(bom.length + body.length);
+  const out = new Uint8Array(new ArrayBuffer(bom.length + body.length));
   out.set(bom, 0);
   out.set(body, bom.length);
-  return out;
+  return out.buffer;
 }
 
 async function buildXlsx(rows: FlatRow[]): Promise<Buffer> {

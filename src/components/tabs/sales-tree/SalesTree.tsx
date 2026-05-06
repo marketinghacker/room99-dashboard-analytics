@@ -5,6 +5,7 @@ import type { ChannelNode } from '@/lib/sales-tree';
 import { flattenTree } from './flatten-tree';
 import { filterTree } from './filter-tree';
 import { SalesTreeRow } from './SalesTreeRow';
+import { ExportModal } from './ExportModal';
 
 type State = { expanded: Set<string>; unbounded: Set<string> };
 type Action =
@@ -42,9 +43,10 @@ function collectAllIds(channels: ChannelNode[]): string[] {
   return out;
 }
 
-export function SalesTree({ channels }: { channels: ChannelNode[] }) {
+export function SalesTree({ channels, start, end }: { channels: ChannelNode[]; start?: string; end?: string }) {
   const [state, dispatch] = useReducer(reducer, { expanded: new Set<string>(), unbounded: new Set<string>() });
   const [query, setQuery] = useState('');
+  const [exportOpen, setExportOpen] = useState(false);
   const parentRef = useRef<HTMLDivElement>(null);
 
   const filtered = useMemo(() => filterTree(channels, query), [channels, query]);
@@ -85,6 +87,15 @@ export function SalesTree({ channels }: { channels: ChannelNode[] }) {
         >
           Zwiń
         </button>
+        <button
+          type="button"
+          disabled={!start || !end}
+          onClick={() => setExportOpen(true)}
+          className="px-2.5 py-1.5 text-[12px] text-[var(--color-ink-secondary)] hover:text-[var(--color-ink-primary)] border border-[var(--color-line-soft)] rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+          title={!start || !end ? 'Brak okresu — eksport nie jest dostępny' : 'Eksport CSV / XLSX'}
+        >
+          Eksport
+        </button>
       </div>
       <div
         className="grid items-center px-3 py-2 text-[10px] uppercase tracking-wider text-[var(--color-ink-tertiary)] border-b border-[var(--color-line-soft)]"
@@ -119,6 +130,14 @@ export function SalesTree({ channels }: { channels: ChannelNode[] }) {
           })}
         </div>
       </div>
+      {start && end && (
+        <ExportModal
+          open={exportOpen}
+          onClose={() => setExportOpen(false)}
+          start={start}
+          end={end}
+        />
+      )}
     </div>
   );
 }

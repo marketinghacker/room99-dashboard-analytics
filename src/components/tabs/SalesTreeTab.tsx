@@ -47,7 +47,7 @@ export function SalesTreeTab() {
         <span>·</span>
         <span>{data.count} produktów</span>
       </div>
-      <SalesTree channels={data.channels} />
+      <SalesTree channels={data.channels} start={data.period.start} end={data.period.end} />
     </div>
   );
 }
