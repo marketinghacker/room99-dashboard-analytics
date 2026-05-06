@@ -1,8 +1,9 @@
 'use client';
-import { useMemo, useReducer, useRef } from 'react';
+import { useMemo, useReducer, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import type { ChannelNode } from '@/lib/sales-tree';
 import { flattenTree } from './flatten-tree';
+import { filterTree } from './filter-tree';
 import { SalesTreeRow } from './SalesTreeRow';
 
 type State = Set<string>;
@@ -17,10 +18,31 @@ function reducer(state: State, a: Action): State {
   return next;
 }
 
+function collectAllIds(channels: ChannelNode[]): string[] {
+  const out: string[] = [];
+  for (const ch of channels) {
+    out.push(ch.source);
+    for (const cat of ch.categories) {
+      out.push(`${ch.source}|${cat.category}`);
+      for (const col of cat.collections) {
+        out.push(`${ch.source}|${cat.category}|${col.collection}`);
+      }
+    }
+  }
+  return out;
+}
+
 export function SalesTree({ channels }: { channels: ChannelNode[] }) {
   const [expanded, dispatch] = useReducer(reducer, new Set<string>());
-  const visible = useMemo(() => flattenTree(channels, expanded), [channels, expanded]);
+  const [query, setQuery] = useState('');
   const parentRef = useRef<HTMLDivElement>(null);
+
+  const filtered = useMemo(() => filterTree(channels, query), [channels, query]);
+  const effectiveExpanded = query.trim() ? filtered.autoExpanded : expanded;
+  const visible = useMemo(
+    () => flattenTree(filtered.tree, effectiveExpanded),
+    [filtered.tree, effectiveExpanded],
+  );
 
   const virt = useVirtualizer({
     count: visible.length,
@@ -31,6 +53,29 @@ export function SalesTree({ channels }: { channels: ChannelNode[] }) {
 
   return (
     <div className="card">
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-[var(--color-line-soft)]">
+        <input
+          type="text"
+          placeholder="Szukaj produktu, SKU, kategorii…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="flex-1 px-3 py-1.5 text-[13px] bg-[var(--color-bg-base)] border border-[var(--color-line-soft)] rounded-md focus:outline-none focus:border-[var(--color-accent)]"
+        />
+        <button
+          type="button"
+          onClick={() => dispatch({ type: 'expandAll', ids: collectAllIds(filtered.tree) })}
+          className="px-2.5 py-1.5 text-[12px] text-[var(--color-ink-secondary)] hover:text-[var(--color-ink-primary)] border border-[var(--color-line-soft)] rounded-md"
+        >
+          Rozwiń wszystko
+        </button>
+        <button
+          type="button"
+          onClick={() => dispatch({ type: 'collapseAll' })}
+          className="px-2.5 py-1.5 text-[12px] text-[var(--color-ink-secondary)] hover:text-[var(--color-ink-primary)] border border-[var(--color-line-soft)] rounded-md"
+        >
+          Zwiń
+        </button>
+      </div>
       <div
         className="grid items-center px-3 py-2 text-[10px] uppercase tracking-wider text-[var(--color-ink-tertiary)] border-b border-[var(--color-line-soft)]"
         style={{ gridTemplateColumns: 'minmax(280px, 1fr) 56px 80px 80px 110px 80px' }}
