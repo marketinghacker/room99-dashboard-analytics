@@ -46,4 +46,17 @@ describe('GET /api/data/sales-tree/export', () => {
     const res = await GET(req);
     expect(res.status).toBe(400);
   });
+
+  it('returns XLSX with binary content for format=xlsx', async () => {
+    const req = new Request('http://x/api/data/sales-tree/export?format=xlsx&start=2026-04-01&end=2026-04-02');
+    const res = await GET(req);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toBe('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    expect(res.headers.get('content-disposition')).toContain('.xlsx');
+    const buf = Buffer.from(await res.arrayBuffer());
+    expect(buf.length).toBeGreaterThan(1000); // real XLSX is ~5-10kb minimum
+    // XLSX is a ZIP — first 4 bytes are PK\x03\x04
+    expect(buf[0]).toBe(0x50); // P
+    expect(buf[1]).toBe(0x4B); // K
+  });
 });
