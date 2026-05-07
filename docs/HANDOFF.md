@@ -141,7 +141,6 @@ Wszystko w kodzie sprzed sales-tree, oznaczone do osobnego cleanupu.
 ### Inny tech debt
 
 - Naprawić 7 znanych testów (DateRangePicker, format, periods) — patrz wyżej.
-- Pinterest synchronizujemy z ręcznych CSV-ek (Windsor.ai). Idealnie: napisać MCP klient lub przełączyć na `MCP-Pinterest` (już istnieje na Railway, nieużywany).
 - `MCP-SearchConsole` i `MCP-Google-Merchant-Center` istnieją, ale nie są podpięte do sync — naturalna następna funkcjonalność (zakładka SEO).
 - Backfill historyczny (przed kwietniem 2026) dla `products_daily` jest częściowy — Marcin uruchamiał ad-hoc skryptem `scripts/sync-sellrocket-range.ts`. Można zrobić UI w `/admin/backfill`.
 

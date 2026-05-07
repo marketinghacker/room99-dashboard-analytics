@@ -13,7 +13,7 @@ Dashboard zaciąga dane z platform reklamowych przez **MCP (Model Context Protoc
 
 ---
 
-## 5 aktywnych serwerów (w sync flow)
+## 6 aktywnych serwerów (w sync flow)
 
 | Serwer | Railway projekt | URL | Tools używane przez sync |
 |---|---|---|---|
@@ -21,6 +21,7 @@ Dashboard zaciąga dane z platform reklamowych przez **MCP (Model Context Protoc
 | Google Ads | `MCP-Ads` | `https://google-ads-mcp-server-production-7a5f.up.railway.app/mcp` | `google_ads_run_query` (GAQL) |
 | Criteo | `MCP-Criteo` | `https://mcp-criteo.up.railway.app/mcp` | `get_campaign_stats` |
 | GA4 | `MCP-Analytics` | `https://mcp-analytics.up.railway.app/mcp` | `run_report`, `get_traffic_sources`, `get_ecommerce_report` |
+| Pinterest | `MCP-Pinterest` (mh-connector) | `https://mh-connector.up.railway.app/mcp` | `list_campaigns`, `get_campaigns_analytics` |
 | BaseLinker (proxy) | `MCP-SellRocket` | `https://mcp-sellrocket.up.railway.app/mcp` | `get_daily_revenue`, `get_products_sold`, `list_orders` |
 
 ### Transport
@@ -37,7 +38,6 @@ OAuth/API keys per-platform są skonfigurowane **wewnątrz każdego serwera MCP*
 
 | Serwer | Railway projekt | URL | Status |
 |---|---|---|---|
-| Pinterest | `MCP-Pinterest` | `https://mcp-pinterest.up.railway.app/mcp` | Standby — Pinterest synchronizujemy via ręczny upload CSV (Windsor.ai). Można przełączyć na MCP, jeśli chcesz natywne API. |
 | Search Console | `MCP-SearchConsole` | `https://mcp-searchconsole.up.railway.app/mcp` | Standby — naturalna następna funkcjonalność (zakładka SEO). |
 | Google Merchant Center | `MCP-Google-Merchant-Center` | `https://mcp-google-merchant.up.railway.app/mcp` | Standby — przyszła zakładka feed-quality. |
 
