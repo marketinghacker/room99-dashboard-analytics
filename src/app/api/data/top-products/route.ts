@@ -60,6 +60,29 @@ function shiftYear(iso: string, years: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+/**
+ * Headline revenue per source from `sellrocket_daily` — the same source the
+ * Sprzedaż / Podsumowanie tabs use. Keeps the "Shoper revenue" / "Allegro
+ * revenue" KPIs on this tab numerically identical to the rest of the dashboard
+ * (down to 1 grosz). The per-category aggregation below still comes from
+ * `products_daily` and may differ by ~shipping cost — explained in the UI
+ * footnote.
+ */
+async function headlineFromSellrocket(range: { start: string; end: string }): Promise<{
+  shr: number; allegro: number; total: number;
+}> {
+  const res: any = await db.execute(sql`
+    SELECT
+      COALESCE(SUM(CASE WHEN source = 'shr' THEN revenue END), 0)::float AS shr,
+      COALESCE(SUM(CASE WHEN source = 'allegro' THEN revenue END), 0)::float AS allegro,
+      COALESCE(SUM(CASE WHEN source = 'all' THEN revenue END), 0)::float AS total
+    FROM sellrocket_daily
+    WHERE date BETWEEN ${range.start} AND ${range.end}
+  `);
+  const row = (res.rows ?? res)[0] ?? { shr: 0, allegro: 0, total: 0 };
+  return { shr: Number(row.shr), allegro: Number(row.allegro), total: Number(row.total) };
+}
+
 export async function GET(req: Request) {
   const { period, compare } = parseFilters(req);
   const url = new URL(req.url);
@@ -69,9 +92,10 @@ export async function GET(req: Request) {
   const range = resolvePeriod(period);
   const yoyRange = { start: shiftYear(range.start, -1), end: shiftYear(range.end, -1) };
 
-  const [current, yoy] = await Promise.all([
+  const [current, yoy, headline] = await Promise.all([
     aggregate(level, range, categoryFilter),
     aggregate(level, yoyRange, categoryFilter),
+    headlineFromSellrocket(range),
   ]);
   const yoyByGroup = new Map(yoy.map((r) => [r.group, r]));
 
@@ -133,6 +157,13 @@ export async function GET(req: Request) {
     };
   });
 
+  // Sums from products_daily — used to verify per-row totals add up. Kept in
+  // the response for transparency but the UI binds headline KPIs to
+  // `summary.shoperRevenue` / `summary.allegroRevenue` (sellrocket_daily) so
+  // the numbers match Sprzedaż / Podsumowanie / SellRocket UI exactly.
+  const productsSumShr = enriched.reduce((s, r) => s + r.shrRevenue, 0);
+  const productsSumAllegro = enriched.reduce((s, r) => s + r.allegroRevenue, 0);
+
   return jsonResponse({
     period,
     compare,
@@ -141,9 +172,16 @@ export async function GET(req: Request) {
     yoyRange,
     summary: {
       groups: enriched.length,
-      totalRevenue: enriched.reduce((s, r) => s + r.total, 0),
-      totalShrRevenue: enriched.reduce((s, r) => s + r.shrRevenue, 0),
-      totalAllegroRevenue: enriched.reduce((s, r) => s + r.allegroRevenue, 0),
+      // Headline KPIs — single source of truth (sellrocket_daily). Match the
+      // values shown on Sprzedaż / Podsumowanie tabs.
+      totalRevenue: headline.total,
+      totalShrRevenue: headline.shr,
+      totalAllegroRevenue: headline.allegro,
+      // Diagnostic — sums of the per-category table below. Diff vs headline
+      // is shipping cost (BaseLinker reports order-level shipping separately
+      // from per-line-item products).
+      productsTableShr: productsSumShr,
+      productsTableAllegro: productsSumAllegro,
     },
     items: enriched,
     alerts: enriched.filter((x) => x.alerts.length),

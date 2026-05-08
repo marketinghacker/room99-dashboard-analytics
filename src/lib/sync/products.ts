@@ -59,7 +59,13 @@ export async function syncProducts(
     const agg = new Map<string, Agg>();
 
     for (const src of sources) {
-      const all = await api.getOrdersRange({ fromTs, toTs, sourceType: src.sourceType, sourceId: src.sourceId });
+      // Date attribution = `date_add` (order placement), matching SellRocket UI
+      // and the `sellrocket_daily` rollup. Including unconfirmed orders so the
+      // per-product breakdown doesn't lag the 12-48h Allegro confirmation gap.
+      const all = await api.getOrdersRange({
+        fromTs, toTs, sourceType: src.sourceType, sourceId: src.sourceId,
+        dateField: 'add',
+      });
       const allowed = validSet.size > 0 ? all.filter((o) => validSet.has(o.order_status_id)) : all;
       const filtered = bucketExcludes.size > 0
         ? allowed.filter((o) => !bucketExcludes.has(o.order_status_id))
@@ -67,7 +73,7 @@ export async function syncProducts(
       console.log(`[products] ${bucket} ${src.sourceType}/${src.sourceId}: ${filtered.length}/${all.length} orders kept (bucketExcludes=${bucketExcludes.size})`);
 
       for (const o of filtered) {
-        const date = new Date(o.date_confirmed * 1000).toISOString().slice(0, 10);
+        const date = new Date(o.date_add * 1000).toISOString().slice(0, 10);
         if (date < range.start || date > range.end) continue; // edge of TZ
         for (const p of o.products ?? []) {
           const sku = (p.sku ?? '').trim() || (p.ean ?? '').trim() || `noname-${(p as any).product_id ?? 'x'}`;

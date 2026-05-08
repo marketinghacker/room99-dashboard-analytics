@@ -91,12 +91,16 @@ export async function syncSellRocketDirect(
     console.log(`[baselinker] bucket=${bucket} sources=${JSON.stringify(sources)} range=${range.start}..${range.end} bucketExcludes=${bucketExcludes.size}`);
 
     // Sum across source ids within the bucket.
+    // Date attribution = `date_add` (order placement), matching SellRocket UI.
+    // Includes unconfirmed orders so today's Allegro number doesn't lag the
+    // 12-48h Allegro confirmation window.
     const byDate = new Map<string, { orders: number; revenue: number }>();
     for (const src of sources) {
       const fromTs = Math.floor(new Date(range.start + 'T00:00:00Z').getTime() / 1000);
       const toTs = Math.floor(new Date(range.end + 'T23:59:59Z').getTime() / 1000);
       const allOrders = await api.getOrdersRange({
         fromTs, toTs, sourceType: src.sourceType, sourceId: src.sourceId,
+        dateField: 'add',
       });
       const statusAllowed = validSet.size > 0
         ? allOrders.filter((o) => validSet.has(o.order_status_id))
@@ -106,7 +110,7 @@ export async function syncSellRocketDirect(
         : statusAllowed;
 
       for (const o of filtered) {
-        const d = new Date(o.date_confirmed * 1000).toISOString().slice(0, 10);
+        const d = new Date(o.date_add * 1000).toISOString().slice(0, 10);
         // skip if outside range (timezone edge)
         if (d < range.start || d > range.end) continue;
         let e = byDate.get(d);
