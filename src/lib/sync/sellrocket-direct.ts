@@ -33,32 +33,39 @@ export type Bucket = keyof typeof SOURCE_BUCKETS;
 /**
  * Bucket-specific order status excludes — applied IN ADDITION to the global
  * order_status_config allow-list. Empirically derived from matching the
- * SellRocket UI convention:
+ * SellRocket UI convention against per-status revenue breakdown
+ * (/api/admin/status-breakdown).
  *
- *   - Allegro: exclude in-transit / awaiting / cancelled / intermediate WMS
- *     statuses. Matching Apr 2026 ref number (916,031 zł) required dropping
- *     these 11 statuses; keeping them pushed us 7% over.
+ *   - Allegro: exclude statuses where the order is NOT a confirmed sale
+ *     (cancelled, returned, awaiting customer payment/verification, ambiguous
+ *     admin states). Confirmed-sale states like 'W drodze' (in transit, customer
+ *     paid, package shipped) and intermediate WMS steps (Zaalokowane,
+ *     Skompletowane) ARE included — SellRocket UI counts them as sales.
  *   - SHR: no bucket-specific excludes (Shoper flow reports all paid orders
  *     regardless of delivery state).
  *
  * If a status belongs on the global invalid list (returns, refunds), configure
  * it via /admin/statuses — this set is for source-specific workflow status
  * quirks that Shoper and Allegro don't share.
+ *
+ * Calibration history:
+ *   2026-05-08: removed 2223 / 144918 / 144920 after switching sync to
+ *   `date_add`. Per /api/admin/status-breakdown for 2026-05-07 they hold
+ *   ~19k zł / 91 confirmed-and-shipping orders that SellRocket UI counts.
+ *   Apr 2026 was previously calibrated under date_confirmed mode; this set
+ *   is now calibrated under date_add mode (+2% vs SellRocket UI for May 7).
  */
 export const BUCKET_STATUS_EXCLUDES: Record<Bucket, ReadonlySet<number>> = {
   shr: new Set<number>(),
   allegro: new Set<number>([
-    2223,   // W drodze (in transit — not yet counted as sale by SellRocket UI)
-    2224,   // Oczekuje w punkcie (awaiting pickup)
-    2226,   // Niedoręczone (not delivered)
+    2224,   // Oczekuje w punkcie (awaiting pickup; ambiguous, low volume)
+    2226,   // Niedoręczone (not delivered; possible return)
     2229,   // Anulowane (cancelled)
-    137523, // Aktualizuj ZK (triggers; observed data anomaly)
-    147785, // WERYFIKACJA SMS (pending verification)
-    1666,   // Oczekuje Allegro (awaiting Allegro)
-    30035,  // Błąd Wysyłka (shipping error)
-    144920, // WMS Skompletowane (intermediate warehouse step)
-    144918, // WMS Zaalokowane (intermediate warehouse step)
-    111527, // BRAKI (shortage)
+    137523, // Aktualizuj ZK (admin trigger; observed data anomaly)
+    147785, // WERYFIKACJA SMS (pending customer verification, not yet a sale)
+    1666,   // Oczekuje Allegro (awaiting Allegro confirmation)
+    30035,  // Błąd Wysyłka (shipping error, ambiguous state)
+    111527, // BRAKI (out of stock; cannot fulfill)
   ]),
 };
 
