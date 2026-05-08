@@ -65,3 +65,49 @@ export const SESSION_COOKIE = {
   secure: process.env.NODE_ENV === 'production',
   path: '/',
 } as const;
+
+/**
+ * Reads the r99-session cookie from the incoming request and returns the
+ * session payload, or null if missing/invalid. Use inside route handlers
+ * that bypass the proxy auth (e.g. /api/admin/* paths, which the proxy
+ * makes "public" because cron+operator scripts hit them with key auth).
+ */
+export async function getSessionFromRequest(req: Request): Promise<SessionPayload | null> {
+  const cookieHeader = req.headers.get('cookie');
+  if (!cookieHeader) return null;
+  // Tiny cookie parser — avoids a runtime dep just for this. Cookie name
+  // contains only [a-z-] chars so a simple split is safe.
+  const target = `${COOKIE_NAME}=`;
+  for (const part of cookieHeader.split(';')) {
+    const trimmed = part.trim();
+    if (trimmed.startsWith(target)) {
+      const value = trimmed.slice(target.length);
+      if (!value) return null;
+      return verifySession(decodeURIComponent(value));
+    }
+  }
+  return null;
+}
+
+/**
+ * Convenience: 401 if no session, 403 if wrong role, otherwise returns the
+ * session. Throws Response objects (caller should propagate them as-is).
+ *
+ * Usage:
+ *   const session = await requireRole(req, 'agency');
+ *   if (session instanceof Response) return session;
+ *   // ... session.userId / session.email
+ */
+export async function requireRole(
+  req: Request,
+  role: Role,
+): Promise<SessionPayload | Response> {
+  const session = await getSessionFromRequest(req);
+  if (!session) {
+    return Response.json({ error: 'unauthenticated' }, { status: 401 });
+  }
+  if (session.role !== role) {
+    return Response.json({ error: 'forbidden' }, { status: 403 });
+  }
+  return session;
+}
