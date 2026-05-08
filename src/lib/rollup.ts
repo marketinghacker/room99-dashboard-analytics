@@ -23,8 +23,44 @@ import {
  */
 export const REVENUE_SOURCE = 'shr';
 
+/**
+ * Marketing Hackers monthly retainer (PLN). Distributed equally across the
+ * days of each month so the COS metric reflects the TRUE total marketing cost
+ * (ad-platform spend + agency fee) instead of just paid media. Applied only
+ * to the cross-platform `platform='all'` rollup — per-platform views (Meta,
+ * Google Ads, Criteo, Pinterest) keep showing platform-only COS so a
+ * Meta-tab COS doesn't get distorted by the retainer.
+ */
+export const AGENCY_MONTHLY_FEE_PLN = 25_000;
+
+function daysInMonthOf(date: string): number {
+  const [y, m] = date.split('-').map(Number);
+  // Date.UTC(y, m, 0) → last day of month m (1-indexed for the month arg).
+  return new Date(Date.UTC(y, m, 0)).getUTCDate();
+}
+
+/** Per-day agency fee = MONTHLY_FEE / days-in-that-month. */
+export function agencyFeeForDate(date: string): number {
+  return AGENCY_MONTHLY_FEE_PLN / daysInMonthOf(date);
+}
+
+/** Sum of per-day agency fees over an inclusive YYYY-MM-DD range. */
+export function totalAgencyFee(range: DateRange): number {
+  let total = 0;
+  let cursor = range.start;
+  while (cursor <= range.end) {
+    total += agencyFeeForDate(cursor);
+    const d = new Date(cursor + 'T00:00:00Z');
+    d.setUTCDate(d.getUTCDate() + 1);
+    cursor = d.toISOString().slice(0, 10);
+  }
+  return total;
+}
+
 export type KPIs = {
   spend: number;
+  /** Marketing Hackers retainer prorated to the period — only set on platform='all'. */
+  spendAgency: number;
   impressions: number;
   clicks: number;
   conversions: number;
@@ -42,7 +78,9 @@ export type KPIs = {
   ctr: number | null;
   cpc: number | null;
   cpm: number | null;
+  /** Total marketing COS = (spend + spendAgency) / Shoper revenue. */
   cos: number | null;
+  /** Total marketing ROAS = revenue / (spend + spendAgency). */
   roas: number | null;
   aov: number | null;
   /** Platform-attributed ROAS = conversionValue / spend. Meta/Google's own numbers. */
@@ -69,6 +107,8 @@ export type RollupPayload = {
   timeSeries: Array<{
     date: string;
     spend: number;
+    /** Per-day agency fee (MONTHLY_FEE / days-in-month). 0 unless platform='all'. */
+    spendAgency: number;
     revenue: number;    // Shoper revenue (primary)
     revenueAll: number; // All channels combined (reference)
     sessions: number;
@@ -80,7 +120,7 @@ export type RollupPayload = {
     spendGoogle: number;
     spendCriteo: number;
     spendPinterest: number;
-    /** COS = total spend / Shoper revenue — critical KPI for agency scope. */
+    /** COS = (spend + spendAgency) / Shoper revenue — critical KPI for agency scope. */
     cos: number | null;
   }>;
   campaigns: Array<{
@@ -119,7 +159,7 @@ const AD_PLATFORMS: Array<Exclude<Platform, 'all' | 'ga4'>> = [
 ];
 
 const EMPTY_KPIS: KPIs = {
-  spend: 0, impressions: 0, clicks: 0, conversions: 0, conversionValue: 0,
+  spend: 0, spendAgency: 0, impressions: 0, clicks: 0, conversions: 0, conversionValue: 0,
   revenue: 0, sessions: 0, transactions: 0, users: 0, newUsers: 0,
   engagedSessions: 0, bounceRate: null, itemsViewed: 0, addToCart: 0, beginCheckout: 0,
   ctr: null, cpc: null, cpm: null, cos: null, roas: null, aov: null,
@@ -132,14 +172,18 @@ function safeDiv(a: number, b: number): number | null {
 }
 
 function deriveDerived(k: KPIs): KPIs {
+  // Total marketing cost = paid media + agency retainer. Drives COS/ROAS so
+  // those reflect the FULL cost of growing Room99, not just Meta+Google etc.
+  // CPC/CPM stay on platform spend only — they're per-click/per-mille metrics
+  // tied to ad delivery, not retainer.
+  const totalMarketingCost = k.spend + k.spendAgency;
   return {
     ...k,
     ctr: safeDiv(k.clicks, k.impressions),
     cpc: safeDiv(k.spend, k.clicks),
     cpm: safeDiv(k.spend * 1000, k.impressions),
-    // Agency-scope: spend / Shoper revenue → "ile budżet vs całkowity przychód"
-    cos: safeDiv(k.spend, k.revenue),
-    roas: safeDiv(k.revenue, k.spend),
+    cos: safeDiv(totalMarketingCost, k.revenue),
+    roas: safeDiv(k.revenue, totalMarketingCost),
     aov: safeDiv(k.revenue, k.transactions),
     // Platform-attributed (Meta/Google own attribution): conversionValue / spend
     platformRoas: safeDiv(k.conversionValue, k.spend),
@@ -413,6 +457,13 @@ export async function buildOneLive(
   const sr = await loadSellRocketKPIs(db, range);
   const srCompare = compareRange ? await loadSellRocketKPIs(db, compareRange) : null;
 
+  // Agency retainer: only added on the cross-platform 'all' rollup. A
+  // Meta-only or Google-only view shouldn't fold the retainer into its COS —
+  // that'd misattribute the cost and make per-platform comparisons noisy.
+  const includeAgencyFee = platform === 'all';
+  const agencyFee = includeAgencyFee ? totalAgencyFee(range) : 0;
+  const compareAgencyFee = includeAgencyFee && compareRange ? totalAgencyFee(compareRange) : 0;
+
   // Merge: ads gives spend + ad-platform conversionValue/conversions.
   //        GA4 gives sessions/users/newUsers/engagedSessions/bounce + funnel events.
   //        SellRocket gives the authoritative revenue/transactions/AOV (SHR).
@@ -420,6 +471,7 @@ export async function buildOneLive(
     a: typeof ads | null,
     g: typeof ga4 | null,
     s: typeof sr | null,
+    feeForRange: number,
   ): KPIs => {
     const merged: KPIs = {
       ...EMPTY_KPIS,
@@ -428,14 +480,15 @@ export async function buildOneLive(
       // Override GA4 revenue/transactions with Shoper SellRocket data.
       revenue: s?.salesBySource.shr.revenue ?? 0,
       transactions: s?.salesBySource.shr.orders ?? 0,
+      spendAgency: feeForRange,
     };
-    // Re-derive AOV/COS/ROAS based on the Shoper numbers.
+    // Re-derive AOV/COS/ROAS — COS now folds in the agency retainer.
     return deriveDerived(merged);
   };
 
-  const kpis = build(ads, ga4, sr);
+  const kpis = build(ads, ga4, sr, agencyFee);
   const compareKpis = compareRange
-    ? build(adsCompare, ga4Compare, srCompare)
+    ? build(adsCompare, ga4Compare, srCompare, compareAgencyFee)
     : null;
 
   const deltas: Partial<Record<keyof KPIs, number>> = {};
@@ -457,7 +510,7 @@ export async function buildOneLive(
     let existing = tsMap.get(date);
     if (!existing) {
       existing = {
-        date, spend: 0, revenue: 0, revenueAll: 0,
+        date, spend: 0, spendAgency: 0, revenue: 0, revenueAll: 0,
         sessions: 0, transactions: 0, ordersShr: 0, ordersAllegro: 0,
         spendMeta: 0, spendGoogle: 0, spendCriteo: 0, spendPinterest: 0,
         cos: null,
@@ -490,9 +543,16 @@ export async function buildOneLive(
   for (const r of sr.allTimeSeries) {
     ensure(r.date).revenueAll = r.revenue;
   }
-  // Compute daily COS = spend / Shoper revenue (agency scope).
+  // Per-day agency retainer (only for cross-platform rollup) so the daily COS
+  // chart reflects the same total marketing cost as the headline KPI.
+  if (includeAgencyFee) {
+    for (const e of tsMap.values()) {
+      e.spendAgency = agencyFeeForDate(e.date);
+    }
+  }
+  // Daily COS = (ad spend + agency fee) / Shoper revenue.
   for (const e of tsMap.values()) {
-    e.cos = e.revenue > 0 ? e.spend / e.revenue : null;
+    e.cos = e.revenue > 0 ? (e.spend + e.spendAgency) / e.revenue : null;
   }
   const timeSeries = Array.from(tsMap.values()).sort((a, b) => a.date.localeCompare(b.date));
 
