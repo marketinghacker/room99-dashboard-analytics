@@ -1,153 +1,170 @@
 /**
- * Pinterest adapter: Windsor.ai writes to `ad_performance_daily` directly.
- * This module READS that table and normalizes rows to the same shape as `ads_daily`
- * so the rollup job treats Pinterest identically to Meta/Google/Criteo.
+ * Pinterest sync: live per-campaign daily metrics via the MCP-Pinterest server.
  *
- * Numeric-looking TEXT columns (conversions, conversion_value, ctr, roas) are
- * coerced back to numbers with a safe fallback; missing conversion_value is
- * derived from ROAS × spend when possible (common Windsor quirk).
+ * MCP server: https://mh-connector.up.railway.app/mcp  (streamable HTTP, gated by
+ *             Bearer token = INTERNAL_API_SECRET set on the MCP server itself).
+ * Tools: list_campaigns + get_campaigns_analytics
+ * Ad account: 549764456968 (Room99 sp. z o.o., currency PLN)
+ *
+ * The MCP server stores the OAuth user token (encrypted) and refreshes it
+ * automatically — we never see Pinterest's raw access token here. Spend is
+ * reported in `*_IN_MICRO_DOLLAR` columns; despite the name the unit follows
+ * the ad account's currency (PLN for Room99).
+ *
+ * Replaces the legacy Windsor.ai reader (preserved in pinterest-windsor.ts)
+ * which lagged 24-48h and dropped fields.
  */
 import { db as defaultDb, type DB } from '@/lib/db';
-import { and, eq, gte, lte } from 'drizzle-orm';
-import { adPerformanceDaily } from '@/lib/schema';
+import { callMCPTool, connectMCP } from './mcp-client';
+import { upsertAdsDaily, type AdsDailyRow } from './upsert';
 import { type DateRange } from '@/lib/periods';
-import { toNum, toNumOrNull, upsertAdsDaily, type AdsDailyRow } from './upsert';
 
-export type NormalizedAdRow = {
-  date: string;
-  platform: 'pinterest';
-  accountId: string;
-  campaignId: string;
-  campaignName: string;
-  campaignStatus: string | null;
-  campaignObjective: string | null;
-  spend: number;
-  impressions: number;
-  clicks: number;
-  ctr: number | null;
-  cpc: number | null;
-  cpm: number | null;
-  conversions: number;
-  conversionValue: number;
+const MCP_URL = process.env.MCP_PINTEREST_URL || 'https://mh-connector.up.railway.app/mcp';
+const MCP_TOKEN =
+  process.env.MCP_PINTEREST_TOKEN ||
+  process.env.MCP_PINTEREST_INTERNAL_SECRET ||
+  process.env.PINTEREST_INTERNAL_SECRET ||
+  '';
+// MCP-Pinterest dropped persistent 'active user' state (multi-tenant safety),
+// so every call must pass user_id explicitly.
+const USER_ID = process.env.MCP_PINTEREST_USER_ID || 'marcin@marketing-hackers.com';
+const AD_ACCOUNT_ID = process.env.PINTEREST_AD_ACCOUNT_ID || '549764456968';
+
+/** Pinterest reports money in 1/1_000_000 of the account currency. */
+const MICRO = 1_000_000;
+
+type CampaignsList = {
+  items?: Array<{ id: string; name: string; status?: string; objective_type?: string }>;
+  campaigns?: Array<{ id: string; name: string; status?: string; objective_type?: string }>;
 };
 
-export async function readPinterestRange(
-  range: DateRange,
-  opts: { db?: DB } = {}
-): Promise<NormalizedAdRow[]> {
-  const database = opts.db ?? defaultDb;
+type AnalyticsRow = {
+  CAMPAIGN_ID?: string | number;
+  AD_ACCOUNT_ID?: string;
+  DATE?: string;
+  SPEND_IN_MICRO_DOLLAR?: number;
+  IMPRESSION_1?: number;
+  CLICKTHROUGH_1?: number;
+  CTR?: number;
+  CPC_IN_MICRO_DOLLAR?: number;
+  TOTAL_CHECKOUT?: number;
+  TOTAL_CHECKOUT_VALUE_IN_MICRO_DOLLAR?: number;
+};
 
-  const rows = await database
-    .select()
-    .from(adPerformanceDaily)
-    .where(
-      and(
-        eq(adPerformanceDaily.datasource, 'pinterest'),
-        gte(adPerformanceDaily.date, range.start),
-        lte(adPerformanceDaily.date, range.end),
-      ),
-    );
+type AnalyticsResp =
+  | AnalyticsRow[]
+  | { analytics?: AnalyticsRow[]; data?: AnalyticsRow[]; rows?: AnalyticsRow[] };
 
-  return rows.map<NormalizedAdRow>((r) => {
-    const spend = toNum(r.spend);
-    const impressions = Math.round(toNum(r.impressions));
-    const clicks = Math.round(toNum(r.clicks));
-    let conversions = toNum(r.conversions);
-    let conversionValue = toNum(r.conversionValue);
-    const roas = toNumOrNull(r.roas);
-
-    // Fallback: some Windsor Pinterest rows have ROAS but empty conversion_value.
-    if (conversionValue === 0 && roas != null && spend > 0) {
-      conversionValue = roas * spend;
-    }
-    if (conversions === 0 && conversionValue > 0) {
-      // leave conversions as 0 (Pinterest rarely reports conversions separately)
-    }
-
-    const ctr = impressions > 0 ? clicks / impressions : null;
-    const cpc = clicks > 0 ? spend / clicks : null;
-    const cpm = impressions > 0 ? (spend / impressions) * 1000 : null;
-
-    return {
-      date: (r.date ?? '').slice(0, 10),
-      platform: 'pinterest',
-      accountId: r.accountName ?? 'room99',
-      campaignId: r.campaign ?? 'unknown',
-      campaignName: r.campaign ?? '',
-      campaignStatus: r.campaignStatus ?? null,
-      campaignObjective: r.campaignObjective ?? null,
-      spend,
-      impressions,
-      clicks,
-      ctr,
-      cpc,
-      cpm,
-      conversions,
-      conversionValue,
-    };
-  }).filter((r) => r.date !== '');
-}
-
-/**
- * Mirrors Windsor Pinterest rows into `ads_daily` so the rollup reads from a
- * single source of truth. Uses the campaign name as a synthetic campaign_id
- * since Windsor's dump doesn't include Pinterest's numeric IDs.
- */
 export async function syncPinterest(
   range: DateRange,
   opts: { db?: DB } = {}
 ): Promise<{ rowsWritten: number }> {
   const database = opts.db ?? defaultDb;
-  const normalized = await readPinterestRange(range, { db: database });
+  if (!MCP_TOKEN) throw new Error('MCP_PINTEREST_TOKEN missing — add to Railway Variables');
 
-  // Aggregate by (date, campaign_id) to avoid collisions when Windsor emits
-  // multiple rows per campaign per day (one per ad_group etc.).
-  const grouped = new Map<string, AdsDailyRow>();
-  for (const r of normalized) {
-    const key = `${r.date}|${r.campaignId}`;
-    const existing = grouped.get(key);
-    if (existing) {
-      existing.spend = String(Number(existing.spend) + r.spend);
-      existing.impressions = (existing.impressions ?? 0) + r.impressions;
-      existing.clicks = (existing.clicks ?? 0) + r.clicks;
-      existing.conversions = String(Number(existing.conversions ?? 0) + r.conversions);
-      existing.conversionValue = String(Number(existing.conversionValue ?? 0) + r.conversionValue);
-    } else {
-      grouped.set(key, {
-        date: r.date,
+  const client = await connectMCP(MCP_URL, 'http', { token: MCP_TOKEN });
+  try {
+    // 1) Find all campaigns we should pull analytics for. Include both ACTIVE
+    //    and PAUSED — paused campaigns may still have spend on the requested
+    //    range (e.g. paused yesterday, ran on May 4).
+    const campaigns = await callMCPTool<CampaignsList>(
+      client,
+      'list_campaigns',
+      {
+        user_id: USER_ID,
+        ad_account_id: AD_ACCOUNT_ID,
+        entity_statuses: ['ACTIVE', 'PAUSED'],
+        page_size: 100,
+      },
+      { retries: 3, initialBackoffMs: 1000 },
+    );
+    const list = campaigns.items ?? campaigns.campaigns ?? [];
+    if (list.length === 0) {
+      console.log('[pinterest] no campaigns found, skipping');
+      return { rowsWritten: 0 };
+    }
+
+    const idToMeta = new Map(list.map((c) => [String(c.id), c]));
+    const campaignIds = [...idToMeta.keys()];
+
+    // 2) Pull DAY-granular analytics for the campaigns. Pinterest caps at 100
+    //    campaign IDs per call — chunk if needed.
+    const all: AnalyticsRow[] = [];
+    const CHUNK = 100;
+    for (let i = 0; i < campaignIds.length; i += CHUNK) {
+      const slice = campaignIds.slice(i, i + CHUNK);
+      const resp = await callMCPTool<AnalyticsResp>(
+        client,
+        'get_campaigns_analytics',
+        {
+          user_id: USER_ID,
+          ad_account_id: AD_ACCOUNT_ID,
+          campaign_ids: slice,
+          start_date: range.start,
+          end_date: range.end,
+          granularity: 'DAY',
+          columns: [
+            'SPEND_IN_MICRO_DOLLAR',
+            'IMPRESSION_1',
+            'CLICKTHROUGH_1',
+            'CTR',
+            'CPC_IN_MICRO_DOLLAR',
+            'TOTAL_CHECKOUT',
+            'TOTAL_CHECKOUT_VALUE_IN_MICRO_DOLLAR',
+          ],
+        },
+        { retries: 3, initialBackoffMs: 1000, timeoutMs: 120_000 },
+      );
+      const rows = Array.isArray(resp)
+        ? resp
+        : resp.analytics ?? resp.data ?? resp.rows ?? [];
+      all.push(...rows);
+    }
+
+    // 3) Map → AdsDailyRow. Skip rows without date or campaign id.
+    const adsRows: AdsDailyRow[] = [];
+    for (const r of all) {
+      const date = (r.DATE ?? '').slice(0, 10);
+      const campaignId = r.CAMPAIGN_ID == null ? '' : String(r.CAMPAIGN_ID);
+      if (!date || !campaignId) continue;
+      const meta = idToMeta.get(campaignId);
+      const spend = (r.SPEND_IN_MICRO_DOLLAR ?? 0) / MICRO;
+      const impressions = Math.round(r.IMPRESSION_1 ?? 0);
+      const clicks = Math.round(r.CLICKTHROUGH_1 ?? 0);
+      const ctr = impressions > 0 ? clicks / impressions : null;
+      const cpc = clicks > 0 ? spend / clicks : null;
+      const cpm = impressions > 0 ? (spend / impressions) * 1000 : null;
+      // TOTAL_CHECKOUT = real purchase events, matches "transactions" semantics
+      // we use for Meta/Google. TOTAL_CONVERSIONS includes view-through visits
+      // and is too noisy to compare cross-platform.
+      const conversions = r.TOTAL_CHECKOUT ?? 0;
+      const conversionValue = (r.TOTAL_CHECKOUT_VALUE_IN_MICRO_DOLLAR ?? 0) / MICRO;
+
+      adsRows.push({
+        date,
         platform: 'pinterest',
-        accountId: r.accountId,
-        campaignId: r.campaignId,
-        campaignName: r.campaignName,
-        campaignStatus: r.campaignStatus,
-        campaignObjective: r.campaignObjective,
+        accountId: r.AD_ACCOUNT_ID ?? AD_ACCOUNT_ID,
+        campaignId,
+        campaignName: meta?.name ?? campaignId,
+        campaignStatus: meta?.status ?? null,
+        campaignObjective: meta?.objective_type ?? null,
         adGroupId: null,
         adGroupName: null,
-        spend: String(r.spend),
-        impressions: r.impressions,
-        clicks: r.clicks,
-        ctr: null,
-        cpc: null,
-        cpm: null,
-        conversions: String(r.conversions),
-        conversionValue: String(r.conversionValue),
+        spend: spend.toFixed(4),
+        impressions,
+        clicks,
+        ctr: ctr?.toString() ?? null,
+        cpc: cpc?.toString() ?? null,
+        cpm: cpm?.toString() ?? null,
+        conversions: String(conversions),
+        conversionValue: conversionValue.toFixed(4),
       });
     }
+
+    const rowsWritten = await upsertAdsDaily(database, adsRows);
+    console.log(`[pinterest] wrote ${rowsWritten} rows for ${range.start}..${range.end} across ${list.length} campaigns`);
+    return { rowsWritten };
+  } finally {
+    await client.close();
   }
-
-  // Recompute derived metrics after aggregation.
-  const rows = Array.from(grouped.values()).map((r) => {
-    const imp = r.impressions ?? 0;
-    const clk = r.clicks ?? 0;
-    const sp = Number(r.spend);
-    return {
-      ...r,
-      ctr: imp > 0 ? (clk / imp).toString() : null,
-      cpc: clk > 0 ? (sp / clk).toString() : null,
-      cpm: imp > 0 ? ((sp / imp) * 1000).toString() : null,
-    };
-  });
-
-  const rowsWritten = await upsertAdsDaily(database, rows);
-  return { rowsWritten };
 }

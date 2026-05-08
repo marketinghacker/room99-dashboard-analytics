@@ -97,12 +97,24 @@ export async function callMCPTool<T = unknown>(
 /**
  * Connect to an MCP server + return the raw SDK client.
  * Caller must `await client.close()` when done.
+ *
+ * `opts.token` adds `Authorization: Bearer <token>` to the transport's request
+ * init — used by MCP-Pinterest (mh-connector.up.railway.app) which gates the
+ * `/mcp` endpoint with INTERNAL_API_SECRET. Other Marketing Hackers MCP
+ * servers are open inside the Railway network and don't need it.
  */
-export async function connectMCP(url: string, transport: MCPTransport = 'sse'): Promise<Client> {
+export async function connectMCP(
+  url: string,
+  transport: MCPTransport = 'sse',
+  opts: { token?: string } = {},
+): Promise<Client> {
   const u = new URL(url);
+  const requestInit: RequestInit | undefined = opts.token
+    ? { headers: { Authorization: `Bearer ${opts.token}` } }
+    : undefined;
   const t = transport === 'http'
-    ? new StreamableHTTPClientTransport(u)
-    : new SSEClientTransport(u);
+    ? new StreamableHTTPClientTransport(u, requestInit ? { requestInit } : undefined)
+    : new SSEClientTransport(u, requestInit ? { requestInit } : undefined);
   const client = new Client({ name: 'room99-dashboard', version: '3.0.0' });
   await client.connect(t);
   return client;
