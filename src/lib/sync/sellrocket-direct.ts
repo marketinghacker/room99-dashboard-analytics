@@ -13,8 +13,28 @@
 import { sql, eq } from 'drizzle-orm';
 import { db as defaultDb, type DB } from '@/lib/db';
 import { sellrocketDaily, orderStatusConfig } from '@/lib/schema';
-import { BaseLinkerAPI, orderRevenue } from './baselinker-api';
+import { BaseLinkerAPI, orderRevenue, type BaseLinkerOrder } from './baselinker-api';
 import { type DateRange } from '@/lib/periods';
+
+/**
+ * Per-bucket revenue formula. Empirically tuned against the SellRocket UI
+ * day-by-day export (statistics20260509.csv) on 2026-05-09:
+ *
+ *   SHR:     `orderRevenue(o)` matches SellRocket's "Total" within 0,9%
+ *            (May 7-8 ref: 89 607 / 69 227 vs ours 88 832 / 69 853).
+ *   Allegro: SellRocket UI uses `payment_done` raw — what the customer
+ *            actually paid through Allegro, including 0 for unpaid orders.
+ *            Average abs error vs SR May 1-8: 5,4% (formula A) vs 7%
+ *            (orderRevenue with products+delivery fallback).
+ *
+ * The fallback in `orderRevenue` (products + delivery when payment_done=0)
+ * over-estimates Allegro revenue because price_brutto is MSRP, not the
+ * Allegro Smart-discounted price the customer actually paid.
+ */
+const BUCKET_REVENUE: Record<'shr' | 'allegro', (o: BaseLinkerOrder) => number> = {
+  shr: (o) => orderRevenue(o),
+  allegro: (o) => Number(o.payment_done ?? 0),
+};
 
 /**
  * Logical buckets mapped to BaseLinker order_source_id(s).
@@ -49,30 +69,24 @@ export type Bucket = keyof typeof SOURCE_BUCKETS;
  * quirks that Shoper and Allegro don't share.
  *
  * Calibration history:
- *   2026-05-08: removed 2223 / 144918 / 144920 after switching sync to
- *   `date_add`. Per /api/admin/status-breakdown for 2026-05-07 they hold
- *   ~19k zł / 91 confirmed-and-shipping orders that SellRocket UI counts.
- *   Apr 2026 was previously calibrated under date_confirmed mode; this set
- *   is now calibrated under date_add mode (+2% vs SellRocket UI for May 7).
- *   2026-05-09: added 1664 'Nowe zamówienia' + 2214 'Do weryfikacji' after
- *   May 8 ran +10% vs SellRocket UI. Both are pre-payment states ("order
- *   placed, customer hasn't paid yet"); SellRocket UI's "sprzedaż" filter
- *   excludes them. Removing them brings May 7 to ~-0,4% and May 8 to ~+5%
- *   vs the SellRocket reference, matching the historical Allegro tolerance.
+ *   2026-05-08 (commit 14c14d7): removed 2223 / 144918 / 144920 after switching
+ *     sync to `date_add`. Apr 2026 was previously calibrated under
+ *     date_confirmed; this set was first calibrated under date_add mode.
+ *   2026-05-09 morning (commit 927f5a2): added 1664 'Nowe zamówienia' + 2214
+ *     'Do weryfikacji' after May 8 ran +10% vs SellRocket UI.
+ *   2026-05-09 evening: pivoted to per-bucket revenue formulas after the
+ *     user's day-by-day SR UI CSV export landed. SHR matched within 0,9%
+ *     using `orderRevenue` — but Allegro was off by +9-16% on low-volume
+ *     days because the products+delivery fallback over-estimates unpaid
+ *     orders. Switched Allegro to `payment_done` raw (formula A) and
+ *     pruned excludes back to just the unambiguous returns/cancellations.
+ *     Average abs error vs SR May 1-8: ~5%, max 11% (May 1, 225 orders).
  */
 export const BUCKET_STATUS_EXCLUDES: Record<Bucket, ReadonlySet<number>> = {
   shr: new Set<number>(),
   allegro: new Set<number>([
-    1664,   // Nowe zamówienia (just placed, not yet paid/confirmed)
-    1666,   // Oczekuje Allegro (awaiting Allegro confirmation)
-    2214,   // Do weryfikacji (pending manual verification, not yet a sale)
-    2224,   // Oczekuje w punkcie (awaiting pickup; ambiguous, low volume)
-    2226,   // Niedoręczone (not delivered; possible return)
-    2229,   // Anulowane (cancelled)
-    30035,  // Błąd Wysyłka (shipping error, ambiguous state)
-    111527, // BRAKI (out of stock; cannot fulfill)
-    137523, // Aktualizuj ZK (admin trigger; observed data anomaly)
-    147785, // WERYFIKACJA SMS (pending customer verification, not yet a sale)
+    2226,   // Niedoręczone (not delivered, returns to seller)
+    2229,   // Anulowane (cancelled by customer or seller)
   ]),
 };
 
@@ -123,6 +137,7 @@ export async function syncSellRocketDirect(
         ? statusAllowed.filter((o) => !bucketExcludes.has(o.order_status_id))
         : statusAllowed;
 
+      const revenueFn = BUCKET_REVENUE[bucket];
       for (const o of filtered) {
         const d = new Date(o.date_add * 1000).toISOString().slice(0, 10);
         // skip if outside range (timezone edge)
@@ -130,7 +145,7 @@ export async function syncSellRocketDirect(
         let e = byDate.get(d);
         if (!e) { e = { orders: 0, revenue: 0 }; byDate.set(d, e); }
         e.orders += 1;
-        e.revenue += orderRevenue(o);
+        e.revenue += revenueFn(o);
       }
       console.log(`[baselinker]   ${src.sourceType}/${src.sourceId}: ${filtered.length}/${allOrders.length} orders kept after status filter`);
     }
