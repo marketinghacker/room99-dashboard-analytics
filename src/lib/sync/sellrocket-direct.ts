@@ -54,18 +54,25 @@ export type Bucket = keyof typeof SOURCE_BUCKETS;
  *   ~19k zł / 91 confirmed-and-shipping orders that SellRocket UI counts.
  *   Apr 2026 was previously calibrated under date_confirmed mode; this set
  *   is now calibrated under date_add mode (+2% vs SellRocket UI for May 7).
+ *   2026-05-09: added 1664 'Nowe zamówienia' + 2214 'Do weryfikacji' after
+ *   May 8 ran +10% vs SellRocket UI. Both are pre-payment states ("order
+ *   placed, customer hasn't paid yet"); SellRocket UI's "sprzedaż" filter
+ *   excludes them. Removing them brings May 7 to ~-0,4% and May 8 to ~+5%
+ *   vs the SellRocket reference, matching the historical Allegro tolerance.
  */
 export const BUCKET_STATUS_EXCLUDES: Record<Bucket, ReadonlySet<number>> = {
   shr: new Set<number>(),
   allegro: new Set<number>([
+    1664,   // Nowe zamówienia (just placed, not yet paid/confirmed)
+    1666,   // Oczekuje Allegro (awaiting Allegro confirmation)
+    2214,   // Do weryfikacji (pending manual verification, not yet a sale)
     2224,   // Oczekuje w punkcie (awaiting pickup; ambiguous, low volume)
     2226,   // Niedoręczone (not delivered; possible return)
     2229,   // Anulowane (cancelled)
-    137523, // Aktualizuj ZK (admin trigger; observed data anomaly)
-    147785, // WERYFIKACJA SMS (pending customer verification, not yet a sale)
-    1666,   // Oczekuje Allegro (awaiting Allegro confirmation)
     30035,  // Błąd Wysyłka (shipping error, ambiguous state)
     111527, // BRAKI (out of stock; cannot fulfill)
+    137523, // Aktualizuj ZK (admin trigger; observed data anomaly)
+    147785, // WERYFIKACJA SMS (pending customer verification, not yet a sale)
   ]),
 };
 
