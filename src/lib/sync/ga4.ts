@@ -12,6 +12,10 @@ import { type DateRange } from '@/lib/periods';
 
 const MCP_URL = process.env.MCP_GA4_URL || 'https://mcp-analytics.up.railway.app/mcp';
 const PROPERTY_ID = process.env.GA4_PROPERTY_ID || '315856757';
+// MCP-Analytics now holds OAuth tokens for multiple users (magda, marcin,
+// marcin.michalski32) and refuses to fall back to a single active user.
+// Pass the explicit user_id whose token has property access to 315856757.
+const USER_ID = process.env.MCP_GA4_USER_ID || 'marcin@marketing-hackers.com';
 
 type GA4ReportRow = {
   dimensionValues?: Array<{ value?: string }>;
@@ -70,6 +74,7 @@ export async function syncGA4(
       client,
       'run_report',
       {
+        user_id: USER_ID,
         property_id: PROPERTY_ID,
         start_date: range.start,
         end_date: range.end,

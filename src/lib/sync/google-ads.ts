@@ -96,7 +96,9 @@ export async function syncGoogleAds(
   opts: { db?: DB; chunkDays?: number } = {}
 ): Promise<{ rowsWritten: number }> {
   const database = opts.db ?? defaultDb;
-  const chunkDays = opts.chunkDays ?? 7; // avoid 200k char truncation per chunk
+  // Legacy MCP hard-caps responses at 200 000 chars. Room99 has enough campaigns
+  // that even 2-day chunks can exceed the limit. 1 day ≈ 28 KB — safely within bounds.
+  const chunkDays = opts.chunkDays ?? 1;
 
   console.log(`[google-ads] customer_id=${CUSTOMER_ID}, range=${range.start}..${range.end}`);
   const client = await connectMCP(MCP_URL, 'http');
@@ -120,6 +122,7 @@ export async function syncGoogleAds(
           metrics.conversions_value
         FROM campaign
         WHERE segments.date BETWEEN '${chunk.start}' AND '${chunk.end}'
+          AND campaign.status != REMOVED
       `.trim();
 
       const resp = await callMCPTool<GAQLRow[] | { results?: GAQLRow[]; rows?: GAQLRow[] }>(
