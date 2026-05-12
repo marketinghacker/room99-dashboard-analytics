@@ -122,9 +122,15 @@ export async function GET(req: Request) {
   const last7 = { start: toIsoDate(-7), end: toIsoDate(0) };   // 8 days incl. today
   const last30 = { start: toIsoDate(-29), end: toIsoDate(0) }; // 30 days incl. today
 
-  // SellRocket + products are the BaseLinker-heavy syncs — only pull the
-  // tightest window needed. Historical repair goes through /api/admin/backfill.
-  const tightRange = { start: toIsoDate(-2), end: toIsoDate(0) };
+  // SellRocket + products are the BaseLinker-heavy syncs. Allegro orders
+  // confirm late (often +12-48h after purchase — buyer pays later, status
+  // moves through 'new' → 'paid' → 'confirmed'), so a 3-day window left
+  // recent days frozen with under-reported numbers (e.g. May 1 holiday stuck
+  // at 17 Allegro orders forever — actual was much higher once late confirms
+  // came in). 7-day window catches up late confirmations on every cron run.
+  // Cost: ~7× more BaseLinker pages per sync; still <30s/run measured.
+  // Historical repair >7d ago: use /api/admin/backfill or new /api/admin/refresh.
+  const tightRange = { start: toIsoDate(-6), end: toIsoDate(0) };
 
   const results = await Promise.all([
     runWithTracking('meta', () => syncMetaGraph(last30)),

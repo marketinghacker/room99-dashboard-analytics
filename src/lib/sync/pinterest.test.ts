@@ -1,27 +1,32 @@
 import { describe, it, expect } from 'vitest';
-import { buildAdsDailyRows } from './pinterest';
+import { buildAdsDailyRows, type Campaign } from './pinterest';
 
 describe('buildAdsDailyRows (pinterest)', () => {
   it('maps a single row with all metrics, divides micros by 1M', () => {
+    const campaigns = new Map<string, Campaign>([
+      ['626755196414', {
+        id: '626755196414',
+        name: 'Performance+ - Konwersje - Zasłony tarasowe',
+        status: 'ACTIVE',
+        objective_type: 'WEB_CONVERSION',
+      }],
+    ]);
     const rows = buildAdsDailyRows(
       [
         {
           DATE: '2026-05-05',
           CAMPAIGN_ID: '626755196414',
-          CAMPAIGN_NAME: 'Performance+ - Konwersje - Zasłony tarasowe',
-          CAMPAIGN_ENTITY_STATUS: 'ACTIVE',
-          CAMPAIGN_OBJECTIVE_TYPE: 'WEB_CONVERSION',
           SPEND_IN_MICRO_DOLLAR: 754_643_355,        // 754.64 PLN
           IMPRESSION_1: 12_062,
           CLICKTHROUGH_1: 356,
           CTR: 0.0295,                                // ignored — recomputed
-          CPC_IN_MICRO_DOLLAR: 2_119_217,             // 2.12 PLN
-          CPM_IN_MICRO_DOLLAR: 62_563_510,            // 62.56 PLN
-          TOTAL_CONVERSIONS: 247,
+          CPC_IN_MICRO_DOLLAR: 2_119_217,
+          CPM_IN_MICRO_DOLLAR: 62_563_510,
+          TOTAL_CHECKOUT: 12,
           TOTAL_CHECKOUT_VALUE_IN_MICRO_DOLLAR: 97_600_000, // 97.60 PLN
         },
       ],
-      new Map(),
+      campaigns,
     );
 
     expect(rows).toHaveLength(1);
@@ -32,10 +37,12 @@ describe('buildAdsDailyRows (pinterest)', () => {
     expect(r.campaignName).toBe('Performance+ - Konwersje - Zasłony tarasowe');
     expect(r.campaignStatus).toBe('ACTIVE');
     expect(r.campaignObjective).toBe('WEB_CONVERSION');
-    expect(Number(r.spend)).toBeCloseTo(754.643355, 4);
+    expect(Number(r.spend)).toBeCloseTo(754.6434, 4);
     expect(r.impressions).toBe(12_062);
     expect(r.clicks).toBe(356);
-    expect(Number(r.conversions)).toBe(247);
+    // conversions = TOTAL_CHECKOUT (real purchases), not TOTAL_CONVERSIONS
+    // (which is noisier all-events sum incl. page_visit/add_to_cart).
+    expect(Number(r.conversions)).toBe(12);
     expect(Number(r.conversionValue)).toBeCloseTo(97.6, 4);
   });
 
@@ -68,7 +75,7 @@ describe('buildAdsDailyRows (pinterest)', () => {
           SPEND_IN_MICRO_DOLLAR: 100_000_000, // 100 PLN
           IMPRESSION_1: 5_000,
           CLICKTHROUGH_1: 50,
-          TOTAL_CONVERSIONS: 10,
+          TOTAL_CHECKOUT: 6,
           TOTAL_CHECKOUT_VALUE_IN_MICRO_DOLLAR: 50_000_000, // 50 PLN
         },
         {
@@ -77,7 +84,7 @@ describe('buildAdsDailyRows (pinterest)', () => {
           SPEND_IN_MICRO_DOLLAR: 200_000_000, // 200 PLN
           IMPRESSION_1: 5_000,
           CLICKTHROUGH_1: 50,
-          TOTAL_CONVERSIONS: 5,
+          TOTAL_CHECKOUT: 3,
           TOTAL_CHECKOUT_VALUE_IN_MICRO_DOLLAR: 30_000_000, // 30 PLN
         },
       ],
@@ -88,12 +95,31 @@ describe('buildAdsDailyRows (pinterest)', () => {
     expect(Number(r.spend)).toBeCloseTo(300, 4);
     expect(r.impressions).toBe(10_000);
     expect(r.clicks).toBe(100);
-    expect(Number(r.conversions)).toBe(15);
+    expect(Number(r.conversions)).toBe(9);
     expect(Number(r.conversionValue)).toBeCloseTo(80, 4);
   });
 
-  it('falls back to listed campaign metadata when analytics row omits names/status', () => {
-    const campaigns = new Map([
+  it('falls back to campaignId for name when listing has no metadata', () => {
+    const rows = buildAdsDailyRows(
+      [
+        {
+          DATE: '2026-05-05',
+          CAMPAIGN_ID: 'c1',
+          SPEND_IN_MICRO_DOLLAR: 1_000_000,
+          IMPRESSION_1: 100,
+          CLICKTHROUGH_1: 1,
+        },
+      ],
+      new Map(),
+    );
+    const r = rows[0];
+    expect(r.campaignName).toBe('c1');
+    expect(r.campaignStatus).toBeNull();
+    expect(r.campaignObjective).toBeNull();
+  });
+
+  it('uses listed campaign metadata when present', () => {
+    const campaigns = new Map<string, Campaign>([
       ['c1', { id: 'c1', name: 'From listing', status: 'PAUSED', objective_type: 'WEB_CONVERSION' }],
     ]);
     const rows = buildAdsDailyRows(
@@ -117,8 +143,8 @@ describe('buildAdsDailyRows (pinterest)', () => {
   it('skips rows without DATE or CAMPAIGN_ID', () => {
     const rows = buildAdsDailyRows(
       [
-        { DATE: '', CAMPAIGN_ID: 'c1', SPEND_IN_MICRO_DOLLAR: 1 } as any,
-        { DATE: '2026-05-05', CAMPAIGN_ID: '' as unknown as string, SPEND_IN_MICRO_DOLLAR: 1 } as any,
+        { DATE: '', CAMPAIGN_ID: 'c1', SPEND_IN_MICRO_DOLLAR: 1 },
+        { DATE: '2026-05-05', CAMPAIGN_ID: undefined as unknown as string, SPEND_IN_MICRO_DOLLAR: 1 },
         { DATE: '2026-05-05', CAMPAIGN_ID: 'c1', SPEND_IN_MICRO_DOLLAR: 1_000_000, IMPRESSION_1: 1, CLICKTHROUGH_1: 1 },
       ],
       new Map(),

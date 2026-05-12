@@ -103,33 +103,51 @@ export class BaseLinkerAPI {
   }
 
   /**
-   * Fetch all confirmed orders in [fromTs, toTs] filtered to a specific
-   * order_source_id. Handles 100-per-page pagination via `id_from`.
+   * Fetch all orders in [fromTs, toTs] filtered to a specific order_source_id.
+   * Handles 100-per-page pagination via `id_from`.
    *
-   * BaseLinker ties `date_confirmed_from` to pagination, so for a clean
-   * day-range we iterate by ID until confirmed timestamp crosses `toTs`.
+   * `dateField` controls which timestamp the filter uses:
+   *   - 'add'        → `date_add` (when customer placed the order). Matches
+   *                    SellRocket UI / Allegro panel which attribute by order
+   *                    placement. Includes unconfirmed orders by default
+   *                    (otherwise we'd miss in-flight Allegro orders).
+   *   - 'confirmed'  → `date_confirmed` (when Allegro/Shoper confirmed the
+   *                    order). Lags 12-48h behind `date_add` for Allegro.
+   *                    Kept for legacy/backfill needs; not used by current sync.
+   *
+   * BaseLinker pagination: ties `id_from` to ASC order_id traversal. We iterate
+   * by ID and post-filter by the chosen date field until we cross `toTs`.
    */
   async getOrdersRange(opts: {
     fromTs: number;
     toTs: number;
     sourceId?: number;
     sourceType?: string;
+    dateField?: 'add' | 'confirmed';
     getUnconfirmed?: boolean;
   }): Promise<BaseLinkerOrder[]> {
+    const dateField = opts.dateField ?? 'add';
+    // When filtering by date_add we MUST include unconfirmed orders, otherwise
+    // BaseLinker silently drops them (default behaviour) and our "today" Allegro
+    // bucket loses every order still in 'Nowe'/'Oczekuje Allegro' status.
+    const includeUnconfirmed = dateField === 'add' ? true : (opts.getUnconfirmed ?? false);
+    const apiDateParam = dateField === 'add' ? 'date_from' : 'date_confirmed_from';
+    const pickDate = (o: BaseLinkerOrder): number =>
+      dateField === 'add' ? o.date_add : o.date_confirmed;
+
     const orders: BaseLinkerOrder[] = [];
     let idFrom = 0;
-    const dateConfirmedFrom = opts.fromTs;
     let iterations = 0;
     let batchesWithNoMatchInRange = 0;
-    // Hard cutoff: if we see a batch whose MINIMUM date_confirmed is already
+    // Hard cutoff: if we see a batch whose MINIMUM chosen-date is already
     // 30 days past our end, stop paginating. Prevents 20-minute walks through
     // a year of order_ids when backfilling historical YoY ranges.
     const HARD_CUTOFF_SECONDS = 30 * 24 * 60 * 60;
 
     while (iterations++ < 5000) {
       const params: Record<string, unknown> = {
-        date_confirmed_from: dateConfirmedFrom,
-        get_unconfirmed_orders: opts.getUnconfirmed ? true : false,
+        [apiDateParam]: opts.fromTs,
+        get_unconfirmed_orders: includeUnconfirmed,
       };
       if (idFrom > 0) params.id_from = idFrom;
       // BaseLinker REQUIRES filter_order_source (string category) to be set
@@ -141,21 +159,25 @@ export class BaseLinkerAPI {
       const batch = res.orders ?? [];
       if (batch.length === 0) break;
 
-      // BaseLinker returns batches sorted by order_id ASC, but `date_confirmed`
-      // can be in any order within the batch (orders confirmed retroactively).
-      // We must NOT early-return on a single out-of-range row — keep collecting.
+      // BaseLinker returns batches sorted by order_id ASC, but the chosen date
+      // field can be in any order within the batch (e.g. orders confirmed
+      // retroactively). We must NOT early-return on a single out-of-range row.
       let matchedThisBatch = 0;
       let allBeforeRange = true;
       let allAfterRange = true;
       let minDateInBatch = Number.POSITIVE_INFINITY;
       for (const o of batch) {
-        if (o.date_confirmed >= opts.fromTs && o.date_confirmed <= opts.toTs) {
+        const d = pickDate(o);
+        // Skip orders with no date set (date_confirmed=0 for unconfirmed when
+        // we accidentally request them via 'confirmed' mode).
+        if (d <= 0) continue;
+        if (d >= opts.fromTs && d <= opts.toTs) {
           orders.push(o);
           matchedThisBatch++;
         }
-        if (o.date_confirmed >= opts.fromTs) allBeforeRange = false;
-        if (o.date_confirmed <= opts.toTs) allAfterRange = false;
-        if (o.date_confirmed < minDateInBatch) minDateInBatch = o.date_confirmed;
+        if (d >= opts.fromTs) allBeforeRange = false;
+        if (d <= opts.toTs) allAfterRange = false;
+        if (d < minDateInBatch) minDateInBatch = d;
       }
 
       // Hard cutoff: every order in this batch is already well past our
@@ -194,10 +216,11 @@ export class BaseLinkerAPI {
 
     const results: Array<{ date: string; sourceId: number; orders: number; revenue: number }> = [];
     for (const { sourceType, sourceId } of opts.sources) {
+      // Default 'add' so daily aggregates match SellRocket UI / Allegro panel.
       const all = await this.getOrdersRange({ fromTs, toTs, sourceType, sourceId });
       const byDate = new Map<string, { orders: number; revenue: number }>();
       for (const o of all) {
-        const d = new Date(o.date_confirmed * 1000).toISOString().slice(0, 10);
+        const d = new Date(o.date_add * 1000).toISOString().slice(0, 10);
         const revenue = orderRevenue(o);
         let e = byDate.get(d);
         if (!e) { e = { orders: 0, revenue: 0 }; byDate.set(d, e); }

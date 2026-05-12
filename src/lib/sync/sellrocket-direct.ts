@@ -13,8 +13,28 @@
 import { sql, eq } from 'drizzle-orm';
 import { db as defaultDb, type DB } from '@/lib/db';
 import { sellrocketDaily, orderStatusConfig } from '@/lib/schema';
-import { BaseLinkerAPI, orderRevenue } from './baselinker-api';
+import { BaseLinkerAPI, orderRevenue, type BaseLinkerOrder } from './baselinker-api';
 import { type DateRange } from '@/lib/periods';
+
+/**
+ * Per-bucket revenue formula. Empirically tuned against the SellRocket UI
+ * day-by-day export (statistics20260509.csv) on 2026-05-09:
+ *
+ *   SHR:     `orderRevenue(o)` matches SellRocket's "Total" within 0,9%
+ *            (May 7-8 ref: 89 607 / 69 227 vs ours 88 832 / 69 853).
+ *   Allegro: SellRocket UI uses `payment_done` raw — what the customer
+ *            actually paid through Allegro, including 0 for unpaid orders.
+ *            Average abs error vs SR May 1-8: 5,4% (formula A) vs 7%
+ *            (orderRevenue with products+delivery fallback).
+ *
+ * The fallback in `orderRevenue` (products + delivery when payment_done=0)
+ * over-estimates Allegro revenue because price_brutto is MSRP, not the
+ * Allegro Smart-discounted price the customer actually paid.
+ */
+const BUCKET_REVENUE: Record<'shr' | 'allegro', (o: BaseLinkerOrder) => number> = {
+  shr: (o) => orderRevenue(o),
+  allegro: (o) => Number(o.payment_done ?? 0),
+};
 
 /**
  * Logical buckets mapped to BaseLinker order_source_id(s).
@@ -33,32 +53,40 @@ export type Bucket = keyof typeof SOURCE_BUCKETS;
 /**
  * Bucket-specific order status excludes — applied IN ADDITION to the global
  * order_status_config allow-list. Empirically derived from matching the
- * SellRocket UI convention:
+ * SellRocket UI convention against per-status revenue breakdown
+ * (/api/admin/status-breakdown).
  *
- *   - Allegro: exclude in-transit / awaiting / cancelled / intermediate WMS
- *     statuses. Matching Apr 2026 ref number (916,031 zł) required dropping
- *     these 11 statuses; keeping them pushed us 7% over.
+ *   - Allegro: exclude statuses where the order is NOT a confirmed sale
+ *     (cancelled, returned, awaiting customer payment/verification, ambiguous
+ *     admin states). Confirmed-sale states like 'W drodze' (in transit, customer
+ *     paid, package shipped) and intermediate WMS steps (Zaalokowane,
+ *     Skompletowane) ARE included — SellRocket UI counts them as sales.
  *   - SHR: no bucket-specific excludes (Shoper flow reports all paid orders
  *     regardless of delivery state).
  *
  * If a status belongs on the global invalid list (returns, refunds), configure
  * it via /admin/statuses — this set is for source-specific workflow status
  * quirks that Shoper and Allegro don't share.
+ *
+ * Calibration history:
+ *   2026-05-08 (commit 14c14d7): removed 2223 / 144918 / 144920 after switching
+ *     sync to `date_add`. Apr 2026 was previously calibrated under
+ *     date_confirmed; this set was first calibrated under date_add mode.
+ *   2026-05-09 morning (commit 927f5a2): added 1664 'Nowe zamówienia' + 2214
+ *     'Do weryfikacji' after May 8 ran +10% vs SellRocket UI.
+ *   2026-05-09 evening: pivoted to per-bucket revenue formulas after the
+ *     user's day-by-day SR UI CSV export landed. SHR matched within 0,9%
+ *     using `orderRevenue` — but Allegro was off by +9-16% on low-volume
+ *     days because the products+delivery fallback over-estimates unpaid
+ *     orders. Switched Allegro to `payment_done` raw (formula A) and
+ *     pruned excludes back to just the unambiguous returns/cancellations.
+ *     Average abs error vs SR May 1-8: ~5%, max 11% (May 1, 225 orders).
  */
 export const BUCKET_STATUS_EXCLUDES: Record<Bucket, ReadonlySet<number>> = {
   shr: new Set<number>(),
   allegro: new Set<number>([
-    2223,   // W drodze (in transit — not yet counted as sale by SellRocket UI)
-    2224,   // Oczekuje w punkcie (awaiting pickup)
-    2226,   // Niedoręczone (not delivered)
-    2229,   // Anulowane (cancelled)
-    137523, // Aktualizuj ZK (triggers; observed data anomaly)
-    147785, // WERYFIKACJA SMS (pending verification)
-    1666,   // Oczekuje Allegro (awaiting Allegro)
-    30035,  // Błąd Wysyłka (shipping error)
-    144920, // WMS Skompletowane (intermediate warehouse step)
-    144918, // WMS Zaalokowane (intermediate warehouse step)
-    111527, // BRAKI (shortage)
+    2226,   // Niedoręczone (not delivered, returns to seller)
+    2229,   // Anulowane (cancelled by customer or seller)
   ]),
 };
 
@@ -91,12 +119,16 @@ export async function syncSellRocketDirect(
     console.log(`[baselinker] bucket=${bucket} sources=${JSON.stringify(sources)} range=${range.start}..${range.end} bucketExcludes=${bucketExcludes.size}`);
 
     // Sum across source ids within the bucket.
+    // Date attribution = `date_add` (order placement), matching SellRocket UI.
+    // Includes unconfirmed orders so today's Allegro number doesn't lag the
+    // 12-48h Allegro confirmation window.
     const byDate = new Map<string, { orders: number; revenue: number }>();
     for (const src of sources) {
       const fromTs = Math.floor(new Date(range.start + 'T00:00:00Z').getTime() / 1000);
       const toTs = Math.floor(new Date(range.end + 'T23:59:59Z').getTime() / 1000);
       const allOrders = await api.getOrdersRange({
         fromTs, toTs, sourceType: src.sourceType, sourceId: src.sourceId,
+        dateField: 'add',
       });
       const statusAllowed = validSet.size > 0
         ? allOrders.filter((o) => validSet.has(o.order_status_id))
@@ -105,14 +137,15 @@ export async function syncSellRocketDirect(
         ? statusAllowed.filter((o) => !bucketExcludes.has(o.order_status_id))
         : statusAllowed;
 
+      const revenueFn = BUCKET_REVENUE[bucket];
       for (const o of filtered) {
-        const d = new Date(o.date_confirmed * 1000).toISOString().slice(0, 10);
+        const d = new Date(o.date_add * 1000).toISOString().slice(0, 10);
         // skip if outside range (timezone edge)
         if (d < range.start || d > range.end) continue;
         let e = byDate.get(d);
         if (!e) { e = { orders: 0, revenue: 0 }; byDate.set(d, e); }
         e.orders += 1;
-        e.revenue += orderRevenue(o);
+        e.revenue += revenueFn(o);
       }
       console.log(`[baselinker]   ${src.sourceType}/${src.sourceId}: ${filtered.length}/${allOrders.length} orders kept after status filter`);
     }
