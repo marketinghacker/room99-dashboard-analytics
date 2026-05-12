@@ -22,30 +22,6 @@ export async function startTestDB(): Promise<{
   const db = drizzle(pool, { schema });
 
   // Apply raw SQL migrations (same path as prod bootstrap).
-  // We must create ad_performance_daily here because it's Windsor-managed in prod
-  // but the test container has no such external writer.
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS "ad_performance_daily" (
-      "account_name" text,
-      "ad_group" text,
-      "campaign" text,
-      "campaign_objective" text,
-      "campaign_status" text,
-      "clicks" double precision,
-      "conversions" text,
-      "conversion_value" text,
-      "cpc" double precision,
-      "cpm" double precision,
-      "ctr" text,
-      "datasource" text,
-      "date" date,
-      "impressions" double precision,
-      "roas" text,
-      "source" text,
-      "spend" double precision
-    );
-  `);
-
   const files = readdirSync('./drizzle').filter(f => f.endsWith('.sql')).sort();
   for (const file of files) {
     const sql = readFileSync(join('./drizzle', file), 'utf-8');

@@ -1,5 +1,5 @@
 import {
-  pgTable, text, date, integer, numeric, timestamp, jsonb, uuid, index, primaryKey, doublePrecision, boolean,
+  pgTable, text, date, integer, numeric, timestamp, jsonb, uuid, index, primaryKey, boolean,
 } from 'drizzle-orm/pg-core';
 
 export const adsDaily = pgTable(
@@ -55,28 +55,6 @@ export const ga4Daily = pgTable(
     dateIdx: index('ga4_daily_date_idx').on(t.date),
   })
 );
-
-// Windsor writes here. We do NOT alter — define schema to match actual DB types.
-// Numeric-looking TEXT columns (conversions, conversion_value, ctr, roas) are Windsor quirks.
-export const adPerformanceDaily = pgTable('ad_performance_daily', {
-  accountName: text('account_name'),
-  adGroup: text('ad_group'),
-  campaign: text('campaign'),
-  campaignObjective: text('campaign_objective'),
-  campaignStatus: text('campaign_status'),
-  clicks: doublePrecision('clicks'),
-  conversions: text('conversions'),
-  conversionValue: text('conversion_value'),
-  cpc: doublePrecision('cpc'),
-  cpm: doublePrecision('cpm'),
-  ctr: text('ctr'),
-  datasource: text('datasource'),
-  date: date('date'),
-  impressions: doublePrecision('impressions'),
-  roas: text('roas'),
-  source: text('source'),
-  spend: doublePrecision('spend'),
-});
 
 export const dashboardCache = pgTable(
   'dashboard_cache',

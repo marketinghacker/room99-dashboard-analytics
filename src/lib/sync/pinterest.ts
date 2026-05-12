@@ -1,18 +1,27 @@
 /**
- * Pinterest sync: live per-campaign daily metrics via the MCP-Pinterest server.
+ * Pinterest Ads sync: daily per-campaign metrics via Pinterest API v5 (MCP).
  *
- * MCP server: https://mh-connector.up.railway.app/mcp  (streamable HTTP, gated by
- *             Bearer token = INTERNAL_API_SECRET set on the MCP server itself).
- * Tools: list_campaigns + get_campaigns_analytics
+ * MCP server: https://mh-connector.up.railway.app/mcp  (streamable HTTP,
+ *             gated by Bearer token = INTERNAL_API_SECRET set on the server).
+ * Tools: list_campaigns + get_campaigns_analytics (granularity=DAY)
  * Ad account: 549764456968 (Room99 sp. z o.o., currency PLN)
  *
  * The MCP server stores the OAuth user token (encrypted) and refreshes it
- * automatically — we never see Pinterest's raw access token here. Spend is
- * reported in `*_IN_MICRO_DOLLAR` columns; despite the name the unit follows
- * the ad account's currency (PLN for Room99).
+ * automatically — we never see Pinterest's raw access token here. MCP-Pinterest
+ * has no persistent "active user/account" state, so every call must pass
+ * `user_id` and `ad_account_id` explicitly.
  *
- * Replaces the legacy Windsor.ai reader (preserved in pinterest-windsor.ts)
- * which lagged 24-48h and dropped fields.
+ * Pinterest API quirks:
+ *   - Money columns end in `_IN_MICRO_DOLLAR` — despite the name, the unit
+ *     follows the ad account's currency (PLN for Room99). Divide by 1_000_000.
+ *   - `TOTAL_CONVERSIONS_VALUE` doesn't exist — only per-event values
+ *     (TOTAL_CHECKOUT_VALUE, TOTAL_SIGNUP_VALUE, …). We map purchase value
+ *     from `TOTAL_CHECKOUT_VALUE_IN_MICRO_DOLLAR` and purchase count from
+ *     `TOTAL_CHECKOUT`. This keeps `conversions` / `conversion_value` in
+ *     `ads_daily` parallel with Meta and Google (purchases only, not the
+ *     noisier all-events sum).
+ *   - `get_campaigns_analytics` accepts at most 100 campaign_ids per call.
+ *   - `list_campaigns` paginates via `bookmark` cursor (page_size ≤ 100).
  */
 import { db as defaultDb, type DB } from '@/lib/db';
 import { callMCPTool, connectMCP } from './mcp-client';
@@ -25,122 +34,145 @@ const MCP_TOKEN =
   process.env.MCP_PINTEREST_INTERNAL_SECRET ||
   process.env.PINTEREST_INTERNAL_SECRET ||
   '';
-// MCP-Pinterest dropped persistent 'active user' state (multi-tenant safety),
-// so every call must pass user_id explicitly.
 const USER_ID = process.env.MCP_PINTEREST_USER_ID || 'marcin@marketing-hackers.com';
 const AD_ACCOUNT_ID = process.env.PINTEREST_AD_ACCOUNT_ID || '549764456968';
 
-/** Pinterest reports money in 1/1_000_000 of the account currency. */
+/** Pinterest reports money in 1/1_000_000 of the account currency (PLN micros). */
 const MICRO = 1_000_000;
 
-type CampaignsList = {
-  items?: Array<{ id: string; name: string; status?: string; objective_type?: string }>;
-  campaigns?: Array<{ id: string; name: string; status?: string; objective_type?: string }>;
+const ANALYTICS_COLUMNS = [
+  'SPEND_IN_MICRO_DOLLAR',
+  'IMPRESSION_1',
+  'CLICKTHROUGH_1',
+  'CTR',
+  'CPC_IN_MICRO_DOLLAR',
+  'CPM_IN_MICRO_DOLLAR',
+  'TOTAL_CHECKOUT',
+  'TOTAL_CHECKOUT_VALUE_IN_MICRO_DOLLAR',
+] as const;
+
+const CAMPAIGN_BATCH_SIZE = 100;
+const LIST_PAGE_SIZE = 100;
+const LIST_STATUSES = ['ACTIVE', 'PAUSED'];
+
+export type Campaign = {
+  id: string;
+  name?: string;
+  status?: string;
+  objective_type?: string;
 };
 
-type AnalyticsRow = {
+export type AnalyticsRow = {
+  DATE?: string;
   CAMPAIGN_ID?: string | number;
   AD_ACCOUNT_ID?: string;
-  DATE?: string;
   SPEND_IN_MICRO_DOLLAR?: number;
   IMPRESSION_1?: number;
   CLICKTHROUGH_1?: number;
   CTR?: number;
   CPC_IN_MICRO_DOLLAR?: number;
+  CPM_IN_MICRO_DOLLAR?: number;
   TOTAL_CHECKOUT?: number;
   TOTAL_CHECKOUT_VALUE_IN_MICRO_DOLLAR?: number;
 };
 
+type CampaignsList = {
+  items?: Campaign[];
+  campaigns?: Campaign[];
+  bookmark?: string | null;
+};
+
 type AnalyticsResp =
   | AnalyticsRow[]
-  | { analytics?: AnalyticsRow[]; data?: AnalyticsRow[]; rows?: AnalyticsRow[] };
+  | { analytics?: AnalyticsRow[] | { items?: AnalyticsRow[] }; data?: AnalyticsRow[]; rows?: AnalyticsRow[] };
 
-export async function syncPinterest(
-  range: DateRange,
-  opts: { db?: DB } = {}
-): Promise<{ rowsWritten: number }> {
-  const database = opts.db ?? defaultDb;
-  if (!MCP_TOKEN) throw new Error('MCP_PINTEREST_TOKEN missing — add to Railway Variables');
+type Client = Awaited<ReturnType<typeof connectMCP>>;
 
-  const client = await connectMCP(MCP_URL, 'http', { token: MCP_TOKEN });
-  try {
-    // 1) Find all campaigns we should pull analytics for. Include both ACTIVE
-    //    and PAUSED — paused campaigns may still have spend on the requested
-    //    range (e.g. paused yesterday, ran on May 4).
-    const campaigns = await callMCPTool<CampaignsList>(
+async function listAllCampaigns(client: Client): Promise<Campaign[]> {
+  const all: Campaign[] = [];
+  let bookmark: string | null | undefined;
+  do {
+    const resp = await callMCPTool<CampaignsList>(
       client,
       'list_campaigns',
       {
         user_id: USER_ID,
         ad_account_id: AD_ACCOUNT_ID,
-        entity_statuses: ['ACTIVE', 'PAUSED'],
-        page_size: 100,
+        entity_statuses: LIST_STATUSES,
+        page_size: LIST_PAGE_SIZE,
+        ...(bookmark ? { bookmark } : {}),
       },
       { retries: 3, initialBackoffMs: 1000 },
     );
-    const list = campaigns.items ?? campaigns.campaigns ?? [];
-    if (list.length === 0) {
-      console.log('[pinterest] no campaigns found, skipping');
-      return { rowsWritten: 0 };
-    }
+    const batch = resp.items ?? resp.campaigns ?? [];
+    all.push(...batch);
+    bookmark = resp.bookmark ?? null;
+  } while (bookmark);
+  return all;
+}
 
-    const idToMeta = new Map(list.map((c) => [String(c.id), c]));
-    const campaignIds = [...idToMeta.keys()];
+async function fetchCampaignAnalytics(
+  client: Client,
+  campaignIds: string[],
+  range: DateRange,
+): Promise<AnalyticsRow[]> {
+  const out: AnalyticsRow[] = [];
+  for (let i = 0; i < campaignIds.length; i += CAMPAIGN_BATCH_SIZE) {
+    const batch = campaignIds.slice(i, i + CAMPAIGN_BATCH_SIZE);
+    const resp = await callMCPTool<AnalyticsResp>(
+      client,
+      'get_campaigns_analytics',
+      {
+        user_id: USER_ID,
+        ad_account_id: AD_ACCOUNT_ID,
+        campaign_ids: batch,
+        start_date: range.start,
+        end_date: range.end,
+        granularity: 'DAY',
+        columns: [...ANALYTICS_COLUMNS],
+      },
+      { retries: 3, initialBackoffMs: 1000, timeoutMs: 120_000 },
+    );
+    const inner = Array.isArray(resp) ? resp : resp.analytics ?? resp.data ?? resp.rows;
+    const rows = Array.isArray(inner) ? inner : inner?.items ?? [];
+    out.push(...rows);
+  }
+  return out;
+}
 
-    // 2) Pull DAY-granular analytics for the campaigns. Pinterest caps at 100
-    //    campaign IDs per call — chunk if needed.
-    const all: AnalyticsRow[] = [];
-    const CHUNK = 100;
-    for (let i = 0; i < campaignIds.length; i += CHUNK) {
-      const slice = campaignIds.slice(i, i + CHUNK);
-      const resp = await callMCPTool<AnalyticsResp>(
-        client,
-        'get_campaigns_analytics',
-        {
-          user_id: USER_ID,
-          ad_account_id: AD_ACCOUNT_ID,
-          campaign_ids: slice,
-          start_date: range.start,
-          end_date: range.end,
-          granularity: 'DAY',
-          columns: [
-            'SPEND_IN_MICRO_DOLLAR',
-            'IMPRESSION_1',
-            'CLICKTHROUGH_1',
-            'CTR',
-            'CPC_IN_MICRO_DOLLAR',
-            'TOTAL_CHECKOUT',
-            'TOTAL_CHECKOUT_VALUE_IN_MICRO_DOLLAR',
-          ],
-        },
-        { retries: 3, initialBackoffMs: 1000, timeoutMs: 120_000 },
-      );
-      const rows = Array.isArray(resp)
-        ? resp
-        : resp.analytics ?? resp.data ?? resp.rows ?? [];
-      all.push(...rows);
-    }
+/**
+ * Exported for unit testing. Pure transformation from Pinterest analytics rows
+ * to AdsDailyRow shape. Aggregates defensively per (date, campaign_id) — at
+ * DAY granularity Pinterest already returns one row per pair, but we tolerate
+ * the MCP layer ever splitting a campaign-day (e.g. attribution-window slicing).
+ */
+export function buildAdsDailyRows(
+  analytics: AnalyticsRow[],
+  campaignsById: Map<string, Campaign>,
+): AdsDailyRow[] {
+  const grouped = new Map<string, AdsDailyRow>();
+  for (const r of analytics) {
+    const date = (r.DATE ?? '').slice(0, 10);
+    const campaignId = r.CAMPAIGN_ID == null ? '' : String(r.CAMPAIGN_ID);
+    if (!date || !campaignId) continue;
 
-    // 3) Map → AdsDailyRow. Skip rows without date or campaign id.
-    const adsRows: AdsDailyRow[] = [];
-    for (const r of all) {
-      const date = (r.DATE ?? '').slice(0, 10);
-      const campaignId = r.CAMPAIGN_ID == null ? '' : String(r.CAMPAIGN_ID);
-      if (!date || !campaignId) continue;
-      const meta = idToMeta.get(campaignId);
-      const spend = (r.SPEND_IN_MICRO_DOLLAR ?? 0) / MICRO;
-      const impressions = Math.round(r.IMPRESSION_1 ?? 0);
-      const clicks = Math.round(r.CLICKTHROUGH_1 ?? 0);
-      const ctr = impressions > 0 ? clicks / impressions : null;
-      const cpc = clicks > 0 ? spend / clicks : null;
-      const cpm = impressions > 0 ? (spend / impressions) * 1000 : null;
-      // TOTAL_CHECKOUT = real purchase events, matches "transactions" semantics
-      // we use for Meta/Google. TOTAL_CONVERSIONS includes view-through visits
-      // and is too noisy to compare cross-platform.
-      const conversions = r.TOTAL_CHECKOUT ?? 0;
-      const conversionValue = (r.TOTAL_CHECKOUT_VALUE_IN_MICRO_DOLLAR ?? 0) / MICRO;
+    const meta = campaignsById.get(campaignId);
+    const spend = (r.SPEND_IN_MICRO_DOLLAR ?? 0) / MICRO;
+    const impressions = Math.round(r.IMPRESSION_1 ?? 0);
+    const clicks = Math.round(r.CLICKTHROUGH_1 ?? 0);
+    const conversions = r.TOTAL_CHECKOUT ?? 0;
+    const conversionValue = (r.TOTAL_CHECKOUT_VALUE_IN_MICRO_DOLLAR ?? 0) / MICRO;
 
-      adsRows.push({
+    const key = `${date}|${campaignId}`;
+    const existing = grouped.get(key);
+    if (existing) {
+      existing.spend = (Number(existing.spend) + spend).toFixed(4);
+      existing.impressions = (existing.impressions ?? 0) + impressions;
+      existing.clicks = (existing.clicks ?? 0) + clicks;
+      existing.conversions = String(Number(existing.conversions ?? 0) + conversions);
+      existing.conversionValue = (Number(existing.conversionValue ?? 0) + conversionValue).toFixed(4);
+    } else {
+      grouped.set(key, {
         date,
         platform: 'pinterest',
         accountId: r.AD_ACCOUNT_ID ?? AD_ACCOUNT_ID,
@@ -153,16 +185,55 @@ export async function syncPinterest(
         spend: spend.toFixed(4),
         impressions,
         clicks,
-        ctr: ctr?.toString() ?? null,
-        cpc: cpc?.toString() ?? null,
-        cpm: cpm?.toString() ?? null,
+        ctr: null,
+        cpc: null,
+        cpm: null,
         conversions: String(conversions),
         conversionValue: conversionValue.toFixed(4),
       });
     }
+  }
 
-    const rowsWritten = await upsertAdsDaily(database, adsRows);
-    console.log(`[pinterest] wrote ${rowsWritten} rows for ${range.start}..${range.end} across ${list.length} campaigns`);
+  // Recompute derived metrics from aggregated totals so they stay consistent
+  // even if Pinterest pre-rounds CTR/CPC/CPM at row level.
+  return Array.from(grouped.values()).map((r) => {
+    const imp = r.impressions ?? 0;
+    const clk = r.clicks ?? 0;
+    const sp = Number(r.spend);
+    return {
+      ...r,
+      ctr: imp > 0 ? (clk / imp).toString() : null,
+      cpc: clk > 0 ? (sp / clk).toString() : null,
+      cpm: imp > 0 ? ((sp / imp) * 1000).toString() : null,
+    };
+  });
+}
+
+export async function syncPinterest(
+  range: DateRange,
+  opts: { db?: DB } = {},
+): Promise<{ rowsWritten: number }> {
+  const database = opts.db ?? defaultDb;
+  if (!MCP_TOKEN) throw new Error('MCP_PINTEREST_TOKEN missing — add to Railway Variables');
+  console.log(`[pinterest] ad_account=${AD_ACCOUNT_ID}, range=${range.start}..${range.end}`);
+
+  const client = await connectMCP(MCP_URL, 'http', { token: MCP_TOKEN });
+  try {
+    const campaigns = await listAllCampaigns(client);
+    if (campaigns.length === 0) {
+      console.log('[pinterest] no campaigns found, skipping');
+      return { rowsWritten: 0 };
+    }
+
+    const campaignsById = new Map<string, Campaign>(
+      campaigns.map((c) => [String(c.id), c]),
+    );
+    const campaignIds = campaigns.map((c) => String(c.id));
+
+    const analytics = await fetchCampaignAnalytics(client, campaignIds, range);
+    const rows = buildAdsDailyRows(analytics, campaignsById);
+    const rowsWritten = await upsertAdsDaily(database, rows);
+    console.log(`[pinterest] wrote ${rowsWritten} rows across ${campaigns.length} campaigns`);
     return { rowsWritten };
   } finally {
     await client.close();

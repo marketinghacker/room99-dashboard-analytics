@@ -247,7 +247,7 @@ export function ExecutiveSummaryTab() {
         <SectionHead
           number="§03"
           title="Platformy — zestawienie"
-          sub="Wydatki, ROAS, CR, CPA, % budżetu. Źródło: platform ads APIs (Meta Graph, Google Ads, Pinterest via Windsor, Criteo). Przychód w tej tabeli = sprzedaż raportowana przez platformy (własne ich attribution), nie Shoper."
+          sub="Wydatki, ROAS, CR, CPA, % budżetu. Źródło: platform ads APIs (Meta Graph, Google Ads, Pinterest, Criteo). Przychód w tej tabeli = sprzedaż raportowana przez platformy (własne ich attribution), nie Shoper."
         />
         <div className="card overflow-hidden">
           <table className="w-full">
