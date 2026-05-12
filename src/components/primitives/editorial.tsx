@@ -299,7 +299,7 @@ export function HeroKpi({
 }) {
   const count = useCountUp(value, 1400);
   const display =
-    format === 'pln' ? formatPLN(Math.round(count))
+    format === 'pln' ? formatPLN(count)
       : format === 'int' ? formatInt(Math.round(count))
       : format === 'pct' ? formatPct(count / 100)
       : fmtX(count);
@@ -355,7 +355,7 @@ export function StatCard({
 }) {
   const count = useCountUp(value, 1400);
   const display =
-    format === 'pln' ? formatPLN(Math.round(count))
+    format === 'pln' ? formatPLN(count)
       : format === 'int' ? formatInt(Math.round(count))
       : format === 'pct' ? formatPct(count / 100)
       : fmtX(count);
