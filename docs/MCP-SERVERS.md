@@ -18,7 +18,7 @@ Dashboard zaciąga dane z platform reklamowych przez **MCP (Model Context Protoc
 | Serwer | Railway projekt | URL | Tools używane przez sync |
 |---|---|---|---|
 | Meta Ads | `MCP-Meta` | `https://mcp-meta.up.railway.app/mcp` | `facebook_get_adaccount_insights` |
-| Google Ads | `MCP-Ads` | `https://google-ads-mcp-server-production-7a5f.up.railway.app/mcp` | `google_ads_run_query` (GAQL) |
+| Google Ads | `MCP-Ads` | `https://mcp-ads.up.railway.app/mcp` | `google_ads_run_query` (GAQL) |
 | Criteo | `MCP-Criteo` | `https://mcp-criteo.up.railway.app/mcp` | `get_campaign_stats` |
 | GA4 | `MCP-Analytics` | `https://mcp-analytics.up.railway.app/mcp` | `run_report`, `get_traffic_sources`, `get_ecommerce_report` |
 | Pinterest | `MCP-Pinterest` (mh-connector) | `https://mh-connector.up.railway.app/mcp` | `list_campaigns`, `get_campaigns_analytics` |
