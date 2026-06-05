@@ -140,6 +140,8 @@ export type RollupPayload = {
     cpm: number | null;
     cos: number | null;
     roas: number | null;
+    /** Relative ROAS change vs compare period (fraction; null = no compare data for this campaign). */
+    roasDelta?: number | null;
   }>;
   channelBreakdown: Array<{
     channelGroup: string;
@@ -561,6 +563,20 @@ export async function buildOneLive(
   }
   const timeSeries = Array.from(tsMap.values()).sort((a, b) => a.date.localeCompare(b.date));
 
+  // Per-campaign ROAS delta vs compare period — feeds the „Zmiana ROAS"
+  // column in TOP/BOTTOM campaign tables. Matched by campaign id.
+  const compareRoasById = new Map<string, number | null>(
+    (adsCompare?.campaigns ?? []).map((c) => [`${c.platform}:${c.id}`, c.roas]),
+  );
+  const campaigns = (ads?.campaigns ?? []).map((c) => {
+    const prevRoas = compareRoasById.get(`${c.platform}:${c.id}`);
+    const roasDelta =
+      c.roas != null && prevRoas != null && prevRoas !== 0
+        ? (c.roas - prevRoas) / prevRoas
+        : null;
+    return { ...c, roasDelta };
+  });
+
   return {
     range,
     compareRange,
@@ -569,7 +585,7 @@ export async function buildOneLive(
     compareKpis,
     deltas,
     timeSeries,
-    campaigns: ads?.campaigns ?? [],
+    campaigns,
     channelBreakdown: ga4.channels,
     salesBySource: sr.salesBySource,
     warnings,

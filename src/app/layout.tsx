@@ -1,30 +1,20 @@
 import type { Metadata } from 'next';
-import { Fraunces, Inter, JetBrains_Mono } from 'next/font/google';
+import { Montserrat, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@/components/providers';
 
 /**
  * Fonts (all self-hosted via next/font, zero layout shift):
- *  - Fraunces: editorial serif for mastheads, H1, KPI numerals. Opsz axis
- *    enabled so large display renders at its optical size.
- *  - Inter: sans body.
+ *  - Montserrat: brand sans (substytut Gotham Book — klient używa Gothama,
+ *    Montserrat to standardowy wolnolicencyjny odpowiednik). Display i body.
  *  - JetBrains Mono: overlines, table headers, mono numbers.
  */
-const fraunces = Fraunces({
+const montserrat = Montserrat({
   subsets: ['latin', 'latin-ext'],
-  weight: ['400', '500', '600'],
+  weight: ['400', '500', '600', '700'],
   style: ['normal', 'italic'],
   display: 'swap',
-  variable: '--font-fraunces',
-  // Opsz axis is auto-included via `font-optical-sizing: auto` in CSS; when
-  // specific weights are pinned Next.js disallows manual axes opt-in.
-});
-
-const inter = Inter({
-  subsets: ['latin', 'latin-ext'],
-  weight: ['400', '500', '600'],
-  display: 'swap',
-  variable: '--font-inter',
+  variable: '--font-montserrat',
 });
 
 const jetbrains = JetBrains_Mono({
@@ -48,7 +38,7 @@ export default function RootLayout({
       lang="pl"
       data-theme="editorial"
       data-role="agency"
-      className={`${fraunces.variable} ${inter.variable} ${jetbrains.variable}`}
+      className={`${montserrat.variable} ${jetbrains.variable}`}
     >
       <body>
         <Providers>{children}</Providers>

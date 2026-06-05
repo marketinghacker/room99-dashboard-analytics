@@ -29,6 +29,18 @@ export function SalesChannelsTab() {
   const shrShare = totalTracked > 0 ? sbs.shr.revenue / totalTracked : 0;
   const allegroShare = totalTracked > 0 ? sbs.allegro.revenue / totalTracked : 0;
 
+  // YoY — zawsze rok-do-roku, niezależnie od globalnego filtra porównania.
+  // Prośba klienta: AOV i przychód z odniesieniem do zeszłego roku = sezonowość.
+  const yoy = data.yoy as null | {
+    range: { start: string; end: string };
+    shr: { revenue: number; orders: number; aov: number | null };
+    allegro: { revenue: number; orders: number; aov: number | null };
+  };
+  const rel = (cur: number, prev: number | null | undefined): number | null =>
+    prev != null && prev !== 0 ? (cur - prev) / prev : null;
+  const yoyShrAvailable = (yoy?.shr.revenue ?? 0) > 0;
+  const yoyAllegroAvailable = (yoy?.allegro.revenue ?? 0) > 0;
+
   const daysAllegroWins = timeSeries.filter((t) => t.revenueAllegro > t.revenueShr).length;
   const totalDays = timeSeries.filter((t) => t.revenueShr > 0 || t.revenueAllegro > 0).length;
   const alertDays = timeSeries.filter((t) => t.revenueAllegro > t.revenueShr);
@@ -55,18 +67,57 @@ export function SalesChannelsTab() {
         format="pln"
       />
 
-      {/* Context KPIs */}
+      {/* Notka YoY pod CompareBar — kontekst sezonowości */}
+      {yoyShrAvailable && yoy && (
+        <p className="text-[12px] -mt-6" style={{ color: 'var(--color-ink-tertiary)' }}>
+          Rok temu ({yoy.range.start} → {yoy.range.end}): Shoper {formatPLN(yoy.shr.revenue)}
+          {yoyAllegroAvailable
+            ? <> · Allegro {formatPLN(yoy.allegro.revenue)}</>
+            : <> · Allegro: brak danych (retencja BaseLinker ~365 dni)</>}
+        </p>
+      )}
+
+      {/* Context KPIs — delty i hinty „rok temu" = sezonowość (prośba klienta) */}
       <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
-        <StatCard label="Zamówienia — Shoper" value={sbs.shr.orders ?? 0} format="int" />
-        <StatCard label="AOV — Shoper" value={sbs.shr.aov ?? 0} format="pln" />
-        <StatCard label="Zamówienia — Allegro" value={sbs.allegro.orders ?? 0} format="int" />
-        <StatCard label="AOV — Allegro" value={sbs.allegro.aov ?? 0} format="pln" />
+        <StatCard
+          label="Zamówienia — Shoper"
+          value={sbs.shr.orders ?? 0}
+          change={yoyShrAvailable ? rel(sbs.shr.orders ?? 0, yoy?.shr.orders) : null}
+          format="int"
+          hint={yoyShrAvailable ? `rok temu: ${formatInt(yoy!.shr.orders)}` : undefined}
+        />
+        <StatCard
+          label="AOV — Shoper"
+          value={sbs.shr.aov ?? 0}
+          change={yoyShrAvailable ? rel(sbs.shr.aov ?? 0, yoy?.shr.aov) : null}
+          format="pln"
+          hint={yoyShrAvailable && yoy!.shr.aov != null ? `rok temu: ${formatPLN(yoy!.shr.aov)} (sezonowość)` : undefined}
+        />
+        <StatCard
+          label="Zamówienia — Allegro"
+          value={sbs.allegro.orders ?? 0}
+          change={yoyAllegroAvailable ? rel(sbs.allegro.orders ?? 0, yoy?.allegro.orders) : null}
+          format="int"
+          hint={yoyAllegroAvailable ? `rok temu: ${formatInt(yoy!.allegro.orders)}` : 'rok temu: brak (retencja BaseLinker ~365d)'}
+        />
+        <StatCard
+          label="AOV — Allegro"
+          value={sbs.allegro.aov ?? 0}
+          change={yoyAllegroAvailable ? rel(sbs.allegro.aov ?? 0, yoy?.allegro.aov) : null}
+          format="pln"
+          hint={yoyAllegroAvailable && yoy!.allegro.aov != null ? `rok temu: ${formatPLN(yoy!.allegro.aov)} (sezonowość)` : 'rok temu: brak (retencja BaseLinker ~365d)'}
+        />
       </div>
 
       <div className="grid gap-5" style={{ gridTemplateColumns: '1fr 1fr' }}>
         <HeroKpi
           label="Udział Shoper (Room99.pl)"
           value={shrShare * 100}
+          change={
+            yoyShrAvailable && yoyAllegroAvailable
+              ? rel(shrShare, yoy!.shr.revenue / (yoy!.shr.revenue + yoy!.allegro.revenue))
+              : null
+          }
           format="pct"
           primary
           hint={`${formatPLN(sbs.shr.revenue)} / ${formatPLN(totalTracked)} razem`}
@@ -74,6 +125,11 @@ export function SalesChannelsTab() {
         <HeroKpi
           label="Udział Allegro"
           value={allegroShare * 100}
+          change={
+            yoyShrAvailable && yoyAllegroAvailable
+              ? rel(allegroShare, yoy!.allegro.revenue / (yoy!.shr.revenue + yoy!.allegro.revenue))
+              : null
+          }
           format="pct"
           hint={`${formatPLN(sbs.allegro.revenue)} / ${formatPLN(totalTracked)} razem`}
         />

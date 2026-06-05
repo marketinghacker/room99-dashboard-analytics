@@ -4,7 +4,6 @@ import { useMemo, useState } from 'react';
 import useSWR, { mutate as globalMutate } from 'swr';
 import { type ColumnDef } from '@tanstack/react-table';
 import { useFilters } from '@/stores/filters';
-import { HeroMetric } from '@/components/primitives/HeroMetric';
 import { DataTable } from '@/components/primitives/DataTable';
 import { DeltaBadge } from '@/components/primitives/DeltaBadge';
 import { LoadingCard, ErrorCard, EmptyCard } from '@/components/primitives/StateCard';
@@ -186,7 +185,6 @@ export function TopProductsTab() {
   }
 
   const items: Item[] = data.items;
-  const summary = data.summary;
   const alerts: Item[] = data.alerts ?? [];
   // Detect purged history: if every row has zero YoY on both channels,
   // BaseLinker's 365-day retention has wiped the comparison window and
@@ -279,16 +277,9 @@ export function TopProductsTab() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <HeroMetric label="Grupy" value={summary.groups} format="int" />
-        <HeroMetric label="Shoper revenue" value={summary.totalShrRevenue} format="pln" tone="primary" />
-        <HeroMetric label="Allegro revenue" value={summary.totalAllegroRevenue} format="pln" />
-        <HeroMetric
-          label="Razem (Shoper + Allegro)"
-          value={summary.totalRevenue}
-          format="pln"
-        />
-      </div>
+      {/* Karty podsumowania (Grupy / Shoper / Allegro / Razem) usunięte —
+          duplikowały zakładkę Sprzedaż (Shoper vs Allegro). Alerty powyżej
+          wprowadzają bezpośrednio do tabeli (decyzja klienta 04.2026). */}
 
       <DataTable data={items} columns={columns} pageSize={25} />
     </div>

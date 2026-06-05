@@ -5,7 +5,7 @@
 import { parseFilters, jsonResponse, errorResponse } from '@/lib/api';
 import { db } from '@/lib/db';
 import { sql } from 'drizzle-orm';
-import { resolvePeriod } from '@/lib/periods';
+import { resolvePeriod, resolveCompare } from '@/lib/periods';
 import { getCached } from '@/lib/api';
 
 export const runtime = 'nodejs';
@@ -46,11 +46,42 @@ export async function GET(req: Request) {
   const cached = await getCached('all', period, compare);
   if (!cached) return errorResponse('No cache — run /api/cron/sync', 503);
 
+  // YoY (analogiczny okres rok wcześniej) — liczone ZAWSZE, niezależnie od
+  // globalnego porównania (prośba klienta: sezonowość AOV/przychodu).
+  // Shoper YoY działa; Allegro bywa puste — SellRocket/BaseLinker usuwa
+  // zamówienia po ~365 dniach.
+  const yoyRange = resolveCompare(range, 'same_period_last_year');
+  let yoy: {
+    range: { start: string; end: string };
+    shr: { revenue: number; orders: number; aov: number | null };
+    allegro: { revenue: number; orders: number; aov: number | null };
+  } | null = null;
+  if (yoyRange) {
+    const yoyTotals: any = await db.execute(sql`
+      SELECT
+        source,
+        COALESCE(SUM(order_count), 0)::int AS orders,
+        COALESCE(SUM(revenue), 0)::float AS revenue
+      FROM sellrocket_daily
+      WHERE date BETWEEN ${yoyRange.start} AND ${yoyRange.end}
+      GROUP BY source
+    `);
+    const yoyRows = (yoyTotals.rows ?? yoyTotals) as Array<{ source: string; orders: number; revenue: number }>;
+    const pick = (s: string) => {
+      const r = yoyRows.find((x) => x.source === s);
+      const revenue = Number(r?.revenue ?? 0);
+      const orders = Number(r?.orders ?? 0);
+      return { revenue, orders, aov: orders > 0 ? revenue / orders : null };
+    };
+    yoy = { range: yoyRange, shr: pick('shr'), allegro: pick('allegro') };
+  }
+
   return jsonResponse({
     period,
     compare,
     range,
     salesBySource: cached.salesBySource,
     timeSeries,
+    yoy,
   });
 }

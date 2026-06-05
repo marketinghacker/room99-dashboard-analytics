@@ -62,9 +62,9 @@
   --color-platform-ga4:       #6A8470;
 
   /* Typography — loaded via next/font/google in layout.tsx.
-     Variables populated by CSS-variable output from next/font. */
-  --font-display: var(--font-fraunces, 'Fraunces'), 'Georgia', 'Times New Roman', serif;
-  --font-text:    var(--font-inter, 'Inter'), -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+     Montserrat = substytut Gotham Book (decyzja klienta 06.2026). */
+  --font-display: var(--font-montserrat, 'Montserrat'), 'Helvetica Neue', Arial, sans-serif;
+  --font-text:    var(--font-montserrat, 'Montserrat'), -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   --font-mono:    var(--font-jetbrains, 'JetBrains Mono'), ui-monospace, 'SF Mono', Menlo, monospace;
 
   /* Shadows — soft, low-contrast on cream */

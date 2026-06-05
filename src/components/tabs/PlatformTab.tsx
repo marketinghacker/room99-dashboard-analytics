@@ -7,6 +7,7 @@ import { HeroKpi, StatCard, SectionHead, Overline } from '@/components/primitive
 import { ChartArea } from '@/components/primitives/charts';
 import { LoadingCard, ErrorCard } from '@/components/primitives/StateCard';
 import { DataTable } from '@/components/primitives/DataTable';
+import { DeltaBadge } from '@/components/primitives/DeltaBadge';
 import { formatPLN, formatPLN2, formatInt, formatPct } from '@/lib/format';
 import { cn } from '@/components/ui/cn';
 
@@ -35,6 +36,7 @@ type CampaignRow = {
   cpm: number | null;
   cos: number | null;
   roas: number | null;
+  roasDelta?: number | null;
 };
 
 export function PlatformTab({
@@ -194,18 +196,9 @@ export function PlatformTab({
         />
       </div>
 
-      {/* Agency-scope comparison: platform spend vs Shoper revenue */}
-      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
-        <StatCard
-          label="Udział w przychodzie Shopera"
-          value={kpis.revenue > 0 ? (kpis.spend / kpis.revenue) * 100 : 0}
-          format="pct"
-        />
-        <StatCard
-          label="Wkład ROAS Shoper"
-          value={kpis.spend > 0 ? kpis.revenue / kpis.spend : 0}
-          format="x"
-        />
+      {/* Detail strip — karty „Udział w przychodzie Shopera" i „Wkład ROAS Shoper"
+          usunięte (klient 04.2026: bez sensu na poziomie platformy). */}
+      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(7, 1fr)' }}>
         <StatCard
           label="Konwersje (platform)"
           value={kpis.conversions ?? 0}
@@ -217,10 +210,6 @@ export function PlatformTab({
           value={kpis.conversions > 0 ? kpis.conversionValue / kpis.conversions : 0}
           format="pln"
         />
-      </div>
-
-      {/* Detail strip */}
-      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
         <StatCard label="Wyświetlenia" value={kpis.impressions ?? 0} change={deltas.impressions} format="int" />
         <StatCard label="Kliki" value={kpis.clicks ?? 0} change={deltas.clicks} format="int" />
         <StatCard label="CTR" value={(kpis.ctr ?? 0) * 100} change={deltas.ctr} format="pct" />
@@ -247,10 +236,86 @@ export function PlatformTab({
         </div>
       </section>
 
-      {/* §02 campaigns */}
+      {/* §02/§03 TOP i BOTTOM kampanie wg ROAS — odwzorowanie draftu */}
+      {(() => {
+        // Tylko kampanie z wydatkami i policzalnym ROAS — inaczej ranking to szum.
+        const ranked = campaigns
+          .filter((c) => c.spend > 0 && c.roas != null)
+          .sort((a, b) => (b.roas ?? 0) - (a.roas ?? 0));
+        const top10 = ranked.slice(0, 10);
+        const bottom3 = ranked.length > 10 ? ranked.slice(-3).reverse() : [];
+        const campaignTable = (rows: CampaignRow[]) => (
+          <div className="card overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--color-line-soft)' }}>
+                  <th className="table-header text-left px-4 py-3">Kampania</th>
+                  <th className="table-header text-right px-4 py-3">Wydatki</th>
+                  <th className="table-header text-right px-4 py-3">Przychód (platform)</th>
+                  <th className="table-header text-right px-4 py-3">ROAS</th>
+                  <th className="table-header text-right px-4 py-3">CTR</th>
+                  <th className="table-header text-right px-4 py-3">Zmiana ROAS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((c) => (
+                  <tr
+                    key={c.id}
+                    style={{ borderBottom: '1px solid var(--color-line-soft)' }}
+                    className="transition-colors"
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <td className="px-4 py-3 table-cell">
+                      <span className="font-medium truncate max-w-[340px] inline-block align-bottom" title={c.name}>
+                        {c.name}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right table-cell numeric">{formatPLN(c.spend)}</td>
+                    <td className="px-4 py-3 text-right table-cell numeric">{formatPLN(c.conversionValue)}</td>
+                    <td className="px-4 py-3 text-right table-cell numeric font-medium">
+                      {c.roas != null
+                        ? `${new Intl.NumberFormat('pl-PL', { maximumFractionDigits: 2 }).format(c.roas)}×`
+                        : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-right table-cell numeric">{formatPct(c.ctr)}</td>
+                    <td className="px-4 py-3 text-right">
+                      <DeltaBadge pct={c.roasDelta ?? null} size="xs" />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+        return (
+          <>
+            <section>
+              <SectionHead
+                number="§02"
+                title="TOP 10 kampanii (według ROAS)"
+                sub="Atrybucja własna platformy. Zmiana ROAS vs wybrany okres porównawczy."
+              />
+              {campaignTable(top10)}
+            </section>
+            {bottom3.length > 0 && (
+              <section>
+                <SectionHead
+                  number="§03"
+                  title="BOTTOM 3 kampanie (według ROAS)"
+                  sub="Najsłabsze kampanie okresu — kandydaci do optymalizacji lub wyłączenia."
+                />
+                {campaignTable(bottom3)}
+              </section>
+            )}
+          </>
+        );
+      })()}
+
+      {/* §04 campaigns */}
       <section>
         <SectionHead
-          number="§02"
+          number="§04"
           title={`Kampanie (${campaigns.length})`}
           sub="Źródło: platform ads API · atrybucja własna platformy. Sortuj klikając nagłówek."
           right={

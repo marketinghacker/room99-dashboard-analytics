@@ -117,39 +117,14 @@ export function Sidebar() {
         borderRight: '1px solid var(--color-line-soft)',
       }}
     >
-      {/* Brand */}
+      {/* Brand — logo klienta (wordmark „AESTHETIC HOME ROOM99") */}
       <div className="px-6 pt-6 pb-5">
-        <div className="flex items-center gap-3">
-          <div
-            className="w-9 h-9 rounded-[8px] flex items-center justify-center"
-            style={{
-              background: 'var(--color-accent)',
-              color: 'var(--color-bg-card)',
-              fontFamily: 'var(--font-display)',
-              fontWeight: 500,
-              letterSpacing: '-0.02em',
-              fontSize: '14px',
-            }}
-          >
-            R99
-          </div>
-          <div className="flex flex-col leading-tight">
-            <span className="overline" style={{ fontSize: '9px' }}>
-              № 03 · dashboard
-            </span>
-            <span
-              className="text-[14px]"
-              style={{
-                fontFamily: 'var(--font-display)',
-                fontWeight: 500,
-                letterSpacing: '-0.01em',
-                color: 'var(--color-ink-primary)',
-              }}
-            >
-              Room99
-            </span>
-          </div>
-        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/brand/room99-logo.png"
+          alt="Room99 — Aesthetic Home"
+          style={{ maxWidth: 170, height: 'auto', display: 'block' }}
+        />
       </div>
 
       {/* Nav */}
