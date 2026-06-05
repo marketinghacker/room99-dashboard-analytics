@@ -54,7 +54,9 @@ export async function syncGA4Products(
 
     const raw: GA4ReportRow[] = Array.isArray(resp) ? resp : resp.rows ?? resp.data ?? [];
 
-    const rows: GA4ProductRow[] = [];
+    // Agregacja po PK (date, itemId) — ten sam itemId potrafi wystąpić z kilkoma
+    // wariantami itemName; multi-row upsert nie znosi duplikatów klucza.
+    const byKey = new Map<string, GA4ProductRow>();
     for (const r of raw) {
       const dimMap = r.dimensions ?? null;
       const metMap = r.metrics ?? null;
@@ -67,18 +69,31 @@ export async function syncGA4Products(
       const itemId = get('itemId', 1);
       if (!date || !itemId || itemId === '(not set)') continue;
 
-      rows.push({
-        date,
-        itemId,
-        itemName: get('itemName', 2) ?? '',
-        itemsViewed: Math.round(toNum(getMetric('itemsViewed', 0))),
-        addToCarts: Math.round(toNum(getMetric('itemsAddedToCart', 1))),
-        itemsPurchased: Math.round(toNum(getMetric('itemsPurchased', 2))),
-        revenue: String(toNum(getMetric('itemRevenue', 3))),
-      });
+      const key = `${date}|${itemId}`;
+      const itemsViewed = Math.round(toNum(getMetric('itemsViewed', 0)));
+      const addToCarts = Math.round(toNum(getMetric('itemsAddedToCart', 1)));
+      const itemsPurchased = Math.round(toNum(getMetric('itemsPurchased', 2)));
+      const revenue = toNum(getMetric('itemRevenue', 3));
+      const existing = byKey.get(key);
+      if (existing) {
+        existing.itemsViewed = (existing.itemsViewed ?? 0) + itemsViewed;
+        existing.addToCarts = (existing.addToCarts ?? 0) + addToCarts;
+        existing.itemsPurchased = (existing.itemsPurchased ?? 0) + itemsPurchased;
+        existing.revenue = String(Number(existing.revenue ?? 0) + revenue);
+      } else {
+        byKey.set(key, {
+          date,
+          itemId,
+          itemName: get('itemName', 2) ?? '',
+          itemsViewed,
+          addToCarts,
+          itemsPurchased,
+          revenue: String(revenue),
+        });
+      }
     }
 
-    const rowsWritten = await upsertGA4Products(database, rows);
+    const rowsWritten = await upsertGA4Products(database, Array.from(byKey.values()));
     return { rowsWritten };
   } finally {
     await client.close().catch(() => {});

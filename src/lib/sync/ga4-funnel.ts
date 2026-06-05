@@ -100,7 +100,10 @@ export async function syncGA4Funnel(
 
     const raw: GA4ReportRow[] = Array.isArray(resp) ? resp : resp.rows ?? resp.data ?? [];
 
-    const rows: GA4FunnelRow[] = [];
+    // Agregacja po kluczu PK — normalizacja device/userType ('(not set)' →
+    // 'unknown' itp.) skleja kilka wierszy GA4 w jeden klucz, a multi-row
+    // INSERT ... ON CONFLICT nie może dotknąć tego samego wiersza dwa razy.
+    const byKey = new Map<string, GA4FunnelRow>();
     for (const r of raw) {
       const dimMap = r.dimensions ?? null;
       const metMap = r.metrics ?? null;
@@ -113,17 +116,21 @@ export async function syncGA4Funnel(
       const eventName = get('eventName', 1);
       if (!date || !eventName || !TRACKED.has(eventName)) continue;
 
-      rows.push({
-        date,
-        eventName,
-        device: normalizeDevice(get('deviceCategory', 2)),
-        userType: normalizeUserType(get('newVsReturning', 3)),
-        users: Math.round(toNum(getMetric('totalUsers', 0))),
-        eventCount: Math.round(toNum(getMetric('eventCount', 1))),
-      });
+      const device = normalizeDevice(get('deviceCategory', 2));
+      const userType = normalizeUserType(get('newVsReturning', 3));
+      const key = `${date}|${eventName}|${device}|${userType}`;
+      const existing = byKey.get(key);
+      const users = Math.round(toNum(getMetric('totalUsers', 0)));
+      const eventCount = Math.round(toNum(getMetric('eventCount', 1)));
+      if (existing) {
+        existing.users = (existing.users ?? 0) + users;
+        existing.eventCount = (existing.eventCount ?? 0) + eventCount;
+      } else {
+        byKey.set(key, { date, eventName, device, userType, users, eventCount });
+      }
     }
 
-    const rowsWritten = await upsertGA4Funnel(database, rows);
+    const rowsWritten = await upsertGA4Funnel(database, Array.from(byKey.values()));
     return { rowsWritten };
   } finally {
     await client.close().catch(() => {});
