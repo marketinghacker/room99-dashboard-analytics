@@ -3,6 +3,7 @@ import { create } from 'zustand';
 export type TabId =
   | 'executive-summary'
   | 'performance-marketing'
+  | 'funnel'
   | 'sales-channels'
   | 'sales-tree'
   | 'google-ads'

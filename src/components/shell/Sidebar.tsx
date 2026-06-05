@@ -35,7 +35,8 @@ const NAV: NavItem[] = [
   { id: 'executive-summary',     label: 'Podsumowanie', number: '§01', icon: LayoutDashboard, group: 'overview' },
   { id: 'top-products',          label: 'Produkty',     number: '§02', icon: Package,         group: 'overview' },
   { id: 'performance-marketing', label: 'Performance',  number: '§03', icon: Activity,        group: 'marketing' },
-  { id: 'traffic-sources',       label: 'Ruch',         number: '§04', icon: LineChart,       group: 'marketing' },
+  { id: 'funnel',                label: 'Lejek',        number: '§04', icon: Target,          group: 'marketing' },
+  { id: 'traffic-sources',       label: 'Ruch',         number: '§05', icon: LineChart,       group: 'marketing' },
   { id: 'sales-channels',        label: 'Sprzedaż',     number: '§05', icon: Store,           group: 'channels' },
   { id: 'sales-tree',            label: 'Drzewo sprzedaży', number: '§06', icon: ShoppingBag, group: 'channels' },
   // 'product-catalogs' (Katalogi) ZAPARKOWANE — decyzja 22.04.2026: brak czystego

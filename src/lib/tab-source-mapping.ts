@@ -58,6 +58,7 @@ export const TAB_SOURCES: Record<TabId, readonly SyncSource[]> = {
   criteo:                  ['criteo'],
   'product-catalogs':      ['products'],
   'traffic-sources':       ['ga4'],
+  funnel:                  ['ga4'],
   'top-products':          ['sellrocket', 'products'],
 };
 

@@ -9,6 +9,7 @@ export function MetaAdsTab() {
       platformLabel="Meta Ads"
       accountHint="Konto: act_295812916 · Room99"
       accentColor="var(--color-platform-meta)"
+      showMicroConversions
     />
   );
 }

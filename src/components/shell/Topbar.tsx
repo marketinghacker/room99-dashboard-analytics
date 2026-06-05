@@ -21,6 +21,7 @@ import Papa from 'papaparse';
 
 const TAB_ENDPOINT: Record<TabId, string> = {
   'executive-summary':     '/api/data/executive-summary',
+  funnel:                  '/api/data/funnel',
   'top-products':          '/api/data/top-products',
   'performance-marketing': '/api/data/performance-marketing',
   'traffic-sources':       '/api/data/traffic-sources',

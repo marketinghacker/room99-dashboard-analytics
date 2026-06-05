@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import useSWR from 'swr';
 import { type ColumnDef } from '@tanstack/react-table';
 import { useFilteredSWR } from '@/components/primitives/useFilteredSWR';
 import { HeroKpi, StatCard, SectionHead, Overline } from '@/components/primitives/editorial';
@@ -19,6 +20,8 @@ export type PlatformTabProps = {
   warningBanner?: string | null;
   infoBanner?: string | null;
   objective?: 'pln' | 'roas';
+  /** Sekcja „Mikrokonwersje — sygnały intencji" (GTM/GA4) — na razie tylko Meta. */
+  showMicroConversions?: boolean;
 };
 
 type CampaignRow = {
@@ -46,6 +49,7 @@ export function PlatformTab({
   accentColor,
   warningBanner,
   infoBanner,
+  showMicroConversions = false,
 }: PlatformTabProps) {
   const { data, error, isLoading } = useFilteredSWR<any>(endpoint);
 
@@ -331,6 +335,96 @@ export function PlatformTab({
           <DataTable data={campaigns} columns={campaignColumns} pageSize={20} />
         </div>
       </section>
+
+      {showMicroConversions && <MicroConversionsSection />}
     </div>
+  );
+}
+
+/* ─── Mikrokonwersje — sygnały intencji (GTM/GA4, draft Widok 5) ─── */
+
+function MicroConversionsSection() {
+  const { data } = useSWR<{
+    last7: { start: string; end: string };
+    rows: Array<{
+      event: string;
+      label: string;
+      stage: 'TOF' | 'MOF' | 'BOF';
+      weight: 'Wysoka' | 'Średnia' | 'Niska';
+      eventsWeekly: number;
+      wowChange: number | null;
+    }>;
+    hasData: boolean;
+  }>('/api/data/micro-conversions');
+
+  if (!data) return null;
+
+  const weightDot: Record<string, string> = {
+    Wysoka: 'var(--color-accent-positive)',
+    Średnia: 'var(--color-accent-warning)',
+    Niska: 'var(--color-ink-tertiary)',
+  };
+
+  return (
+    <section>
+      <SectionHead
+        number="§05"
+        title="Mikrokonwersje — sygnały intencji"
+        sub={`Zdarzenia obserwacyjne (GTM/GA4) · nie wpływają na optymalizację kampanii · tydzień ${data.last7.start} → ${data.last7.end} vs poprzedni.`}
+      />
+      {!data.hasData ? (
+        <div
+          className="card p-4 flex items-start gap-3"
+          style={{
+            background: 'var(--color-accent-warning-bg)',
+            border: '1px solid color-mix(in oklch, var(--color-accent-warning) 40%, transparent)',
+          }}
+        >
+          <div className="w-1 min-h-[40px] rounded-full" style={{ background: 'var(--color-accent-warning)' }} />
+          <div className="text-[12px]" style={{ color: 'var(--color-ink-secondary)' }}>
+            <strong>Brak zdarzeń mikrokonwersji w GA4 dla ostatniego tygodnia.</strong>{' '}
+            Tagi GTM (kontener GTM-ROOM99) są przygotowane — status wg architektury: GA4 + Google Ads
+            wdrożone i zweryfikowane, <strong>Meta wymaga pilnego checku</strong>. Jeśli kontener nie został
+            opublikowany, zdarzenia nie spływają.
+          </div>
+        </div>
+      ) : (
+        <div className="card overflow-hidden">
+          <table className="w-full">
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--color-line-soft)' }}>
+                <th className="table-header text-left px-4 py-3">Mikrokonwersja</th>
+                <th className="table-header text-left px-4 py-3">Etap lejka</th>
+                <th className="table-header text-left px-4 py-3">Waga sygnału</th>
+                <th className="table-header text-right px-4 py-3">Zdarzenia (tydz.)</th>
+                <th className="table-header text-right px-4 py-3">Zmiana WoW</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.rows.map((r) => (
+                <tr key={r.event} style={{ borderBottom: '1px solid var(--color-line-soft)' }}>
+                  <td className="px-4 py-3 table-cell font-medium">{r.label}</td>
+                  <td className="px-4 py-3 table-cell">
+                    <span className="chip text-[10px] py-0 px-1.5">{r.stage}</span>
+                  </td>
+                  <td className="px-4 py-3 table-cell">
+                    <span className="flex items-center gap-1.5 text-[12px]">
+                      <span className="w-1.5 h-1.5 rounded-full" style={{ background: weightDot[r.weight] }} />
+                      {r.weight}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-right numeric table-cell">{formatInt(r.eventsWeekly)}</td>
+                  <td className="px-4 py-3 text-right"><DeltaBadge pct={r.wowChange} size="xs" /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="px-4 py-2.5 text-[11px] italic" style={{ color: 'var(--color-ink-tertiary)', borderTop: '1px solid var(--color-line-soft)' }}>
+            ⚠ Wagi sygnałów = propozycja (do potwierdzenia z klientem). Zdarzenia mierzą intencję
+            zakupową — nie są celami optymalizacji kampanii.
+          </p>
+        </div>
+      )}
+    </section>
   );
 }

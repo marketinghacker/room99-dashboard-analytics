@@ -102,7 +102,10 @@ export function FilterBar() {
               onClick={() => { setShowPicker(false); setShowCustom(false); }}
             />
             <div
-              className="absolute right-0 top-full mt-2 z-50 flex"
+              // whitespace-normal: root FilterBar ma whitespace-nowrap, które
+              // dziedziczyło do popovera i układało przyciski presetów w jeden
+              // niełamliwy wiersz wylatujący poza panel (bug zgłoszony 06.2026).
+              className="absolute right-0 top-full mt-2 z-50 flex whitespace-normal"
               onClick={(e) => e.stopPropagation()}
               style={{
                 background: 'var(--color-bg-card)',

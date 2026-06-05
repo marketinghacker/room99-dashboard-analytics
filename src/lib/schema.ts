@@ -56,6 +56,49 @@ export const ga4Daily = pgTable(
   })
 );
 
+/**
+ * GA4 funnel by USERS (klient liczy lejek od użytkowników, nie sesji) +
+ * mikrokonwersje GTM. Jeden wiersz = dzień × event × device × typ użytkownika.
+ * device: 'mobile' | 'desktop' | 'tablet'; user_type: 'new' | 'returning'.
+ */
+export const ga4FunnelDaily = pgTable(
+  'ga4_funnel_daily',
+  {
+    date: date('date').notNull(),
+    eventName: text('event_name').notNull(),
+    device: text('device').notNull().default('all'),
+    userType: text('user_type').notNull().default('all'),
+    users: integer('users').notNull().default(0),
+    eventCount: integer('event_count').notNull().default(0),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.date, t.eventName, t.device, t.userType] }),
+    dateIdx: index('ga4_funnel_daily_date_idx').on(t.date),
+    eventIdx: index('ga4_funnel_daily_event_idx').on(t.eventName),
+  })
+);
+
+/** GA4 ruch per produkt — do tabel Top produktów (spadek ruchu vs konwersji). */
+export const ga4ProductDaily = pgTable(
+  'ga4_product_daily',
+  {
+    date: date('date').notNull(),
+    itemId: text('item_id').notNull(),
+    itemName: text('item_name').notNull(),
+    itemsViewed: integer('items_viewed').notNull().default(0),
+    addToCarts: integer('add_to_carts').notNull().default(0),
+    itemsPurchased: integer('items_purchased').notNull().default(0),
+    revenue: numeric('revenue', { precision: 14, scale: 4 }).notNull().default('0'),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.date, t.itemId] }),
+    dateIdx: index('ga4_product_daily_date_idx').on(t.date),
+    nameIdx: index('ga4_product_daily_name_idx').on(t.itemName),
+  })
+);
+
 export const dashboardCache = pgTable(
   'dashboard_cache',
   {

@@ -5,10 +5,12 @@
  */
 import { sql } from 'drizzle-orm';
 import { type DB } from '@/lib/db';
-import { adsDaily, ga4Daily } from '@/lib/schema';
+import { adsDaily, ga4Daily, ga4FunnelDaily, ga4ProductDaily } from '@/lib/schema';
 
 export type AdsDailyRow = typeof adsDaily.$inferInsert;
 export type GA4DailyRow = typeof ga4Daily.$inferInsert;
+export type GA4FunnelRow = typeof ga4FunnelDaily.$inferInsert;
+export type GA4ProductRow = typeof ga4ProductDaily.$inferInsert;
 
 export async function upsertAdsDaily(db: DB, rows: AdsDailyRow[]): Promise<number> {
   if (rows.length === 0) return 0;
@@ -56,6 +58,41 @@ export async function upsertGA4Daily(db: DB, rows: GA4DailyRow[]): Promise<numbe
         itemsViewed: sql`excluded.items_viewed`,
         addToCart: sql`excluded.add_to_cart`,
         beginCheckout: sql`excluded.begin_checkout`,
+        updatedAt: sql`now()`,
+      },
+    });
+  return rows.length;
+}
+
+export async function upsertGA4Funnel(db: DB, rows: GA4FunnelRow[]): Promise<number> {
+  if (rows.length === 0) return 0;
+  await db
+    .insert(ga4FunnelDaily)
+    .values(rows)
+    .onConflictDoUpdate({
+      target: [ga4FunnelDaily.date, ga4FunnelDaily.eventName, ga4FunnelDaily.device, ga4FunnelDaily.userType],
+      set: {
+        users: sql`excluded.users`,
+        eventCount: sql`excluded.event_count`,
+        updatedAt: sql`now()`,
+      },
+    });
+  return rows.length;
+}
+
+export async function upsertGA4Products(db: DB, rows: GA4ProductRow[]): Promise<number> {
+  if (rows.length === 0) return 0;
+  await db
+    .insert(ga4ProductDaily)
+    .values(rows)
+    .onConflictDoUpdate({
+      target: [ga4ProductDaily.date, ga4ProductDaily.itemId],
+      set: {
+        itemName: sql`excluded.item_name`,
+        itemsViewed: sql`excluded.items_viewed`,
+        addToCarts: sql`excluded.add_to_carts`,
+        itemsPurchased: sql`excluded.items_purchased`,
+        revenue: sql`excluded.revenue`,
         updatedAt: sql`now()`,
       },
     });

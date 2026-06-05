@@ -12,6 +12,8 @@ import { syncMetaGraph } from '@/lib/sync/meta-graph';
 import { syncGoogleAds } from '@/lib/sync/google-ads';
 import { syncCriteo } from '@/lib/sync/criteo';
 import { syncGA4 } from '@/lib/sync/ga4';
+import { syncGA4Funnel } from '@/lib/sync/ga4-funnel';
+import { syncGA4Products } from '@/lib/sync/ga4-products';
 import { syncPinterest } from '@/lib/sync/pinterest';
 import { syncSellRocket } from '@/lib/sync/sellrocket';
 import { syncSellRocketDirect } from '@/lib/sync/sellrocket-direct';
@@ -27,7 +29,9 @@ export const runtime = 'nodejs';
 // to stay well inside Railway's default 5-min ingress limit.
 export const maxDuration = 300;
 
-type Source = 'meta' | 'google_ads' | 'criteo' | 'ga4' | 'pinterest' | 'sellrocket' | 'products';
+type Source =
+  | 'meta' | 'google_ads' | 'criteo' | 'ga4' | 'pinterest' | 'sellrocket' | 'products'
+  | 'ga4_funnel' | 'ga4_products';
 
 // Per-source hard timeout. The cron container's maxDuration is 300s total,
 // so each source gets a slice well inside that. Generous for Meta Graph
@@ -43,6 +47,9 @@ const SOURCE_TIMEOUT_MS: Record<Source, number> = {
   pinterest: 30_000,
   sellrocket: 120_000,
   products: 60_000,
+  // Lejek (event×device×userType) i produkty GA4 — te same limity co ga4.
+  ga4_funnel: 75_000,
+  ga4_products: 75_000,
 };
 
 async function runWithTracking(
@@ -147,6 +154,9 @@ export async function GET(req: Request) {
     // Products + products_daily — today's categories/SKUs need to be fresh
     // so the Produkty tab never shows empty-state mid-day.
     runWithTracking('products', () => syncProducts(tightRange)),
+    // Lejek od użytkowników + mikrokonwersje GTM oraz ruch per produkt (GA4).
+    runWithTracking('ga4_funnel', () => syncGA4Funnel(last7)),
+    runWithTracking('ga4_products', () => syncGA4Products(last7)),
   ]);
 
   // Rollup is CPU/DB-bound (~8 min for 234 cache rows). Run in background so

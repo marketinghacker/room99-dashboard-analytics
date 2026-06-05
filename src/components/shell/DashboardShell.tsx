@@ -17,6 +17,7 @@ import { ProductCatalogsTab } from '@/components/tabs/ProductCatalogs';
 import { TrafficSourcesTab } from '@/components/tabs/TrafficSources';
 import { TopProductsTab } from '@/components/tabs/TopProducts';
 import { SalesTreeTab } from '@/components/tabs/SalesTreeTab';
+import { FunnelTab } from '@/components/tabs/Funnel';
 
 /**
  * Skip the first render entirely, so client content never has to match
@@ -72,6 +73,7 @@ export function DashboardShell() {
           <div key={tab} className="animate-fade-up">
             {tab === 'executive-summary' && <ExecutiveSummaryTab />}
             {tab === 'performance-marketing' && <PerformanceMarketingTab />}
+            {tab === 'funnel' && <FunnelTab />}
             {tab === 'sales-channels' && <SalesChannelsTab />}
             {tab === 'google-ads' && <GoogleAdsTab />}
             {tab === 'meta-ads' && <MetaAdsTab />}
