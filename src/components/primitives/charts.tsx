@@ -1,7 +1,7 @@
 'use client';
 
 import {
-  ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
+  ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, Legend,
   BarChart, Bar, AreaChart, Area,
   PieChart, Pie, Cell,
 } from 'recharts';
@@ -24,10 +24,8 @@ const axisStyle = {
   fontFamily: 'var(--font-text)',
 };
 
-const gridStyle = {
-  stroke: 'var(--color-border-subtle)',
-  strokeDasharray: '3 4',
-};
+// Siatka (CartesianGrid) usunięta z wykresów — prośba klienta 06.2026:
+// czysty wykres bez outline'ów, zostają tylko osie z tickami.
 
 function TooltipBox({ active, payload, label, money, fmt }: any) {
   if (!active || !payload?.length) return null;
@@ -74,7 +72,6 @@ export function ChartLine({
   return (
     <ResponsiveContainer width="100%" height={height}>
       <LineChart data={data} margin={{ top: 8, right: hasRight ? 8 : 16, left: 0, bottom: 0 }}>
-        <CartesianGrid {...gridStyle} vertical={false} />
         <XAxis
           dataKey={xKey}
           axisLine={false}
@@ -156,7 +153,6 @@ export function ChartArea({
             );
           })}
         </defs>
-        <CartesianGrid {...gridStyle} vertical={false} />
         <XAxis
           dataKey={xKey}
           axisLine={false}
@@ -246,7 +242,6 @@ export function ChartBar({
         layout={horizontal ? 'vertical' : 'horizontal'}
         margin={{ top: 8, right: 8, left: horizontal ? 80 : 0, bottom: 0 }}
       >
-        <CartesianGrid {...gridStyle} vertical={!horizontal} horizontal={horizontal} />
         {horizontal ? (
           <>
             <XAxis type="number" axisLine={false} tickLine={false} tick={axisStyle as any}

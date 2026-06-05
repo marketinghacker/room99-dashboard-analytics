@@ -8,58 +8,58 @@
    ---------------------------------------------------------------- */
 
 @theme {
-  /* -- Editorial (default) -- */
-  --color-bg-base:    #F6F1E8;   /* app canvas */
-  --color-bg-side:    #EFE8DC;   /* sidebar, headers */
-  --color-bg-card:    #FBF8F1;   /* cards, popovers */
-  --color-bg-elevated:#EFE8DC;   /* hover state, strips */
-  --color-bg-hero:    #F0E6D2;   /* primary KPI cards, AI insight */
-  --color-bg-hover:   #E8DFCB;   /* interactive hover */
+  /* -- Room99 brand (room99.pl: monochrom + dusty rose) -- */
+  --color-bg-base:    #F7F7F7;   /* app canvas */
+  --color-bg-side:    #FFFFFF;   /* sidebar, headers */
+  --color-bg-card:    #FFFFFF;   /* cards, popovers */
+  --color-bg-elevated:#F5F5F5;   /* hover state, strips */
+  --color-bg-hero:    #FAF1F4;   /* primary KPI cards — delikatny róż brandu */
+  --color-bg-hover:   #EFEFEF;   /* interactive hover */
 
   /* Alias legacy key for anything still referencing it */
-  --color-bg-subtle:  #EFE8DC;
+  --color-bg-subtle:  #F5F5F5;
 
   /* Borders */
-  --color-line-soft:  #E2D8C4;   /* default borders */
-  --color-line-hard:  #C9B896;   /* emphasized borders */
+  --color-line-soft:  #EBEBEB;   /* default borders (token sklepu) */
+  --color-line-hard:  #D8D8D8;   /* emphasized borders (token sklepu) */
   /* Legacy aliases */
-  --color-border-subtle: #E2D8C4;
-  --color-border-strong: #C9B896;
-  --color-border-focus:  #A65D4E;
+  --color-border-subtle: #EBEBEB;
+  --color-border-strong: #D8D8D8;
+  --color-border-focus:  #0A0B0B;
 
   /* Ink */
-  --color-ink-primary:     #2A1F17;
-  --color-ink-secondary:   #5C4A3A;
-  --color-ink-tertiary:    #8B7355;
-  --color-ink-placeholder: #A89376;
+  --color-ink-primary:     #0A0B0B;  /* czerń brandu room99.pl */
+  --color-ink-secondary:   #444444;
+  --color-ink-tertiary:    #999999;
+  --color-ink-placeholder: #BBBBBB;
 
   /* Accent + semantic */
-  --color-accent:          #A65D4E;   /* terracotta — primary accent */
-  --color-accent-2:        #6A5A48;   /* taupe */
-  --color-accent-primary:  #A65D4E;   /* legacy alias */
-  --color-accent-positive: #6A8470;   /* sage */
-  --color-accent-positive-bg: #E3ECE4;
-  --color-accent-negative: #A65D4E;   /* terracotta = alert too */
-  --color-accent-negative-bg: #F3DED9;
-  --color-accent-warning:  #BF8E4C;   /* amber */
-  --color-accent-warning-bg: #F5E6CC;
+  --color-accent:          #0A0B0B;   /* czerń — primary brand accent */
+  --color-accent-2:        #D990AA;   /* dusty rose — akcent sklepu */
+  --color-accent-primary:  #0A0B0B;   /* legacy alias */
+  --color-accent-positive: #5D8A66;   /* stonowana zieleń */
+  --color-accent-positive-bg: #E9F1EA;
+  --color-accent-negative: #D5310D;   /* czerwień promocyjna sklepu */
+  --color-accent-negative-bg: #FFEAEA; /* token sklepu */
+  --color-accent-warning:  #C98B2D;
+  --color-accent-warning-bg: #F7ECD8;
 
-  /* Chart palette — warm, muted, magazine-like */
-  --color-chart-1: #A65D4E; /* terracotta */
-  --color-chart-2: #6A8470; /* sage */
-  --color-chart-3: #BF8E4C; /* amber */
-  --color-chart-4: #8B6940; /* bronze */
-  --color-chart-5: #6A5A48; /* taupe */
-  --color-chart-6: #C9B896; /* sand */
-  --color-chart-7: #A07A5C; /* caramel */
-  --color-chart-8: #8FA892; /* pistachio */
+  /* Chart palette — monochrom + rose, zgodna z brandem */
+  --color-chart-1: #0A0B0B; /* czerń */
+  --color-chart-2: #D990AA; /* dusty rose */
+  --color-chart-3: #999999; /* szary */
+  --color-chart-4: #8A5A64; /* deep rose */
+  --color-chart-5: #6D6A6A; /* grafit (token sklepu) */
+  --color-chart-6: #E3B7C4; /* jasny róż */
+  --color-chart-7: #444444; /* antracyt */
+  --color-chart-8: #C4C4C4; /* srebrny */
 
-  /* Platform brand hints — warm, muted, keep recognizable */
-  --color-platform-meta:      #8B6940;
-  --color-platform-google:    #B8926B;
-  --color-platform-pinterest: #A65D4E;
-  --color-platform-criteo:    #BF8E4C;
-  --color-platform-ga4:       #6A8470;
+  /* Platform brand hints — rozróżnialne w obrębie palety */
+  --color-platform-meta:      #0A0B0B;
+  --color-platform-google:    #999999;
+  --color-platform-pinterest: #D990AA;
+  --color-platform-criteo:    #C98B2D;
+  --color-platform-ga4:       #5D8A66;
 
   /* Typography — loaded via next/font/google in layout.tsx.
      Montserrat = substytut Gotham Book (decyzja klienta 06.2026). */
@@ -67,10 +67,10 @@
   --font-text:    var(--font-montserrat, 'Montserrat'), -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   --font-mono:    var(--font-jetbrains, 'JetBrains Mono'), ui-monospace, 'SF Mono', Menlo, monospace;
 
-  /* Shadows — soft, low-contrast on cream */
-  --shadow-card:       0 1px 2px rgba(42, 31, 23, 0.05), 0 4px 16px rgba(42, 31, 23, 0.04);
-  --shadow-card-hover: 0 2px 4px rgba(42, 31, 23, 0.08), 0 12px 32px rgba(42, 31, 23, 0.08);
-  --shadow-popover:    0 8px 32px rgba(42, 31, 23, 0.14), 0 2px 8px rgba(42, 31, 23, 0.08);
+  /* Shadows — soft, neutral */
+  --shadow-card:       0 1px 2px rgba(10, 11, 11, 0.04), 0 4px 16px rgba(10, 11, 11, 0.04);
+  --shadow-card-hover: 0 2px 4px rgba(10, 11, 11, 0.06), 0 12px 32px rgba(10, 11, 11, 0.08);
+  --shadow-popover:    0 8px 32px rgba(10, 11, 11, 0.12), 0 2px 8px rgba(10, 11, 11, 0.08);
   --shadow-inset:      inset 0 1px 0 rgba(255, 255, 255, 0.35);
 
   /* Radii */

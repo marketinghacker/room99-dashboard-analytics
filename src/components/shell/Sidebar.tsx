@@ -199,29 +199,20 @@ export function Sidebar() {
         style={{ borderColor: 'var(--color-line-soft)' }}
       >
         <div className="mb-2"><SyncStatus /></div>
+        {/* Logo Marketing Hackers zamiast napisu z nazwą/rolą (prośba 06.2026) */}
         {me && (
           <div className="flex items-center gap-2">
-            <div
-              className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-medium"
-              style={{
-                background: me.role === 'agency' ? 'var(--color-accent)' : 'var(--color-accent-positive)',
-                color: 'white',
-              }}
-            >
-              {(me.displayName ?? me.email)[0].toUpperCase()}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-[12px] truncate" style={{ color: 'var(--color-ink-primary)' }}>
-                {me.displayName ?? me.email}
-              </div>
-              <div className="text-[10px] font-mono uppercase tracking-[0.08em]" style={{ color: 'var(--color-ink-tertiary)' }}>
-                {me.role}
-              </div>
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/brand/mh-logo.svg"
+              alt="Marketing Hackers"
+              title={`${me.displayName ?? me.email} · ${me.role}`}
+              style={{ maxWidth: 150, height: 'auto', display: 'block', flex: 1, minWidth: 0 }}
+            />
             <button
               onClick={logout}
               title="Wyloguj"
-              className="p-1.5 rounded-[6px]"
+              className="p-1.5 rounded-[6px] shrink-0"
               style={{ color: 'var(--color-ink-tertiary)' }}
               onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
               onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
