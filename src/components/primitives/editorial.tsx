@@ -311,7 +311,9 @@ export function HeroKpi({
     >
       <div className="flex items-center justify-between mb-2">
         <Overline>{label}</Overline>
-        {change != null && <Delta value={change / 100} />}
+        {/* `change` is a FRACTION (rollup deltas: -0.09 = -9%) — Delta renders ×100.
+            Dividing by 100 here was a bug that showed every delta 100× too small. */}
+        {change != null && <Delta value={change} />}
       </div>
       <div
         className="hero-numeral break-words"
@@ -384,7 +386,8 @@ export function StatCard({
         {display}
       </div>
       <div className="flex items-center justify-between mt-0.5">
-        {change != null ? <Delta value={change / 100} size="xs" /> : <span />}
+        {/* `change` is a FRACTION — see HeroKpi note. */}
+        {change != null ? <Delta value={change} size="xs" /> : <span />}
         {trend && trend.length > 1 && (
           <Sparkline data={trend} width={72} height={18} color="var(--color-accent-2)" strokeWidth={1} />
         )}

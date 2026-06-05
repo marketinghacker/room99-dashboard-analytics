@@ -69,7 +69,8 @@ export function ExecutiveSummaryTab() {
     kp?.users > 0 ? ((kp.ga4Transactions ?? kp.transactions ?? 0) / kp.users) * 100 : null;
   const cr = crOf(k);
   const crPrev = crOf(prev);
-  const crChange = cr != null && crPrev != null && crPrev !== 0 ? ((cr - crPrev) / crPrev) * 100 : null;
+  // Fraction, same convention as rollup deltas (0.05 = +5%).
+  const crChange = cr != null && crPrev != null && crPrev !== 0 ? (cr - crPrev) / crPrev : null;
   const perPlatform = (data.perPlatform ?? []).filter((p: any) => p.platform !== 'ga4' && p.payload);
 
   // Masthead defaults (dynamic) — agency can override via DB

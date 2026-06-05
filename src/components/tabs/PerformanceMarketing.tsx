@@ -1,13 +1,11 @@
 'use client';
 
-import { useMemo } from 'react';
-import { type ColumnDef } from '@tanstack/react-table';
 import { useFilteredSWR } from '@/components/primitives/useFilteredSWR';
-import { HeroKpi, StatCard, SectionHead, Overline, Dot, PLATFORM_DOT } from '@/components/primitives/editorial';
+import { HeroKpi, StatCard, SectionHead, Overline, Dot, PLATFORM_DOT, fmtX, Bar } from '@/components/primitives/editorial';
 import { ChartArea, ChartBar } from '@/components/primitives/charts';
-import { DataTable } from '@/components/primitives/DataTable';
+import { DeltaBadge } from '@/components/primitives/DeltaBadge';
 import { LoadingCard, ErrorCard } from '@/components/primitives/StateCard';
-import { formatPLN, formatInt, formatPct } from '@/lib/format';
+import { formatPLN, formatPct } from '@/lib/format';
 
 const PLATFORM_LABEL: Record<string, string> = {
   meta: 'Meta',
@@ -19,41 +17,6 @@ const PLATFORM_LABEL: Record<string, string> = {
 export function PerformanceMarketingTab() {
   const { data, error, isLoading } = useFilteredSWR<any>('/api/data/performance-marketing');
 
-  const columns = useMemo<ColumnDef<any, any>[]>(
-    () => [
-      {
-        accessorKey: 'name',
-        header: 'Kampania',
-        cell: ({ row }) => (
-          <div className="flex items-center gap-2">
-            <Dot color={PLATFORM_DOT[row.original.platform] ?? 'var(--color-accent-2)'} size={8} />
-            <span className="text-[11px] font-mono uppercase tracking-[0.08em]" style={{ color: 'var(--color-ink-tertiary)' }}>
-              {PLATFORM_LABEL[row.original.platform] ?? row.original.platform}
-            </span>
-            <span className="font-medium truncate max-w-[280px]" title={row.original.name}>
-              {row.original.name}
-            </span>
-          </div>
-        ),
-      },
-      { accessorKey: 'spend', header: 'Wydatki', meta: { numeric: true }, cell: (i) => formatPLN(i.getValue() as number) },
-      { accessorKey: 'impressions', header: 'Wyświetlenia', meta: { numeric: true }, cell: (i) => formatInt(i.getValue() as number) },
-      { accessorKey: 'clicks', header: 'Kliki', meta: { numeric: true }, cell: (i) => formatInt(i.getValue() as number) },
-      { accessorKey: 'ctr', header: 'CTR', meta: { numeric: true }, cell: (i) => formatPct(i.getValue() as number) },
-      { accessorKey: 'conversionValue', header: 'Wartość konw. (platform)', meta: { numeric: true }, cell: (i) => formatPLN(i.getValue() as number) },
-      {
-        accessorKey: 'roas',
-        header: 'ROAS',
-        meta: { numeric: true },
-        cell: (i) => {
-          const v = i.getValue() as number | null;
-          return v == null ? '—' : `${new Intl.NumberFormat('pl-PL', { maximumFractionDigits: 2 }).format(v)}×`;
-        },
-      },
-    ],
-    []
-  );
-
   if (isLoading) return <div className="grid grid-cols-3 gap-4">{Array.from({ length: 3 }).map((_, i) => <LoadingCard key={i} />)}</div>;
   if (error) return <ErrorCard error={String(error.message ?? error)} />;
   if (!data?.all) return <ErrorCard error="Brak danych" />;
@@ -61,16 +24,44 @@ export function PerformanceMarketingTab() {
   const all = data.all;
   const kpis = all.kpis;
   const deltas = all.deltas ?? {};
-  const perPlatform = (data.perPlatform ?? []).filter((p: any) => p.payload);
-  const campaigns = all.campaigns ?? [];
+  const prev = all.compareKpis;
+  const perPlatform = (data.perPlatform ?? []).filter((p: any) => p.payload && p.platform !== 'ga4');
   const timeSeries = all.timeSeries ?? [];
 
-  const platformComparison = perPlatform.map((p: any) => ({
-    name: PLATFORM_LABEL[p.platform] ?? p.platform,
-    spend: p.payload.kpis.spend,
-    conversionValue: p.payload.kpis.conversionValue,
-    roas: p.payload.kpis.roas ?? 0,
-  }));
+  // Udział mediów w przychodzie = spend (media, bez fee) / przychód Shoper.
+  // Prośba klienta — zastępuje usunięte „Wartość konwersji" i „ROAS" (duplikowały
+  // sekcję platform attribution).
+  const mediaShare = kpis.revenue > 0 ? kpis.spend / kpis.revenue : null;
+  const prevMediaShare = prev?.revenue > 0 ? prev.spend / prev.revenue : null;
+  const mediaShareChange =
+    mediaShare != null && prevMediaShare != null && prevMediaShare !== 0
+      ? (mediaShare - prevMediaShare) / prevMediaShare
+      : null;
+
+  // Per-platform rows for the two draft tables. Each platform payload carries
+  // its own deltas vs the selected compare period.
+  const rows = perPlatform
+    .map((p: any) => {
+      const k = p.payload.kpis ?? {};
+      const d = p.payload.deltas ?? {};
+      return {
+        platform: p.platform,
+        name: PLATFORM_LABEL[p.platform] ?? p.platform,
+        spend: k.spend ?? 0,
+        spendDelta: d.spend ?? null,
+        revenue: k.conversionValue ?? 0,
+        roas: k.platformRoas ?? null,
+        roasDelta: d.platformRoas ?? null,
+        cpa: k.conversions > 0 ? (k.spend ?? 0) / k.conversions : null,
+        cr: k.clicks > 0 ? (k.conversions ?? 0) / k.clicks : null,
+      };
+    })
+    .filter((r: any) => r.spend > 0)
+    .sort((a: any, b: any) => b.spend - a.spend);
+
+  const totalSpend = rows.reduce((s: number, r: any) => s + r.spend, 0);
+
+  const platformComparison = rows.map((r: any) => ({ name: r.name, spend: r.spend }));
 
   return (
     <div className="flex flex-col gap-10">
@@ -80,14 +71,14 @@ export function PerformanceMarketingTab() {
           Wszystkie kanały płatne
         </h1>
         <p className="lede mt-2" style={{ fontSize: 14 }}>
-          Źródło: API platform ads (Meta Graph, Google Ads, Pinterest, Criteo). Wydatki 1:1 z panelami,
-          przychód i ROAS to własna atrybucja platform — nie Shoper.
+          Źródło: API platform ads (Meta Graph, Google Ads, Pinterest, Criteo). Wydatki 1:1 z panelami.
+          Przychody platform NIE są sumowane — każda platforma raportuje własną atrybucję.
         </p>
       </header>
 
-      {/* Hero KPI — 4 slots is tight at 1280px; bump primary slot so the PLN
-          value fits on one line. */}
-      <div className="grid gap-5" style={{ gridTemplateColumns: '1.5fr 1.25fr 1fr 1fr' }}>
+      {/* Hero KPI — „Wartość konwersji" i „ROAS" usunięte (duplikowały dane platform);
+          w zamian „Udział mediów w przychodzie" (prośba klienta). */}
+      <div className="grid gap-5" style={{ gridTemplateColumns: '1.5fr 1.25fr 1fr' }}>
         <HeroKpi
           label="Wydatki — wszystkie kanały"
           value={kpis.spend ?? 0}
@@ -97,18 +88,11 @@ export function PerformanceMarketingTab() {
           hint="Źródło: Meta + Google + Pinterest + Criteo"
         />
         <HeroKpi
-          label="Wartość konwersji (platform attr.)"
-          value={kpis.conversionValue ?? 0}
-          change={deltas.conversionValue}
-          format="pln"
-          hint="Suma własnej atrybucji platform"
-        />
-        <HeroKpi
-          label="ROAS (platform)"
-          value={kpis.roas ?? 0}
-          change={deltas.roas}
-          format="x"
-          hint="ConversionValue ÷ Spend"
+          label="Udział mediów w przychodzie"
+          value={mediaShare != null ? mediaShare * 100 : 0}
+          change={mediaShareChange != null ? -mediaShareChange : null}
+          format="pct"
+          hint="Wydatki media ÷ przychód Shoper (bez wynagrodzenia MH)"
         />
         <HeroKpi
           label="CPC (średni)"
@@ -170,15 +154,112 @@ export function PerformanceMarketingTab() {
         </div>
       </section>
 
-      {/* §02 campaigns */}
+      {/* §02 Budżet i udział platform — zestawienie 1/2 z draftu */}
       <section>
         <SectionHead
           number="§02"
-          title={`Top kampanie (${campaigns.length})`}
-          sub="Źródło: platformy reklamowe · atrybucja własna platform. Sortuj klikając nagłówek."
+          title="Budżet i udział platform"
+          sub="Wydatki 1:1 z paneli reklamowych. Zmiana vs wybrany okres porównawczy."
         />
         <div className="card overflow-hidden">
-          <DataTable data={campaigns} columns={columns} pageSize={20} />
+          <table className="w-full">
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--color-line-soft)' }}>
+                <th className="table-header text-left px-4 py-3">Platforma</th>
+                <th className="table-header text-right px-4 py-3">Wydatki</th>
+                <th className="table-header text-right px-4 py-3">% udział</th>
+                <th className="table-header text-right px-4 py-3">Zmiana</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r: any) => {
+                const pct = totalSpend > 0 ? r.spend / totalSpend : 0;
+                return (
+                  <tr
+                    key={r.platform}
+                    style={{ borderBottom: '1px solid var(--color-line-soft)' }}
+                    className="transition-colors"
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <td className="px-4 py-3">
+                      <span className="flex items-center gap-2 table-cell">
+                        <Dot color={PLATFORM_DOT[r.platform] ?? 'var(--color-accent-2)'} size={8} />
+                        <span className="font-medium">{r.name}</span>
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right table-cell numeric">{formatPLN(r.spend)}</td>
+                    <td className="px-4 py-3 text-right table-cell">
+                      <span className="flex items-center justify-end gap-2">
+                        <Bar pct={pct} width={60} height={4} color={PLATFORM_DOT[r.platform]} />
+                        <span className="numeric">{(pct * 100).toFixed(0)}%</span>
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <DeltaBadge pct={r.spendDelta} size="xs" />
+                    </td>
+                  </tr>
+                );
+              })}
+              <tr style={{ background: 'var(--color-bg-elevated)' }}>
+                <td className="px-4 py-3 overline">Łącznie</td>
+                <td className="px-4 py-3 text-right numeric font-medium">{formatPLN(totalSpend)}</td>
+                <td className="px-4 py-3 text-right numeric font-medium">100%</td>
+                <td className="px-4 py-3 text-right">
+                  <DeltaBadge pct={deltas.spend ?? null} size="xs" />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* §03 Efektywność platform — zestawienie 2/2 z draftu.
+          UWAGA: bez wiersza „Razem" — przychodów z różnych atrybucji NIE sumujemy. */}
+      <section>
+        <SectionHead
+          number="§03"
+          title="Efektywność platform"
+          sub="Przychód = własna atrybucja każdej platformy (nie Shoper) — wartości NIE sumują się między platformami."
+        />
+        <div className="card overflow-hidden">
+          <table className="w-full">
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--color-line-soft)' }}>
+                <th className="table-header text-left px-4 py-3">Platforma</th>
+                <th className="table-header text-right px-4 py-3">Przychód (platform attr.)</th>
+                <th className="table-header text-right px-4 py-3">ROAS</th>
+                <th className="table-header text-right px-4 py-3">CPA</th>
+                <th className="table-header text-right px-4 py-3">CR</th>
+                <th className="table-header text-right px-4 py-3">Zmiana ROAS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r: any) => (
+                <tr
+                  key={r.platform}
+                  style={{ borderBottom: '1px solid var(--color-line-soft)' }}
+                  className="transition-colors"
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <td className="px-4 py-3">
+                    <span className="flex items-center gap-2 table-cell">
+                      <Dot color={PLATFORM_DOT[r.platform] ?? 'var(--color-accent-2)'} size={8} />
+                      <span className="font-medium">{r.name}</span>
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-right table-cell numeric">{formatPLN(r.revenue)}</td>
+                  <td className="px-4 py-3 text-right table-cell numeric font-medium">{fmtX(r.roas)}</td>
+                  <td className="px-4 py-3 text-right table-cell numeric">{r.cpa != null ? formatPLN(r.cpa) : '—'}</td>
+                  <td className="px-4 py-3 text-right table-cell numeric">{formatPct(r.cr)}</td>
+                  <td className="px-4 py-3 text-right">
+                    <DeltaBadge pct={r.roasDelta} size="xs" />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </section>
     </div>
