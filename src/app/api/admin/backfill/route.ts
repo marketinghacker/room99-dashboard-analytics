@@ -11,6 +11,8 @@ import { syncMetaGraph } from '@/lib/sync/meta-graph';
 import { syncGoogleAds } from '@/lib/sync/google-ads';
 import { syncCriteo } from '@/lib/sync/criteo';
 import { syncGA4 } from '@/lib/sync/ga4';
+import { syncGA4Funnel } from '@/lib/sync/ga4-funnel';
+import { syncGA4Products } from '@/lib/sync/ga4-products';
 import { syncPinterest } from '@/lib/sync/pinterest';
 import { syncSellRocket } from '@/lib/sync/sellrocket';
 import { syncSellRocketDirect } from '@/lib/sync/sellrocket-direct';
@@ -115,6 +117,14 @@ export async function GET(req: Request) {
         break;
       case 'ga4':
         jobs.push({ source, fn: () => syncGA4(range) });
+        break;
+      case 'ga4_funnel':
+        // Lejek od użytkowników + mikrokonwersje (ga4_funnel_daily).
+        jobs.push({ source, fn: () => syncGA4Funnel(range) });
+        break;
+      case 'ga4_products':
+        // Ruch GA4 per produkt (ga4_product_daily).
+        jobs.push({ source, fn: () => syncGA4Products(range) });
         break;
       case 'pinterest':
         jobs.push({ source, fn: () => syncPinterest(range) });
