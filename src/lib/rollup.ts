@@ -68,6 +68,8 @@ export type KPIs = {
   revenue: number;
   sessions: number;
   transactions: number;
+  /** GA4-reported transactions — keeps CR fully GA4-consistent (CR = ga4Transactions / users). */
+  ga4Transactions: number;
   users: number;
   newUsers: number;
   engagedSessions: number;
@@ -160,7 +162,7 @@ const AD_PLATFORMS: Array<Exclude<Platform, 'all' | 'ga4'>> = [
 
 const EMPTY_KPIS: KPIs = {
   spend: 0, spendAgency: 0, impressions: 0, clicks: 0, conversions: 0, conversionValue: 0,
-  revenue: 0, sessions: 0, transactions: 0, users: 0, newUsers: 0,
+  revenue: 0, sessions: 0, transactions: 0, ga4Transactions: 0, users: 0, newUsers: 0,
   engagedSessions: 0, bounceRate: null, itemsViewed: 0, addToCart: 0, beginCheckout: 0,
   ctr: null, cpc: null, cpm: null, cos: null, roas: null, aov: null,
   platformRoas: null, platformCos: null,
@@ -480,6 +482,9 @@ export async function buildOneLive(
       // Override GA4 revenue/transactions with Shoper SellRocket data.
       revenue: s?.salesBySource.shr.revenue ?? 0,
       transactions: s?.salesBySource.shr.orders ?? 0,
+      // Keep the raw GA4 transaction count — CR is defined as GA4 transactions
+      // / GA4 users (total), confirmed with the client (Michał Holka).
+      ga4Transactions: g?.kpis.transactions ?? 0,
       spendAgency: feeForRange,
     };
     // Re-derive AOV/COS/ROAS — COS now folds in the agency retainer.

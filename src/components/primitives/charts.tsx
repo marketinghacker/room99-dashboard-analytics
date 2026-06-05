@@ -139,9 +139,12 @@ export function ChartArea({
   series: LineSeries[];
   height?: number;
 }) {
+  // Secondary (right) axis — lets a low-magnitude series (e.g. daily spend)
+  // show real correlation against a high-magnitude one (e.g. revenue).
+  const hasRight = series.some((s) => s.axis === 'right');
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+      <AreaChart data={data} margin={{ top: 8, right: hasRight ? 8 : 8, left: 0, bottom: 0 }}>
         <defs>
           {series.map((s, i) => {
             const color = s.color ?? CHART_COLORS[i % CHART_COLORS.length];
@@ -163,13 +166,30 @@ export function ChartArea({
           minTickGap={24}
         />
         <YAxis
+          yAxisId="left"
           axisLine={false}
           tickLine={false}
           tick={axisStyle as any}
           tickFormatter={(v) => (Math.abs(v) >= 1000 ? `${Math.round(v / 1000)}k` : String(v))}
           width={44}
         />
+        {hasRight && (
+          <YAxis
+            yAxisId="right"
+            orientation="right"
+            axisLine={false}
+            tickLine={false}
+            tick={axisStyle as any}
+            tickFormatter={(v) => (Math.abs(v) >= 1000 ? `${Math.round(v / 1000)}k` : String(v))}
+            width={44}
+          />
+        )}
         <Tooltip content={(p) => <TooltipBox {...p} />} />
+        <Legend
+          iconType="circle"
+          iconSize={8}
+          wrapperStyle={{ fontSize: 11, color: 'var(--color-ink-secondary)', paddingTop: 10 }}
+        />
         {series.map((s, i) => {
           const color = s.color ?? CHART_COLORS[i % CHART_COLORS.length];
           return (
@@ -181,6 +201,7 @@ export function ChartArea({
               stroke={color}
               strokeWidth={2}
               fill={`url(#g-${s.key})`}
+              yAxisId={s.axis === 'right' ? 'right' : 'left'}
             />
           );
         })}

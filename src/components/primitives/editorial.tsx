@@ -346,12 +346,15 @@ export function StatCard({
   change,
   format = 'int',
   trend,
+  hint,
 }: {
   label: string;
   value: number;
   change?: number | null;
   format?: 'pln' | 'int' | 'pct' | 'x';
   trend?: number[];
+  /** Metric definition shown under the value — e.g. "GA4: transakcje ÷ użytkownicy". */
+  hint?: string;
 }) {
   const count = useCountUp(value, 1400);
   const display =
@@ -386,6 +389,11 @@ export function StatCard({
           <Sparkline data={trend} width={72} height={18} color="var(--color-accent-2)" strokeWidth={1} />
         )}
       </div>
+      {hint && (
+        <div className="text-[10px] leading-snug" style={{ color: 'var(--color-ink-tertiary)' }}>
+          {hint}
+        </div>
+      )}
     </div>
   );
 }

@@ -4,12 +4,12 @@ import { useFilteredSWR } from '@/components/primitives/useFilteredSWR';
 import useSWR from 'swr';
 import { useFilters } from '@/stores/filters';
 import {
-  Masthead, HeroKpi, StatCard, SectionHead, Sparkline,
-  Delta, Dot, Bar, PLATFORM_DOT, fmtX, fmtPLNCompact,
+  Masthead, HeroKpi, StatCard, SectionHead,
+  Dot, PLATFORM_DOT, fmtPLNCompact,
 } from '@/components/primitives/editorial';
 import { ChartArea, ChartDonut, ChartLine } from '@/components/primitives/charts';
 import { LoadingCard, ErrorCard } from '@/components/primitives/StateCard';
-import { formatPLN, formatInt, formatPct } from '@/lib/format';
+import { formatPct } from '@/lib/format';
 import { EditableMasthead } from '@/components/shell/EditableMasthead';
 
 const PLATFORM_NAMES: Record<string, string> = {
@@ -59,7 +59,17 @@ export function ExecutiveSummaryTab() {
   const all = data.all;
   const k = all.kpis;
   const d = all.deltas ?? {};
+  const prev = all.compareKpis;
   const timeSeries = all.timeSeries ?? [];
+
+  // CR — GA4-only: transakcje (GA4) ÷ użytkownicy total (GA4). Potwierdzone
+  // z klientem (Michał Holka). Celowo NIE Shoper-transakcje/sesje — definicja
+  // widoczna pod kartą, żeby ręczne przeliczenia się zgadzały.
+  const crOf = (kp: any): number | null =>
+    kp?.users > 0 ? ((kp.ga4Transactions ?? kp.transactions ?? 0) / kp.users) * 100 : null;
+  const cr = crOf(k);
+  const crPrev = crOf(prev);
+  const crChange = cr != null && crPrev != null && crPrev !== 0 ? ((cr - crPrev) / crPrev) * 100 : null;
   const perPlatform = (data.perPlatform ?? []).filter((p: any) => p.platform !== 'ga4' && p.payload);
 
   // Masthead defaults (dynamic) — agency can override via DB
@@ -129,14 +139,15 @@ export function ExecutiveSummaryTab() {
         />
       </div>
 
-      {/* 6-col stat strip */}
-      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(6, 1fr)' }}>
+      {/* 5-col stat strip — "Nowi użytkownicy" usunięte (decyzja klienta 04.2026) */}
+      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
         <StatCard
           label="Sesje"
           value={k.sessions ?? 0}
           change={d.sessions}
           format="int"
           trend={timeSeries.map((r: any) => r.sessions ?? 0)}
+          hint="GA4"
         />
         <StatCard
           label="Transakcje"
@@ -144,6 +155,7 @@ export function ExecutiveSummaryTab() {
           change={d.transactions}
           format="int"
           trend={timeSeries.map((r: any) => r.transactions ?? 0)}
+          hint="Shoper — realne zamówienia"
         />
         <StatCard
           label="AOV"
@@ -151,39 +163,43 @@ export function ExecutiveSummaryTab() {
           change={d.aov}
           format="pln"
           trend={timeSeries.map((r: any) => (r.transactions ? r.revenue / r.transactions : 0))}
+          hint="Shoper: przychód ÷ zamówienia"
         />
         <StatCard
           label="CR"
-          value={k.sessions ? ((k.transactions ?? 0) / k.sessions) * 100 : 0}
+          value={cr ?? 0}
+          change={crChange}
           format="pct"
-        />
-        <StatCard
-          label="Nowi użytkownicy"
-          value={k.newUsers ?? 0}
-          format="int"
+          hint="GA4: transakcje ÷ użytkownicy (total)"
         />
         <StatCard
           label="COS (agency)"
           value={k.cos != null ? k.cos * 100 : 0}
           change={d.cos != null ? -d.cos : null}
           format="pct"
+          hint="(media + wynagrodzenie MH) ÷ przychód Shoper"
         />
       </div>
 
-      {/* §01 Przychód vs Wydatki */}
+      {/* §01 Przychód vs Wydatki — koszt (media + fee/dzień) na osi pomocniczej,
+          żeby było widać korelację, a nie płaską linię przy skali przychodu */}
       <section>
         <SectionHead
           number="§01"
           title="Przychód vs Wydatki"
-          sub="Dzień po dniu. Źródło: Shoper (przychód) + Meta/Google/Pinterest/Criteo (spend)"
+          sub="Dzień po dniu. Przychód: Shoper (lewa oś). Koszt: media + wynagrodzenie MH rozbite na dni (prawa oś)."
         />
         <div className="grid gap-5" style={{ gridTemplateColumns: '1.6fr 1fr' }}>
           <div className="card p-5">
             <ChartArea
-              data={timeSeries}
+              data={timeSeries.map((r: any) => ({
+                date: r.date,
+                revenue: r.revenue,
+                cost: (r.spend ?? 0) + (r.spendAgency ?? 0),
+              }))}
               series={[
                 { key: 'revenue', label: 'Przychód Shoper', color: 'var(--color-accent)' },
-                { key: 'spend',   label: 'Wydatki reklamowe', color: 'var(--color-accent-positive)' },
+                { key: 'cost',    label: 'Koszt marketingu (media + fee)', color: 'var(--color-accent-positive)', axis: 'right' },
               ]}
               height={280}
             />
@@ -194,12 +210,29 @@ export function ExecutiveSummaryTab() {
               data={spendByPlatform.map((s: any) => ({ name: s.name, value: s.spend }))}
               nameKey="name"
               valueKey="value"
-              height={240}
+              height={200}
             />
-            <div className="mt-3 text-center">
-              <div className="overline">Razem</div>
-              <div className="numeric mt-0.5" style={{ fontFamily: 'var(--font-display)', fontWeight: 500, fontSize: 22 }}>
-                {fmtPLNCompact(totalSpend)}
+            {/* % udział per platforma — prośba klienta: „jak już ma być, pokażmy %" */}
+            <div className="mt-3 flex flex-col gap-1.5">
+              {spendByPlatform.map((p: any) => {
+                const pct = totalSpend > 0 ? (p.spend / totalSpend) * 100 : 0;
+                return (
+                  <div key={p.platform} className="flex items-center gap-2 text-[12px]">
+                    <Dot color={PLATFORM_DOT[p.platform] ?? 'var(--color-accent-2)'} size={7} />
+                    <span style={{ color: 'var(--color-ink-secondary)' }}>{p.name}</span>
+                    <span className="ml-auto numeric font-medium">{pct.toFixed(1).replace('.', ',')}%</span>
+                    <span className="numeric w-[88px] text-right" style={{ color: 'var(--color-ink-tertiary)' }}>
+                      {fmtPLNCompact(p.spend)}
+                    </span>
+                  </div>
+                );
+              })}
+              <div
+                className="flex items-center justify-between pt-1.5 mt-0.5 text-[12px]"
+                style={{ borderTop: '1px solid var(--color-line-soft)' }}
+              >
+                <span className="overline">Razem</span>
+                <span className="numeric font-medium">{fmtPLNCompact(totalSpend)}</span>
               </div>
             </div>
           </div>
@@ -242,75 +275,8 @@ export function ExecutiveSummaryTab() {
         </div>
       </section>
 
-      {/* §03 Platformy — zestawienie */}
-      <section>
-        <SectionHead
-          number="§03"
-          title="Platformy — zestawienie"
-          sub="Wydatki, ROAS, CR, CPA, % budżetu. Źródło: platform ads APIs (Meta Graph, Google Ads, Pinterest, Criteo). Przychód w tej tabeli = sprzedaż raportowana przez platformy (własne ich attribution), nie Shoper."
-        />
-        <div className="card overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--color-line-soft)' }}>
-                <th className="table-header text-left px-4 py-3">Platforma</th>
-                <th className="table-header text-right px-4 py-3">Wydatki</th>
-                <th className="table-header text-right px-4 py-3" title="Sprzedaż raportowana przez platformę reklamową">Przychód (platform attr.)</th>
-                <th className="table-header text-right px-4 py-3">ROAS</th>
-                <th className="table-header text-right px-4 py-3">CR</th>
-                <th className="table-header text-right px-4 py-3">CPA</th>
-                <th className="table-header text-left px-4 py-3">30d trend</th>
-                <th className="table-header text-right px-4 py-3">% budżetu</th>
-              </tr>
-            </thead>
-            <tbody>
-              {spendByPlatform.map((p: any) => {
-                const pct = totalSpend > 0 ? p.spend / totalSpend : 0;
-                return (
-                  <tr
-                    key={p.platform}
-                    style={{ borderBottom: '1px solid var(--color-line-soft)' }}
-                    className="transition-colors"
-                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                  >
-                    <td className="px-4 py-3">
-                      <span className="flex items-center gap-2 table-cell">
-                        <Dot color={PLATFORM_DOT[p.platform] ?? 'var(--color-accent-2)'} size={8} />
-                        <span className="font-medium">{p.name}</span>
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right table-cell numeric">{formatPLN(p.spend)}</td>
-                    <td className="px-4 py-3 text-right table-cell numeric">{formatPLN(p.revenue)}</td>
-                    <td className="px-4 py-3 text-right table-cell numeric">{fmtX(p.roas)}</td>
-                    <td className="px-4 py-3 text-right table-cell numeric">{formatPct(p.cr)}</td>
-                    <td className="px-4 py-3 text-right table-cell numeric">{formatPLN(p.cpa ?? 0)}</td>
-                    <td className="px-4 py-3">
-                      <Sparkline data={p.dailySpend} width={88} height={20} color={PLATFORM_DOT[p.platform]} />
-                    </td>
-                    <td className="px-4 py-3 text-right table-cell">
-                      <span className="flex items-center justify-end gap-2">
-                        <Bar pct={pct} width={60} height={4} color={PLATFORM_DOT[p.platform]} />
-                        <span className="numeric">{(pct * 100).toFixed(0)}%</span>
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
-              <tr style={{ background: 'var(--color-bg-elevated)' }}>
-                <td className="px-4 py-3 overline">Razem</td>
-                <td className="px-4 py-3 text-right numeric font-medium">{formatPLN(k.spend)}</td>
-                <td className="px-4 py-3 text-right numeric font-medium">{formatPLN(k.conversionValue)}</td>
-                <td className="px-4 py-3 text-right numeric font-medium">{fmtX(k.platformRoas)}</td>
-                <td className="px-4 py-3" />
-                <td className="px-4 py-3" />
-                <td className="px-4 py-3" />
-                <td className="px-4 py-3 text-right numeric font-medium">100%</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+      {/* Tabela "Platformy — zestawienie" przeniesiona do zakładki Performance
+          (decyzja klienta 04.2026 — za szczegółowa na widok menedżerski). */}
 
     </div>
   );
