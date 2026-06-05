@@ -62,11 +62,14 @@ export function ChartLine({
   xKey = 'date',
   series,
   height = 240,
+  fmt,
 }: {
   data: Array<Record<string, any>>;
   xKey?: string;
   series: LineSeries[];
   height?: number;
+  /** Custom tooltip value formatter (e.g. percentages) — default formatInt. */
+  fmt?: (v: number) => string;
 }) {
   const hasRight = series.some((s) => s.axis === 'right');
   return (
@@ -99,7 +102,7 @@ export function ChartLine({
             width={44}
           />
         )}
-        <Tooltip content={(p) => <TooltipBox {...p} />} />
+        <Tooltip content={(p) => <TooltipBox {...p} fmt={fmt} />} />
         <Legend
           iconType="circle"
           iconSize={8}
