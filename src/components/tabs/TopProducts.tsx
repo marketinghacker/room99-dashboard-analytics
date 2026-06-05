@@ -7,6 +7,7 @@ import { useFilters } from '@/stores/filters';
 import { DataTable } from '@/components/primitives/DataTable';
 import { DeltaBadge } from '@/components/primitives/DeltaBadge';
 import { LoadingCard, ErrorCard, EmptyCard } from '@/components/primitives/StateCard';
+import { TopProductsDraft } from './TopProductsDraft';
 import { formatPLN, formatInt } from '@/lib/format';
 import { cn } from '@/components/ui/cn';
 
@@ -282,6 +283,9 @@ export function TopProductsTab() {
           wprowadzają bezpośrednio do tabeli (decyzja klienta 04.2026). */}
 
       <DataTable data={items} columns={columns} pageSize={25} />
+
+      {/* Tabele z draftu: TOP 25 / TOP 5 wzrost / BOTTOM 5 spadek + ruch GA4 */}
+      <TopProductsDraft />
     </div>
   );
 }
