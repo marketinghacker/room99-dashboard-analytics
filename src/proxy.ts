@@ -26,6 +26,7 @@ const PUBLIC_PATH_PREFIXES = [
   '/_next/',
   '/favicon',
   '/static/',
+  '/brand/',        // logo klienta — potrzebne też na /login przed zalogowaniem
 ];
 
 const AGENCY_ONLY_PREFIXES = [
