@@ -64,38 +64,49 @@ export async function upsertGA4Daily(db: DB, rows: GA4DailyRow[]): Promise<numbe
   return rows.length;
 }
 
+/** Multi-row insert ma limit ~65k parametrów pg — tnij duże partie. */
+function chunk<T>(rows: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < rows.length; i += size) out.push(rows.slice(i, i + size));
+  return out;
+}
+
 export async function upsertGA4Funnel(db: DB, rows: GA4FunnelRow[]): Promise<number> {
   if (rows.length === 0) return 0;
-  await db
-    .insert(ga4FunnelDaily)
-    .values(rows)
-    .onConflictDoUpdate({
-      target: [ga4FunnelDaily.date, ga4FunnelDaily.eventName, ga4FunnelDaily.device, ga4FunnelDaily.userType],
-      set: {
-        users: sql`excluded.users`,
-        eventCount: sql`excluded.event_count`,
-        updatedAt: sql`now()`,
-      },
-    });
+  for (const part of chunk(rows, 2000)) {
+    await db
+      .insert(ga4FunnelDaily)
+      .values(part)
+      .onConflictDoUpdate({
+        target: [ga4FunnelDaily.date, ga4FunnelDaily.eventName, ga4FunnelDaily.device, ga4FunnelDaily.userType],
+        set: {
+          users: sql`excluded.users`,
+          eventCount: sql`excluded.event_count`,
+          updatedAt: sql`now()`,
+        },
+      });
+  }
   return rows.length;
 }
 
 export async function upsertGA4Products(db: DB, rows: GA4ProductRow[]): Promise<number> {
   if (rows.length === 0) return 0;
-  await db
-    .insert(ga4ProductDaily)
-    .values(rows)
-    .onConflictDoUpdate({
-      target: [ga4ProductDaily.date, ga4ProductDaily.itemId],
-      set: {
-        itemName: sql`excluded.item_name`,
-        itemsViewed: sql`excluded.items_viewed`,
-        addToCarts: sql`excluded.add_to_carts`,
-        itemsPurchased: sql`excluded.items_purchased`,
-        revenue: sql`excluded.revenue`,
-        updatedAt: sql`now()`,
-      },
-    });
+  for (const part of chunk(rows, 2000)) {
+    await db
+      .insert(ga4ProductDaily)
+      .values(part)
+      .onConflictDoUpdate({
+        target: [ga4ProductDaily.date, ga4ProductDaily.itemId],
+        set: {
+          itemName: sql`excluded.item_name`,
+          itemsViewed: sql`excluded.items_viewed`,
+          addToCarts: sql`excluded.add_to_carts`,
+          itemsPurchased: sql`excluded.items_purchased`,
+          revenue: sql`excluded.revenue`,
+          updatedAt: sql`now()`,
+        },
+      });
+  }
   return rows.length;
 }
 
