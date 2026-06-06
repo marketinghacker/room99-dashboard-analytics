@@ -172,7 +172,7 @@ export function SalesChannelsTab() {
             <div className="flex-1">
               <Overline>⚠ Alert</Overline>
               <div className="text-[14px] mt-1" style={{ color: 'var(--color-ink-primary)', fontWeight: 500 }}>
-                {alertDays.length} {alertDays.length === 1 ? 'dzień' : 'dni'} gdy Allegro &gt; Shoper
+                {`${alertDays.length} ${alertDays.length === 1 ? 'dzień' : 'dni'}, gdy Allegro > Shoper`}
               </div>
               <div className="mt-3 grid gap-1.5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}>
                 {alertDays.map((d) => (

@@ -148,10 +148,13 @@ export async function GET(req: Request) {
   const topSkus = top25.map((r) => r.sku);
   let trends = new Map<string, number[]>();
   if (topSkus.length > 0) {
+    // drizzle sql`` rozwija JS-ową tablicę w krotkę ($1,$2,…) — dla ANY()
+    // potrzebna jest lista IN z joinem parametrów.
+    const skuList = sql.join(topSkus.map((s) => sql`${s}`), sql`, `);
     const tRes: any = await db.execute(sql`
       SELECT sku, date::text AS date, COALESCE(SUM(revenue), 0)::float AS revenue
       FROM products_daily
-      WHERE source = 'shr' AND sku = ANY(${topSkus})
+      WHERE source = 'shr' AND sku IN (${skuList})
         AND date BETWEEN ${last30.start} AND ${last30.end}
       GROUP BY sku, date
       ORDER BY date
