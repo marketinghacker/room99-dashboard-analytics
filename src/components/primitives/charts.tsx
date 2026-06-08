@@ -150,8 +150,8 @@ export function ChartArea({
             const color = s.color ?? CHART_COLORS[i % CHART_COLORS.length];
             return (
               <linearGradient id={`g-${s.key}`} key={s.key} x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%" stopColor={color} stopOpacity={0.28} />
-                <stop offset="100%" stopColor={color} stopOpacity={0} />
+                <stop offset="0%" stopColor={color} stopOpacity={0.45} />
+                <stop offset="100%" stopColor={color} stopOpacity={0.04} />
               </linearGradient>
             );
           })}
@@ -197,8 +197,9 @@ export function ChartArea({
               type="monotone"
               dataKey={s.key}
               name={s.label}
-              stroke={color}
-              strokeWidth={2}
+              // Bez obrysu — czyste gradientowe wypełnienie (prośba klienta 06.2026).
+              stroke="none"
+              strokeWidth={0}
               fill={`url(#g-${s.key})`}
               yAxisId={s.axis === 'right' ? 'right' : 'left'}
             />
