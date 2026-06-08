@@ -66,46 +66,6 @@ function downloadCsv(filename: string, rows: Array<Record<string, unknown>>) {
 }
 
 // Numeracja i nazwy muszą zgadzać się z Sidebar.NAV (jedno nazewnictwo).
-function RoleSegmented() {
-  const { authRole, isPreviewingClient, setPreviewClient } = useRole();
-  if (authRole !== 'agency') return null;
-
-  return (
-    <div
-      role="tablist"
-      className="inline-flex items-center p-[3px] rounded-[8px] border text-[11px] font-medium"
-      style={{
-        background: 'var(--color-bg-side)',
-        borderColor: 'var(--color-line-soft)',
-      }}
-    >
-      {(['agency', 'client'] as const).map((r) => {
-        const active = r === (isPreviewingClient ? 'client' : 'agency');
-        const label = r === 'agency' ? 'Agency' : 'Client';
-        const dot = r === 'agency' ? 'var(--color-accent)' : 'var(--color-accent-positive)';
-        return (
-          <button
-            key={r}
-            type="button"
-            role="tab"
-            aria-selected={active}
-            onClick={() => setPreviewClient(r === 'client')}
-            className="px-2.5 py-1 rounded-[6px] flex items-center gap-1.5 transition-colors"
-            style={{
-              background: active ? 'var(--color-bg-card)' : 'transparent',
-              color: active ? 'var(--color-ink-primary)' : 'var(--color-ink-secondary)',
-              boxShadow: active ? 'var(--shadow-card)' : 'none',
-            }}
-          >
-            <span className="w-1.5 h-1.5 rounded-full" style={{ background: dot }} />
-            {label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
 export function Topbar() {
   const tab = useTab((s) => s.tab);
   const { period, compare } = useFilters();
@@ -194,10 +154,7 @@ export function Topbar() {
         {/* Breadcrumb „§0X · NAZWA ● Aktualne" usunięty (06.2026) — tytuł sekcji
             jest w nagłówku strony, a status sync-u w stopce sidebara. */}
         <div className="ml-auto flex items-center gap-3 shrink-0">
-          <RoleSegmented />
-
-          <div className="h-5 w-px shrink-0" style={{ background: 'var(--color-line-soft)' }} />
-
+          {/* Przełącznik Agency/Client usunięty (06.2026). */}
           <FilterBar />
 
           <div className="h-5 w-px shrink-0" style={{ background: 'var(--color-line-soft)' }} />
