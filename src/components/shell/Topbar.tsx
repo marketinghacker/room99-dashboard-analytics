@@ -13,7 +13,6 @@ import { useTab, type TabId } from '@/stores/tab';
 import { useFilters } from '@/stores/filters';
 import { useRole } from '@/stores/role';
 import { FilterBar } from './FilterBar';
-import { SyncStatus } from './SyncStatus';
 import { RefreshDataModal } from './RefreshDataModal';
 import { TAB_SOURCES } from '@/lib/tab-source-mapping';
 import { RefreshCw, Download, RotateCw, DatabaseZap } from 'lucide-react';
@@ -67,21 +66,6 @@ function downloadCsv(filename: string, rows: Array<Record<string, unknown>>) {
 }
 
 // Numeracja i nazwy muszą zgadzać się z Sidebar.NAV (jedno nazewnictwo).
-const TAB_LABELS: Record<string, string> = {
-  'executive-summary':     '§01 · Podsumowanie',
-  'top-products':          '§02 · Produkty',
-  'performance-marketing': '§03 · Performance',
-  'funnel':                '§04 · Lejek',
-  'traffic-sources':       '§05 · Ruch',
-  'sales-channels':        '§06 · Sprzedaż',
-  'sales-tree':            '§07 · Drzewo sprzedaży',
-  'product-catalogs':      '§08 · Katalogi',
-  'meta-ads':              '§08 · Meta Ads',
-  'google-ads':            '§09 · Google Ads',
-  pinterest:               '§10 · Pinterest',
-  criteo:                  '§11 · Criteo',
-};
-
 function RoleSegmented() {
   const { authRole, isPreviewingClient, setPreviewClient } = useRole();
   if (authRole !== 'agency') return null;
@@ -207,15 +191,8 @@ export function Topbar() {
           (date picker, select dropdowns) that sit below the pill. min-w-0 on
           the breadcrumb lets it truncate on narrow screens instead. */}
       <div className="flex items-center gap-4 px-8 h-14 whitespace-nowrap">
-        <div
-          className="text-[12px] font-mono tracking-[0.08em] uppercase min-w-0 overflow-hidden text-ellipsis"
-          style={{ color: 'var(--color-ink-tertiary)' }}
-        >
-          {TAB_LABELS[tab] ?? tab}
-        </div>
-
-        <SyncStatus sources={tabSources} />
-
+        {/* Breadcrumb „§0X · NAZWA ● Aktualne" usunięty (06.2026) — tytuł sekcji
+            jest w nagłówku strony, a status sync-u w stopce sidebara. */}
         <div className="ml-auto flex items-center gap-3 shrink-0">
           <RoleSegmented />
 
