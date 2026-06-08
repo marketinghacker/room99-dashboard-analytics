@@ -3,7 +3,7 @@
 import { useFilteredSWR } from '@/components/primitives/useFilteredSWR';
 import {
   HeroKpi, StatCard, SectionHead,
-  Dot, PLATFORM_DOT, fmtPLNCompact, PageHeader,
+  PLATFORM_DOT, fmtPLNCompact, PageHeader,
 } from '@/components/primitives/editorial';
 import { ChartArea, ChartDonut, ChartLine } from '@/components/primitives/charts';
 import { LoadingCard, ErrorCard } from '@/components/primitives/StateCard';
@@ -169,25 +169,31 @@ export function ExecutiveSummaryTab() {
               data={spendByPlatform.map((s: any) => ({ name: s.name, value: s.spend }))}
               nameKey="name"
               valueKey="value"
-              height={200}
+              height={180}
+              // Kolory wycinków = kolory kropek w legendzie (spójność wizualna).
+              colors={spendByPlatform.map((s: any) => PLATFORM_DOT[s.platform] ?? 'var(--color-accent-2)')}
+              showCenterTotal={false}
             />
-            {/* % udział per platforma — prośba klienta: „jak już ma być, pokażmy %" */}
-            <div className="mt-3 flex flex-col gap-1.5">
+            {/* Legenda: większe kropki + % + kwota; total niżej (nie w środku). */}
+            <div className="mt-4 flex flex-col gap-2.5">
               {spendByPlatform.map((p: any) => {
                 const pct = totalSpend > 0 ? (p.spend / totalSpend) * 100 : 0;
                 return (
-                  <div key={p.platform} className="flex items-center gap-2 text-[12px]">
-                    <Dot color={PLATFORM_DOT[p.platform] ?? 'var(--color-accent-2)'} size={7} />
-                    <span style={{ color: 'var(--color-ink-secondary)' }}>{p.name}</span>
+                  <div key={p.platform} className="flex items-center gap-2.5 text-[13px]">
+                    <span
+                      className="inline-block rounded-full shrink-0"
+                      style={{ width: 12, height: 12, background: PLATFORM_DOT[p.platform] ?? 'var(--color-accent-2)' }}
+                    />
+                    <span style={{ color: 'var(--color-ink-primary)' }}>{p.name}</span>
                     <span className="ml-auto numeric font-medium">{pct.toFixed(1).replace('.', ',')}%</span>
-                    <span className="numeric w-[88px] text-right" style={{ color: 'var(--color-ink-tertiary)' }}>
+                    <span className="numeric w-[96px] text-right" style={{ color: 'var(--color-ink-tertiary)' }}>
                       {fmtPLNCompact(p.spend)}
                     </span>
                   </div>
                 );
               })}
               <div
-                className="flex items-center justify-between pt-1.5 mt-0.5 text-[12px]"
+                className="flex items-center justify-between pt-2.5 mt-0.5 text-[13px]"
                 style={{ borderTop: '1px solid var(--color-line-soft)' }}
               >
                 <span className="overline">Razem</span>

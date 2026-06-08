@@ -296,11 +296,18 @@ export function ChartDonut({
   nameKey,
   valueKey,
   height = 220,
+  colors,
+  showCenterTotal = true,
 }: {
   data: Array<Record<string, any>>;
   nameKey: string;
   valueKey: string;
   height?: number;
+  /** Explicit per-slice colors — pass to keep slice colors in sync with an
+      external legend (else falls back to the default chart palette by index). */
+  colors?: string[];
+  /** Środkowa etykieta TOTAL — wyłącz gdy total jest pokazany obok wykresu. */
+  showCenterTotal?: boolean;
 }) {
   const total = data.reduce((s, d) => s + Number(d[valueKey] ?? 0), 0);
   return (
@@ -317,18 +324,20 @@ export function ChartDonut({
             strokeWidth={0}
           >
             {data.map((_, i) => (
-              <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+              <Cell key={i} fill={colors?.[i] ?? CHART_COLORS[i % CHART_COLORS.length]} />
             ))}
           </Pie>
           <Tooltip content={(p) => <TooltipBox {...p} money />} />
         </PieChart>
       </ResponsiveContainer>
-      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-        <span className="overline">Total</span>
-        <span className="hero-numeral text-[22px] mt-1 tabular text-[var(--color-ink-primary)]">
-          {formatPLN(total)}
-        </span>
-      </div>
+      {showCenterTotal && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+          <span className="overline">Total</span>
+          <span className="hero-numeral text-[20px] mt-1 tabular text-[var(--color-ink-primary)]">
+            {formatPLN(total)}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
