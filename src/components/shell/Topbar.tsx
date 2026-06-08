@@ -2,20 +2,14 @@
 
 /**
  * Editorial topbar — sits next to the sidebar.
- *  [breadcrumb]               [role switch] [date picker] [refresh] [export]
- *
- * Role switch is a segmented control — only visible to agency users.
- * Preview toggle (agency viewing the client view) lives here.
+ *  [date picker] [refresh] [export]
  */
 import { useState } from 'react';
 import { mutate } from 'swr';
 import { useTab, type TabId } from '@/stores/tab';
 import { useFilters } from '@/stores/filters';
-import { useRole } from '@/stores/role';
 import { FilterBar } from './FilterBar';
-import { RefreshDataModal } from './RefreshDataModal';
-import { TAB_SOURCES } from '@/lib/tab-source-mapping';
-import { RefreshCw, Download, RotateCw, DatabaseZap } from 'lucide-react';
+import { RefreshCw, Download } from 'lucide-react';
 import Papa from 'papaparse';
 
 const TAB_ENDPOINT: Record<TabId, string> = {
@@ -65,18 +59,11 @@ function downloadCsv(filename: string, rows: Array<Record<string, unknown>>) {
   URL.revokeObjectURL(url);
 }
 
-// Numeracja i nazwy muszą zgadzać się z Sidebar.NAV (jedno nazewnictwo).
 export function Topbar() {
   const tab = useTab((s) => s.tab);
   const { period, compare } = useFilters();
-  const { authRole } = useRole();
   const [refreshing, setRefreshing] = useState(false);
-  const [syncing, setSyncing] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [syncNotice, setSyncNotice] = useState<string | null>(null);
-  const [refreshModalOpen, setRefreshModalOpen] = useState(false);
-
-  const tabSources = TAB_SOURCES[tab];
 
   /**
    * "Odśwież" = full refresh: trigger sync-now on the server, then revalidate
@@ -98,25 +85,6 @@ export function Topbar() {
     } finally {
       await mutate(() => true, undefined, { revalidate: true });
       setRefreshing(false);
-    }
-  }
-
-  /**
-   * "Sync" = agency-only full backend pull with explicit notice. Longer wait
-   * and feedback than the background-ish Odśwież.
-   */
-  async function onSync() {
-    setSyncing(true);
-    setSyncNotice(null);
-    try {
-      const res = await fetch('/api/sync-now', { method: 'POST' });
-      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? 'sync failed');
-      setSyncNotice('Sync uruchomiony — świeże dane za ~3 min');
-      setTimeout(() => setSyncNotice(null), 8000);
-    } catch (e) {
-      setSyncNotice((e as Error).message);
-    } finally {
-      setSyncing(false);
     }
   }
 
@@ -171,43 +139,8 @@ export function Topbar() {
             <RefreshCw className={refreshing ? 'w-3.5 h-3.5 animate-spin' : 'w-3.5 h-3.5'} />
             Odśwież
           </button>
-
-          <button
-            type="button"
-            onClick={onSync}
-            disabled={syncing}
-            title="Zsynchronizuj na nowo (pobiera świeże dane z Meta/Google/Allegro)"
-            className="agency-only h-8 px-2.5 rounded-[6px] flex items-center gap-1.5 text-[12px] shrink-0 disabled:opacity-50"
-            style={{ color: 'var(--color-ink-secondary)' }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-          >
-            <RotateCw className={syncing ? 'w-3.5 h-3.5 animate-spin' : 'w-3.5 h-3.5'} />
-            Sync
-          </button>
-
-          {authRole === 'agency' && (
-            <button
-              type="button"
-              onClick={() => setRefreshModalOpen(true)}
-              title="Wymusza pobranie świeżych danych dla wybranych źródeł i zakresu dat"
-              className="agency-only h-8 px-2.5 rounded-[6px] flex items-center gap-1.5 text-[12px] shrink-0"
-              style={{ color: 'var(--color-ink-secondary)' }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
-              onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-            >
-              <DatabaseZap className="w-3.5 h-3.5" />
-              Odśwież dane
-            </button>
-          )}
-          {syncNotice && (
-            <span
-              className="text-[11px] font-mono tracking-[0.06em] uppercase shrink-0"
-              style={{ color: 'var(--color-accent)' }}
-            >
-              {syncNotice}
-            </span>
-          )}
+          {/* „Sync" i „Odśwież dane" usunięte (06.2026) — „Odśwież" i tak
+              pobiera świeże dane z backendu, a potem odświeża widok. */}
 
           <button
             type="button"
@@ -225,12 +158,6 @@ export function Topbar() {
         </div>
       </div>
 
-      <RefreshDataModal
-        open={refreshModalOpen}
-        onClose={() => setRefreshModalOpen(false)}
-        defaultSources={tabSources}
-        invalidateKeys={[`${TAB_ENDPOINT[tab]}?period=${period}&compare=${compare}`]}
-      />
     </header>
   );
 }
