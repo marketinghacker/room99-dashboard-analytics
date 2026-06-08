@@ -164,6 +164,18 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--color-ink-primary);
 }
 
+/* Recharts dodaje tabindex do segmentów (Pie/Bar/Area) → przeglądarka rysuje
+   focus-outline (szaro-niebieski prostokąt) po kliknięciu. Wyłączamy go na
+   wszystkich elementach wykresów (prośba klienta 06.2026). */
+.recharts-wrapper :focus,
+.recharts-wrapper :focus-visible,
+.recharts-surface,
+.recharts-surface :focus,
+.recharts-sector,
+.recharts-layer:focus {
+  outline: none !important;
+}
+
 /* Page title — jednolity, duży nagłówek każdej zakładki (bez kickera).
    Wersaliki + regular weight (prośba klienta 06.2026). */
 .page-title {
