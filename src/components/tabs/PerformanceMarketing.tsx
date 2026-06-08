@@ -1,7 +1,7 @@
 'use client';
 
 import { useFilteredSWR } from '@/components/primitives/useFilteredSWR';
-import { HeroKpi, StatCard, SectionHead, Overline, Dot, PLATFORM_DOT, fmtX, Bar } from '@/components/primitives/editorial';
+import { HeroKpi, StatCard, SectionHead, Overline, Dot, PLATFORM_DOT, fmtX, Bar, PageHeader } from '@/components/primitives/editorial';
 import { ChartArea, ChartBar } from '@/components/primitives/charts';
 import { DeltaBadge } from '@/components/primitives/DeltaBadge';
 import { LoadingCard, ErrorCard } from '@/components/primitives/StateCard';
@@ -65,16 +65,10 @@ export function PerformanceMarketingTab() {
 
   return (
     <div className="flex flex-col gap-10">
-      <header className="mb-0">
-        <div className="overline mb-2">Performance Marketing · paid ads combined</div>
-        <h1 className="section-title" style={{ fontSize: 32, letterSpacing: '-0.02em', fontWeight: 500 }}>
-          Wszystkie kanały płatne
-        </h1>
-        <p className="lede mt-2" style={{ fontSize: 14 }}>
-          Źródło: API platform ads (Meta Graph, Google Ads, Pinterest, Criteo). Wydatki 1:1 z panelami.
-          Przychody platform NIE są sumowane — każda platforma raportuje własną atrybucję.
-        </p>
-      </header>
+      <PageHeader
+        title="Performance"
+        sub="Wszystkie kanały płatne · źródło: API platform ads (Meta, Google, Pinterest, Criteo). Wydatki 1:1 z panelami. Przychody platform NIE są sumowane — każda raportuje własną atrybucję."
+      />
 
       {/* Hero KPI — „Wartość konwersji" i „ROAS" usunięte (duplikowały dane platform);
           w zamian „Udział mediów w przychodzie" (prośba klienta). */}

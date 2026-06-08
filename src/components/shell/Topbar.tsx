@@ -66,18 +66,20 @@ function downloadCsv(filename: string, rows: Array<Record<string, unknown>>) {
   URL.revokeObjectURL(url);
 }
 
+// Numeracja i nazwy muszą zgadzać się z Sidebar.NAV (jedno nazewnictwo).
 const TAB_LABELS: Record<string, string> = {
   'executive-summary':     '§01 · Podsumowanie',
   'top-products':          '§02 · Produkty',
   'performance-marketing': '§03 · Performance',
-  'traffic-sources':       '§04 · Ruch',
-  'sales-channels':        '§05 · Sprzedaż',
-  'sales-tree':            '§06 · Drzewo sprzedaży',
-  'product-catalogs':      '§07 · Katalogi',
-  'meta-ads':              '§07 · Meta Ads',
-  'google-ads':            '§08 · Google Ads',
-  pinterest:               '§09 · Pinterest',
-  criteo:                  '§10 · Criteo',
+  'funnel':                '§04 · Lejek',
+  'traffic-sources':       '§05 · Ruch',
+  'sales-channels':        '§06 · Sprzedaż',
+  'sales-tree':            '§07 · Drzewo sprzedaży',
+  'product-catalogs':      '§08 · Katalogi',
+  'meta-ads':              '§08 · Meta Ads',
+  'google-ads':            '§09 · Google Ads',
+  pinterest:               '§10 · Pinterest',
+  criteo:                  '§11 · Criteo',
 };
 
 function RoleSegmented() {

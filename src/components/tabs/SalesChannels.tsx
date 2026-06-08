@@ -2,7 +2,7 @@
 
 import { useFilteredSWR } from '@/components/primitives/useFilteredSWR';
 import {
-  HeroKpi, StatCard, SectionHead, CompareBar, Overline,
+  HeroKpi, StatCard, SectionHead, CompareBar, Overline, PageHeader,
 } from '@/components/primitives/editorial';
 import { ChartLine } from '@/components/primitives/charts';
 import { LoadingCard, ErrorCard } from '@/components/primitives/StateCard';
@@ -47,16 +47,10 @@ export function SalesChannelsTab() {
 
   return (
     <div className="flex flex-col gap-10">
-      <header>
-        <div className="overline mb-2">Sprzedaż · kanały</div>
-        <h1 className="section-title" style={{ fontSize: 32, letterSpacing: '-0.02em', fontWeight: 500 }}>
-          Shoper vs Allegro
-        </h1>
-        <p className="lede mt-2" style={{ fontSize: 14 }}>
-          Źródło: SellRocket (BaseLinker direct) · Shoper = sklep własny Room99.pl (zakres agencji) ·
-          Allegro = marketplace. Klient powinien mieć przewagę Shoper &gt; Allegro każdego dnia.
-        </p>
-      </header>
+      <PageHeader
+        title="Sprzedaż"
+        sub="Shoper vs Allegro · źródło: SellRocket (BaseLinker direct). Shoper = sklep własny Room99.pl (zakres agencji), Allegro = marketplace. Klient powinien prowadzić Shoper > Allegro każdego dnia."
+      />
 
       {/* Hero: Compare bar */}
       <CompareBar

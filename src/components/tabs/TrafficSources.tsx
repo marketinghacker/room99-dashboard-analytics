@@ -1,7 +1,7 @@
 'use client';
 
 import { useFilteredSWR } from '@/components/primitives/useFilteredSWR';
-import { HeroKpi, StatCard, SectionHead, Overline } from '@/components/primitives/editorial';
+import { HeroKpi, StatCard, SectionHead, Overline, PageHeader } from '@/components/primitives/editorial';
 import { ChartBar, ChartDonut, ChartLine } from '@/components/primitives/charts';
 import { LoadingCard, ErrorCard } from '@/components/primitives/StateCard';
 import { formatPLN, formatInt, formatPct } from '@/lib/format';
@@ -80,16 +80,10 @@ export function TrafficSourcesTab() {
 
   return (
     <div className="flex flex-col gap-10">
-      <header>
-        <div className="overline mb-2">Ruch · GA4 acquisition</div>
-        <h1 className="section-title" style={{ fontSize: 32, letterSpacing: '-0.02em', fontWeight: 500 }}>
-          Źródła ruchu
-        </h1>
-        <p className="lede mt-2" style={{ fontSize: 14 }}>
-          Źródło: Google Analytics 4 · kanały pozyskiwania, sesje, przychód transakcyjny.
-          Przychód GA4 może różnić się od Shoper (attribution window, refunds).
-        </p>
-      </header>
+      <PageHeader
+        title="Ruch"
+        sub="Źródło: Google Analytics 4 · kanały pozyskiwania, sesje, przychód transakcyjny. Przychód GA4 może różnić się od Shoper (attribution window, refunds)."
+      />
 
       <div className="grid gap-5" style={{ gridTemplateColumns: '1.25fr 1fr 1fr' }}>
         <HeroKpi

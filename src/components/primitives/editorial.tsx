@@ -255,6 +255,32 @@ export function SectionHead({
   );
 }
 
+/* ---------- PageHeader — jednolity nagłówek zakładki ---------- */
+
+/**
+ * Wspólny nagłówek dla wszystkich zakładek: duży tytuł (nazwa = label z nawigacji)
+ * + opcjonalny podtytuł. Zastępuje rozjazd "mały kicker + mały H1" — bez tekstu
+ * u góry karty, większe litery, jedno nazewnictwo (prośba klienta 06.2026).
+ */
+export function PageHeader({
+  title,
+  sub,
+  color,
+}: {
+  title: ReactNode;
+  sub?: ReactNode;
+  color?: string;
+}) {
+  return (
+    <header className="mb-2">
+      <h1 className="page-title" style={color ? { color } : undefined}>{title}</h1>
+      {sub && (
+        <p className="lede mt-2" style={{ fontSize: 14 }}>{sub}</p>
+      )}
+    </header>
+  );
+}
+
 /* ---------- Masthead ---------- */
 
 export function Masthead({

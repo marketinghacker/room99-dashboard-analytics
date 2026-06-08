@@ -1,16 +1,13 @@
 'use client';
 
 import { useFilteredSWR } from '@/components/primitives/useFilteredSWR';
-import useSWR from 'swr';
-import { useFilters } from '@/stores/filters';
 import {
-  Masthead, HeroKpi, StatCard, SectionHead,
-  Dot, PLATFORM_DOT, fmtPLNCompact,
+  HeroKpi, StatCard, SectionHead,
+  Dot, PLATFORM_DOT, fmtPLNCompact, PageHeader,
 } from '@/components/primitives/editorial';
 import { ChartArea, ChartDonut, ChartLine } from '@/components/primitives/charts';
 import { LoadingCard, ErrorCard } from '@/components/primitives/StateCard';
 import { formatPct } from '@/lib/format';
-import { EditableMasthead } from '@/components/shell/EditableMasthead';
 
 const PLATFORM_NAMES: Record<string, string> = {
   meta: 'Meta',
@@ -19,32 +16,8 @@ const PLATFORM_NAMES: Record<string, string> = {
   criteo: 'Criteo',
 };
 
-/** Polish month name for masthead kicker. */
-const MONTHS_PL = ['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'];
-
-function buildMastheadDefault(range: { start: string; end: string }) {
-  const start = new Date(range.start);
-  const monthName = MONTHS_PL[start.getMonth()];
-  const year = start.getFullYear();
-  const kicker = `№ 03 · ${monthName} ${year} · Monthly Review`;
-  // No auto-generated headline — agency can set one via EditableMasthead.
-  const headline = '';
-  return { kicker, headline };
-}
-
-/** Renders inline-italic segments wrapped in *...* as <em>. */
-function renderHeadline(text: string) {
-  const parts = text.split(/(\*[^*]+\*)/g);
-  return parts.map((p, i) =>
-    p.startsWith('*') && p.endsWith('*') ? <em key={i}>{p.slice(1, -1)}</em> : <span key={i}>{p}</span>,
-  );
-}
-
 export function ExecutiveSummaryTab() {
-  const { period } = useFilters();
   const { data, error, isLoading } = useFilteredSWR<any>('/api/data/executive-summary');
-  // Editorial copy override (agency-only edits saved to DB)
-  const { data: copy } = useSWR<{ headline?: string; kicker?: string; lede?: string }>('/api/data/editorial-copy?tab=executive');
 
   if (isLoading) {
     return (
@@ -73,16 +46,12 @@ export function ExecutiveSummaryTab() {
   const crChange = cr != null && crPrev != null && crPrev !== 0 ? (cr - crPrev) / crPrev : null;
   const perPlatform = (data.perPlatform ?? []).filter((p: any) => p.platform !== 'ga4' && p.payload);
 
-  // Masthead defaults (dynamic) — agency can override via DB
-  const { kicker: defaultKicker, headline: defaultHeadline } = buildMastheadDefault(all.range);
-  const kicker   = copy?.kicker   ?? defaultKicker;
-  const headline = copy?.headline ?? defaultHeadline;
   const compareLabel =
     data.compare === 'same_period_last_year' ? 'rok temu' :
     data.compare === 'same_period_last_quarter' ? 'poprzedni kwartał' :
     data.compare === 'none' ? '' :
     'poprzedni okres';
-  const lede     = copy?.lede     ?? buildDefaultLede(k, d, compareLabel);
+  const lede = buildDefaultLede(k, d, compareLabel);
 
   const spendByPlatform = perPlatform.map((p: any) => ({
     platform: p.platform,
@@ -100,19 +69,8 @@ export function ExecutiveSummaryTab() {
 
   return (
     <div className="flex flex-col gap-10">
-      {/* Masthead */}
-      <EditableMasthead
-        tab="executive"
-        defaultKicker={defaultKicker}
-        defaultHeadline={defaultHeadline}
-        defaultLede={lede}
-      >
-        <Masthead
-          kicker={kicker}
-          title={renderHeadline(headline)}
-          lede={lede}
-        />
-      </EditableMasthead>
+      {/* Jednolity nagłówek — kicker „№ 03 · … · Monthly Review" usunięty (06.2026) */}
+      <PageHeader title="Podsumowanie" sub={lede} />
 
       {/* Hero KPI row — 1.25fr 1fr 1fr */}
       <div className="grid gap-5" style={{ gridTemplateColumns: '1.25fr 1fr 1fr' }}>

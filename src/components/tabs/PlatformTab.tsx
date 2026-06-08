@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import useSWR from 'swr';
 import { type ColumnDef } from '@tanstack/react-table';
 import { useFilteredSWR } from '@/components/primitives/useFilteredSWR';
-import { HeroKpi, StatCard, SectionHead, Overline } from '@/components/primitives/editorial';
+import { HeroKpi, StatCard, SectionHead, Overline, PageHeader } from '@/components/primitives/editorial';
 import { ChartArea } from '@/components/primitives/charts';
 import { LoadingCard, ErrorCard } from '@/components/primitives/StateCard';
 import { DataTable } from '@/components/primitives/DataTable';
@@ -150,29 +150,19 @@ export function PlatformTab({
         </div>
       )}
 
-      <header>
-        <div className="overline mb-2">Platforma · paid ads</div>
-        <h1
-          className="section-title"
-          style={{
-            fontSize: 32,
-            letterSpacing: '-0.02em',
-            fontWeight: 500,
-            color: accentColor ?? 'var(--color-ink-primary)',
-          }}
-        >
-          {platformLabel}
-        </h1>
-        {accountHint && (
-          <p className="text-[13px] numeric mt-1" style={{ color: 'var(--color-ink-tertiary)' }}>
-            {accountHint}
-          </p>
-        )}
-        <p className="lede mt-2" style={{ fontSize: 14 }}>
-          Źródło: API {platformLabel} · konwersje i wartość raportowane przez platformę (własna atrybucja),
-          nie Shoper. Wydatki 1:1 z panelem reklamowym.
-        </p>
-      </header>
+      <PageHeader
+        color={accentColor}
+        title={platformLabel}
+        sub={
+          <>
+            {accountHint && (
+              <span className="numeric" style={{ color: 'var(--color-ink-tertiary)' }}>{accountHint} · </span>
+            )}
+            Źródło: API {platformLabel} · konwersje i wartość raportowane przez platformę (własna atrybucja),
+            nie Shoper. Wydatki 1:1 z panelem reklamowym.
+          </>
+        }
+      />
 
       {/* Hero KPIs */}
       <div className="grid gap-5" style={{ gridTemplateColumns: '1.25fr 1fr 1fr' }}>

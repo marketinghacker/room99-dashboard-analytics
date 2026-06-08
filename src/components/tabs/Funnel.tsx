@@ -1,7 +1,7 @@
 'use client';
 
 import { useFilteredSWR } from '@/components/primitives/useFilteredSWR';
-import { SectionHead, HeroKpi } from '@/components/primitives/editorial';
+import { SectionHead, HeroKpi, PageHeader } from '@/components/primitives/editorial';
 import { DeltaBadge } from '@/components/primitives/DeltaBadge';
 import { LoadingCard, ErrorCard } from '@/components/primitives/StateCard';
 import { formatInt, formatPct } from '@/lib/format';
@@ -121,16 +121,10 @@ export function FunnelTab() {
 
   return (
     <div className="flex flex-col gap-10">
-      <header>
-        <div className="overline mb-2">Lejek · GA4 e-commerce</div>
-        <h1 className="section-title" style={{ fontSize: 32, letterSpacing: '-0.02em', fontWeight: 500 }}>
-          Lejek konwersji
-        </h1>
-        <p className="lede mt-2" style={{ fontSize: 14 }}>
-          Liczony od <strong>użytkowników</strong> (GA4 totalUsers per zdarzenie) — ustalenie z klientem.
-          Konwersja = % użytkowników poprzedniego etapu.
-        </p>
-      </header>
+      <PageHeader
+        title="Lejek"
+        sub={<>Konwersja GA4 liczona od <strong>użytkowników</strong> (totalUsers per zdarzenie) — ustalenie z klientem. Konwersja = % użytkowników poprzedniego etapu.</>}
+      />
 
       <div className="grid gap-5" style={{ gridTemplateColumns: '1.25fr 1fr 1fr' }}>
         <HeroKpi label="Wejścia (sesje — użytkownicy)" value={steps[0]?.users ?? 0} format="int" primary hint="GA4: session_start, użytkownicy" />

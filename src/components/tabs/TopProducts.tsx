@@ -8,6 +8,7 @@ import { DataTable } from '@/components/primitives/DataTable';
 import { DeltaBadge } from '@/components/primitives/DeltaBadge';
 import { LoadingCard, ErrorCard, EmptyCard } from '@/components/primitives/StateCard';
 import { TopProductsDraft } from './TopProductsDraft';
+import { PageHeader } from '@/components/primitives/editorial';
 import { formatPLN, formatInt } from '@/lib/format';
 import { cn } from '@/components/ui/cn';
 
@@ -232,13 +233,10 @@ export function TopProductsTab() {
   return (
     <div className="flex flex-col gap-5 animate-fade-up">
       <div>
-        <h2 className="text-[24px] font-semibold tracking-[-0.02em]">Produkty & kategorie</h2>
-        <p className="text-[13px] text-[var(--color-ink-tertiary)] mt-0.5">
-          Źródło: BaseLinker · wartość towarów (bez dostawy) · porównanie YoY: {data.yoyRange.start} → {data.yoyRange.end}
-        </p>
-        <p className="text-[11px] text-[var(--color-ink-tertiary)] mt-1 italic">
-          Różnica ~2–3% vs Podsumowanie = koszty dostawy wliczone w wartość zamówienia w SellRocket.
-        </p>
+        <PageHeader
+          title="Produkty"
+          sub={`Źródło: BaseLinker · wartość towarów (bez dostawy) · porównanie YoY: ${data.yoyRange.start} → ${data.yoyRange.end}. Różnica ~2–3% vs Podsumowanie = koszty dostawy w wartości zamówienia (SellRocket).`}
+        />
         <div className="mt-2">{breadcrumbs}</div>
       </div>
 
