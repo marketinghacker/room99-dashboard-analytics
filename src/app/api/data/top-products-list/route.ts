@@ -104,6 +104,19 @@ export async function GET(req: Request) {
   const momCurM = bySku(momCur);
   const momPrevM = bySku(momPrev);
 
+  // Miniatura to cecha produktu, nie dnia — bierzemy najnowszy niepusty
+  // thumbnail per SKU z CAŁEJ historii (Shoper zapisuje je nieregularnie,
+  // więc okno bieżące często ich nie ma). Pokrycie ~82% SKU.
+  const thumbRes: any = await db.execute(sql`
+    SELECT DISTINCT ON (sku) sku, thumbnail_url
+    FROM products_daily
+    WHERE source = 'shr' AND thumbnail_url IS NOT NULL AND thumbnail_url <> ''
+    ORDER BY sku, date DESC
+  `);
+  const thumbBySku = new Map<string, string>(
+    ((thumbRes.rows ?? thumbRes) as any[]).map((r) => [r.sku, r.thumbnail_url]),
+  );
+
   // Wzbogacenie + filtry (rozmiar parsowany z nazwy — w bazie go nie ma).
   let rows = cur.map((r) => {
     const size = parseSize(r.name);
@@ -116,6 +129,7 @@ export async function GET(req: Request) {
     const viewsPrevV = viewsPrev.get(nameLc) ?? 0;
     return {
       ...r,
+      thumbnail: thumbBySku.get(r.sku) ?? r.thumbnail,
       size,
       wowChange: wp && wp.revenue > 0 ? ((w?.revenue ?? 0) - wp.revenue) / wp.revenue : null,
       momChange: mp && mp.revenue > 0 ? ((m?.revenue ?? 0) - mp.revenue) / mp.revenue : null,
